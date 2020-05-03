@@ -105,10 +105,21 @@ class Writer(object):
 
     def add_figure(self, tag, figure, global_step, write_time=None):
         self._add_generic(tag, pst.FigureType, figure, global_step, write_time)
-    def add_histogram(self, tag, dat, global_step, write_time=None, bins=10, bin_centers=None, normalize=True):
+
+    def add_scalar(self, tag, value, global_step, write_time=None):
+        self._add_generic(tag, types.Float, value, global_step, write_time)
+
+    def add_histogram(self, tag, dat, global_step, write_time=None, **kwargs):
+        
+        # Compute histogram.
+        bin_centers, hist = self._compute_histogram(dat, **kwargs)
+        self._plot_histograms(tag, (bin_centers, hist), dat, global_step, write_time=write_time)
+
+    @staticmethod
+    def _compute_histogram(dat, bins=10, bin_centers=None, normalize=True):
         """
         'bins': Num bins or bin edges (passed to numpy.histogram to create a histogram).
-        'bin_centers': Overrides 'bins' and specifies the bin centers instead of the edges. 
+        'bin_centers': Overrides 'bins' and specifies the bin centers instead of the edges.
             The first and last bin centers are assumed to extend to +/- infinity.
         """
         dat = numtor.asnumpy(dat)
@@ -131,9 +142,10 @@ class Writer(object):
         if normalize:
             hist=hist/dat.size
 
+        return bin_centers, hist
+        
+    def _plot_histogram(self, tag, dat, global_step, write_time=None):
         # Build figure
+        bin_centers, hist = dat
         fig = px.line(x=bin_centers,y=hist)
         self._add_generic(tag, pst.HistogramType, fig, global_step, write_time)
-
-    def add_scalar(self, tag, value, global_step, write_time=None):
-        self._add_generic(tag, types.Float, value, global_step, write_time)
