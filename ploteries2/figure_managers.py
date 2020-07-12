@@ -30,7 +30,7 @@ class Colors:
         return f'hsl({255*hsl[0]:.0f}, {hsl[1]:.0%}, {hsl[2]:.0%})'
 
 
-def load_figure(reader, figure, **kwargs):
+def load_figure(reader, *args, manager_kwargs={}, **kwargs):
     """
     Loads a figure from the database and populates all its data, returning a plotly.graph_objects.Figure object.
 
@@ -40,16 +40,14 @@ def load_figure(reader, figure, **kwargs):
     figure: Figure id, tag or records RowProxy object.
     """
 
-    # Retrieve figure data
-    if isinstance(figure, (str, int)):
-        figs_tbl = reader._figures
-        query = figs_tbl.select().where(
-            (figs_tbl.c.id if isinstance(figure, int) else figs_tbl.c.tag) == figure)
-        figure = reader.execute(query)[0]
-    elif not isinstance(figure, RowProxy):
-        raise Exception('Invalid input.')
+    figure_recs = reader.load_figure_recs(*args, **kwargs)
+    if len(figure_recs) > 1:
+        raise Exception(
+            'More than one figure record matched the query specificaiton.')
 
-    return figure.manager(reader, **kwargs).load(figure)
+    figure = figure_recs[0]
+
+    return figure.manager(reader, **manager_kwargs).load(figure)
 
 
 class FigureManager:
@@ -87,7 +85,7 @@ class FigureManager:
         # Concatenate outputs to numpy arrays.
         if len(sql_output) == 0:
             return None
-        elif len(sql_output) > 1:
+        else:
             sql_output = {field: np.array(
                 [record[field] for record in sql_output]) for field in sql_output[0].keys()}
         return sql_output
@@ -184,7 +182,7 @@ class ScalarsManager(FigureManager):
                 [go.Scatter(x=[], y=[], mode=mode, line=dict(
                     color=colors[k])) for k in range(len(values))])
             #
-            table = writer.get_table(tag)
+            table = writer.get_data_table(tag)
             data_mappers = []
             for k in range(len(values)):
                 data_mappers.append(

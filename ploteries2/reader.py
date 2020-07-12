@@ -3,10 +3,11 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy import create_engine, MetaData, event, Table, Column, Integer, String, \
     ForeignKey, types, insert, UniqueConstraint, func, exc, column, text, select
 from sqlalchemy.engine import Engine
-from .figure_managers import load_figure
+from .figure_managers import load_figure as figure_manager_load_figure
 from pglib.sqlalchemy import PlotlyFigureType, ClassType, sql_query_type_builder
 from ._sql_data_types import DataMapperType
 import re
+from sqlalchemy.engine.result import RowProxy
 
 
 def sqlite3_concurrent_engine(path):
@@ -29,8 +30,27 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor.close()
 
 
-class Reader(object):
+#
+#event.listen(Table, "column_reflect", do_this_on_column_reflect)
+# @event.listens_for(Table, "column_reflect")
+def _reflect_custom_types(inspector, table, column_info, _content_types_table):
+
     #
+    if table.name in Reader.RESERVED_TABLE_NAMES or column_info['name'] != 'content':
+        return
+
+    with inspector.engine.begin() as conn:
+        content_type_recs = conn.execute(_content_types_table.select().where(
+            _content_types_table.c.table_name == table.name)).fetchall()
+        assert len(content_type_recs) == 1
+        column_info['type'] = content_type_recs[0].content_type
+
+
+class Reader(object):
+    RESERVED_TABLE_NAMES = ['__figures__',
+                            '__data_templates__', '__content_types__']
+    #
+
     def __init__(self, path, check_exists=True):
         #
         if check_exists:
@@ -42,18 +62,20 @@ class Reader(object):
         self._metadata = MetaData(bind=self.engine)
         self.SQLQueryType = sql_query_type_builder(
             scoped_session(sessionmaker(bind=self.engine)), self._metadata)
+        #
         self._init_headers()
+        event.listen(Table, "column_reflect",
+                     lambda inspector, table, column_info, _content_types_table=self._content_types:
+                     _reflect_custom_types(inspector, table, column_info, _content_types_table))
+        self._metadata.reflect()
 
     def load_figure(self, *args, **kwargs):
-        return load_figure(self, *args, **kwargs)
+        return figure_manager_load_figure(self, *args, **kwargs)
 
     def execute(self, *args, **kwargs):
         with self.engine.begin() as conn:
             result = conn.execute(*args, **kwargs).fetchall()
         return result
-
-    def tabs(self):
-        self.execute()
 
     def _init_headers(self):
         self._figures = Table('__figures__', self._metadata,
@@ -75,22 +97,55 @@ class Reader(object):
                                      Column('data_mapper', DataMapperType,
                                             nullable=False))
 
-    def get_figure_recs(self, tag=None, id=None, manager=None, name=None):
+        # Specifies the content type for each data table
+        self._content_types = Table('__content_types__', self._metadata,
+                                    Column('id', Integer, primary_key=True),
+                                    Column('table_name', String,
+                                           nullable=False),
+                                    Column('content_type', ClassType,
+                                           nullable=False))
+
+    def load_figure_recs(self, *args, **kwargs):
+        """
+        load_figure_recs(row_proxy) : Returns the input arg.
+        load_figure_recs([tag=tag | id=id | manager=manager | name=name]) : Gets matching rows.
+        """
+
+        # Return input RowProxy
+        if len(args) > 0:
+            if len(args) == 1 and isinstance(args[0], RowProxy) and len(kwargs) == 0:
+                return args
+            else:
+                raise Exception('Invalid input args.')
+
+        # Get id from name
+        if 'name' in kwargs:
+            if 'id' in kwargs:
+                Exception('Invalid input args.')
+            kwargs['id'] = re.match(
+                '^fig_(\d+)$', kwargs.pop('name')).groups()[0]
+
         # Add derived fields.
         query = select(
             [self._figures, ('fig_' + self._figures.c.id.cast(String)).label('name')])
 
-        # Map name to id
-        if name is not None:
-            if id is not None:
-                raise Exception('Invalid combimation of arguments.')
-            id = int(re.match('^fig_(\d+)$', name).groups()[0])
+        # Add query constraints.
+        for key, val in kwargs.items():
+            query = query.where(getattr(self._figures.c, key) == val)
 
-        # Build query
-        if tag is not None:
-            query = query.where(self._figures.c.tag == tag)
-        if id is not None:
-            query = query.where(self._figures.c.id == id)
-        if manager is not None:
-            query = query.where(self._figures.c.manager == manager)
         return self.execute(query)
+
+        # # Map name to id
+        # if name is not None:
+        #     if id is not None:
+        #         raise Exception('Invalid combimation of arguments.')
+        #     id = int(re.match('^fig_(\d+)$', name).groups()[0])
+
+        # # Build query
+        # if tag is not None:
+        #     query = query.where(self._figures.c.tag == tag)
+        # if id is not None:
+        #     query = query.where(self._figures.c.id == id)
+        # if manager is not None:
+        #     query = query.where(self._figures.c.manager == manager)
+        # return self.execute(query)

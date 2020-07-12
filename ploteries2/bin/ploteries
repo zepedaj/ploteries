@@ -118,11 +118,11 @@ def create_layout(reader, update_interval):
 
     def get_graphs_of_type(manager_type, **kwargs):
         graphs = [(fig.name, build_graph_html(fig.tag, fig.name, **kwargs))
-                  for fig in reader.get_figure_recs(manager=manager_type)]
+                  for fig in reader.load_figure_recs(manager=manager_type)]
         graphs = group_plots(graphs)
         return graphs
     #
-    scalars = reader.get_figure_recs(manager=ScalarsManager)
+    scalars = reader.load_figure_recs(manager=ScalarsManager)
     figures = []  # get_graphs_of_type('FigureType', slider=True)
     histograms = []  # get_graphs_of_type('HistogramType', slider=True)
 
@@ -169,7 +169,7 @@ def create_layout(reader, update_interval):
 
 def update_scalar(figure_name):
     reader = Reader(DB_PATH)
-    figure_rec = reader.get_figure_recs(name=figure_name)[0]
+    figure_rec = reader.load_figure_recs(name=figure_name)[0]
     fig = reader.load_figure(figure_rec)
     fig.update_layout(height=HEIGHT, width=WIDTH, showlegend=False,
                       margin=go.layout.Margin(**dict(zip('lrbt', [0]*4), pad=4)))
@@ -191,7 +191,7 @@ def create_toolbar_callbacks():
 
 def create_update_scalar_callbacks(reader):
     _g = globals()
-    for _fig in reader.get_figure_recs(manager=ScalarsManager):
+    for _fig in reader.load_figure_recs(manager=ScalarsManager):
         import ipdb
         ipdb.set_trace()
         _g['update_scalar_'+_fig.name] = APP.callback(
@@ -209,7 +209,7 @@ def retrieve_graph(global_step, figure_name):
         raise PreventUpdate
     #
     reader = Reader(DB_PATH)
-    records = reader.get_figure_recs(name=figure_name)
+    records = reader.load_figure_recs(name=figure_name)
     #
     if len(records) > 1:
         raise Exception('Unexpected error!')
@@ -247,7 +247,7 @@ def update_slider(table_name, slider_value, slider_output_keys):
 def create_graph_callbacks(reader, figure_type):
     _g = globals()
 
-    for fig_rec in reader.get_figure_recs(manager=figure_type):
+    for fig_rec in reader.load_figure_recs(manager=figure_type):
         slider_name = 'slider-'+fig_rec.name
 
         # Retrieve graph callbacks
@@ -365,8 +365,8 @@ def create_test_db(path):
     arr = np.ones(3)
     writer.add_scalars('scalars1', arr, 0)
     writer.add_scalars('scalars1', arr*2, 1)
-    writer.add_scalars('scalars1', arr, 0)
-    writer.add_scalars('scalars1', arr*3, 2)
+    writer.add_scalars('scalars1', arr, 2)
+    writer.add_scalars('scalars1', arr*3, 3)
     writer.flush()
 
 

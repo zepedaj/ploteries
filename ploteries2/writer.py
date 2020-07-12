@@ -22,9 +22,6 @@ from . import figure_managers
 from inspect import isclass
 
 
-RESERVED_TABLE_NAMES = ['__figures__', '__data_templates__']
-
-
 def utc_now():
     return _dt.now(pytz.utc)
 
@@ -67,10 +64,11 @@ class Writer(Reader):
         super()._init_headers()
         self._figures.create()
         self._data_templates.create()
+        self._content_types.create()
 
-    def _create_table(self, name,  content_type, **kwargs):
+    def _create_data_table(self, name,  content_type):
         #
-        if name in RESERVED_TABLE_NAMES:
+        if name in self.RESERVED_TABLE_NAMES:
             raise Exception(f"The specified name '{name}' is reserved!")
         #
         # content_type = {float: types.Float,
@@ -84,18 +82,21 @@ class Writer(Reader):
                           Column('global_step', Integer, nullable=False),
                           Column('write_time', types.DateTime, nullable=False),
                           Column('content', content_type, nullable=True))  # Need nullable for NaN values
-            table.create()
+            with self.engine.begin() as conn:
+                table.create(conn)
+                conn.execute(self._content_types.insert(
+                    {'table_name': name, 'content_type': content_type}))
         except:  # TODO: Check if error is "table exists"
             raise
 
-    def get_table(self, tag, content_type=None):
+    def get_data_table(self, tag, content_type=None):
         try:
             table = self._metadata.tables[tag]
         except KeyError:
             if content_type is None:
                 # Creation not requested
                 raise
-            self._create_table(tag, content_type)
+            self._create_data_table(tag, content_type)
             table = self._metadata.tables[tag]
         return table
 
@@ -105,7 +106,8 @@ class Writer(Reader):
         # Cache results
         content_type = type(content)
         write_time = write_time or utc_now()
-        self.get_table(name, content_type)  # Creates table if does not exist.
+        # Creates table if does not exist.
+        self.get_data_table(name, content_type)
         self._cache.setdefault(name, []).append(
             dict(content=content, global_step=global_step, write_time=write_time))
         #

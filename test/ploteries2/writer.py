@@ -7,31 +7,32 @@ import numpy as np
 import numpy.testing as npt
 from pglib.py import SliceSequence
 from plotly import graph_objects as go
+from ploteries2.reader import Reader
 
 
 class TestWriter(TestCase):
 
-    def test_create_table_and_add_data(self):
+    def test_create_data_table_and_add_data(self):
         with NamedTemporaryFile() as tmpfo:
             writer = mdl.Writer(tmpfo.name)
-            writer._create_table('np_data1', np.ndarray)
+            writer._create_data_table('np_data1', np.ndarray)
             arr = np.array([0, 1, 2, 3])
             writer.add_data('np_data1', arr, 0)
             writer.flush()
 
             with writer.engine.begin() as conn:
                 out = conn.execute(sqa.select(
-                    [writer.get_table('np_data1').c.content])).fetchall()
+                    [writer.get_data_table('np_data1').c.content])).fetchall()
             npt.assert_equal(out[0][0], arr)
 
     def test_register_display(self):
         with NamedTemporaryFile() as tmpfo:
             writer = mdl.Writer(tmpfo.name)
-            writer._create_table('np_data1', np.ndarray)
+            writer._create_data_table('np_data1', np.ndarray)
 
             figure = go.Figure()
             #
-            np_data1 = writer.get_table('np_data1')
+            np_data1 = writer.get_data_table('np_data1')
 
             # Check 0
             out = writer.execute(sqa.select(
@@ -93,3 +94,19 @@ class TestWriter(TestCase):
             dat = writer.execute(sqa.select(
                 [writer._figures]).where(sqa.column('tag') == 'scalars1'))
             self.assertEqual(len(dat), 1)
+
+    # def test_writer_reader(self):
+    #     with NamedTemporaryFile() as tmpfo:
+    #         path = tmpfo.name
+    #         writer = mdl.Writer(path)
+    #         arr = np.ones(3)
+    #         writer.add_scalars('scalars1', arr, 0)
+    #         # writer.add_scalars('scalars1', arr*2, 1)
+    #         # writer.add_scalars('scalars1', arr, 2)
+    #         # writer.add_scalars('scalars1', arr*3, 3)
+    #         writer.flush()
+    #         # writer.engine.close()
+
+    #         reader = Reader(path)
+    #         fig_rec = reader.load_figure_recs()[0]
+    #         fig_obj = reader.load_figure(fig_rec)

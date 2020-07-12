@@ -11,17 +11,24 @@ from plotly import graph_objects as go
 
 
 class TestReader(TestCase):
-    def test_get_figures(self):
+    def test_load_figures(self):
         with NamedTemporaryFile() as tmpfo:
             # Create scalars
             writer = Writer(tmpfo.name)
             writer.add_scalars('scalars1', np.array([0, 1, 2]), 0)
+            writer.add_scalars('scalars1', np.array([0, 2, 3]), 1)
             writer.add_scalars('scalars2', np.array([3, 4, 5]), 1)
             writer.flush()
 
+            # Filter by manager
+            figure_recs = writer.load_figure_recs(manager=ScalarsManager)
+            fig_objs = [writer.load_figure(_f) for _f in figure_recs]
+            self.assertEqual(
+                list(map(lambda x: x.data[0].y.shape, fig_objs)), [(2,), (1,)])  # Order guaranteed?
+
             #
             reader = mdl.Reader(tmpfo.name)
-            figure_recs = reader.get_figure_recs()
+            figure_recs = reader.load_figure_recs()
             self.assertEqual(
                 set([x.tag for x in figure_recs]), {'scalars1', 'scalars2'})
             #
@@ -31,29 +38,25 @@ class TestReader(TestCase):
                              'fig_1', 'fig_2'})
 
             # Filter by manager
-            reader = mdl.Reader(tmpfo.name)
-            figure_recs = reader.get_figure_recs(manager=ScalarsManager)
-
+            figure_recs = reader.load_figure_recs(manager=ScalarsManager)
+            fig_obj = [reader.load_figure(_f) for _f in figure_recs]
             self.assertEqual(
                 set([x.tag for x in figure_recs]), {'scalars1', 'scalars2'})
 
             # Filter by id
-            reader = mdl.Reader(tmpfo.name)
-            figure_recs = reader.get_figure_recs(id=1)
-
+            figure_recs = reader.load_figure_recs(id=1)
+            fig_obj = [reader.load_figure(_f) for _f in figure_recs]
             self.assertEqual(
                 set([x.tag for x in figure_recs]), {'scalars1'})
 
             # Filter by name
-            reader = mdl.Reader(tmpfo.name)
-            figure_recs = reader.get_figure_recs(name='fig_1')
-
+            figure_recs = reader.load_figure_recs(name='fig_1')
+            fig_obj = [reader.load_figure(_f) for _f in figure_recs]
             self.assertEqual(
                 set([x.tag for x in figure_recs]), {'scalars1'})
 
             # Filter by tag
-            reader = mdl.Reader(tmpfo.name)
-            figure_recs = reader.get_figure_recs(tag='scalars1')
-
+            figure_recs = reader.load_figure_recs(tag='scalars1')
+            fig_obj = [reader.load_figure(_f) for _f in figure_recs]
             self.assertEqual(
                 set([x.name for x in figure_recs]), {'fig_1'})

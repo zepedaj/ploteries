@@ -21,7 +21,7 @@ class TestScalarsManager(TestCase):
 
             # Load and verify.
             #out = mdl.ScalarsManager(writer).load('scalars1')
-            out = mdl.load_figure(writer, 'scalars1')
+            out = mdl.load_figure(writer, tag='scalars1')
             #
             self.assertEqual(len(out['data']), 6)
             #
@@ -49,5 +49,5 @@ class TestScalarsManager(TestCase):
 
             # Verify data exists.
             dat = writer.execute(sqa.select(
-                [writer.get_table('scalars1').c.content]))
+                [writer.get_data_table('scalars1').c.content]))
             self.assertEqual(len(dat), 2)
