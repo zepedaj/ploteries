@@ -3,7 +3,7 @@
 import re
 import numpy as np
 import climax as clx
-from ploteries.reader import Reader
+from ploteries2 import Reader, Writer, ScalarsManager
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -58,14 +58,14 @@ class SliderGroup(object):
             return bool(value)
 
 
-def iter_safe_names(reader, content_type):
-    return [(content_type+'-'+str(_t['id']) + '-'+re.sub('[^0-9a-zA-Z]+', '-', _t['name']), _t['name'])
-            for _t in reader.tables_of_type(content_type)]
+# def iter_safe_names(reader, content_type):
+#     return [(content_type+'-'+str(_t['id']) + '-'+re.sub('[^0-9a-zA-Z]+', '-', _t['name']), _t['name'])
+#             for _t in reader.tables_of_type(content_type)]
 
 
 def group_plots(figures_tags, depth=1):
     # Groups figures into html Summaries based on table name.
-    #figures: [(table_name, dcc/html), ... ]
+    # figures: [(table_name, dcc/html), ... ]
     group_ids = [('/'.join(figure_tag.split('/')[:depth]), html)
                  for figure_tag, html in figure_tags]
     groups = {}
@@ -101,30 +101,30 @@ def create_layout(reader, update_interval):
     # Build HTML for all graphs
     def _skip(sel, val): return [val] if sel else []
 
-    def build_graph_html(tbl_name, tbl_safe_name, auto=False, expand=True, slider=False):
+    def build_graph_html(fig_tag, fig_name, auto=False, expand=True, slider=False):
         out = html.Div([
-            html.Div(tbl_name), LoadingGraph(id=tbl_safe_name)] +
+            html.Div(fig_tag), LoadingGraph(id=fig_name)] +
             _skip(auto or expand, html.Div(
-                _skip(auto, dcc.Checklist(id='auto-'+tbl_safe_name,
+                _skip(auto, dcc.Checklist(id='auto-'+fig_name,
                                           options=[
                                               {'label': 'auto', 'value': 'auto'}],
                                           value=['auto'], style={'display': 'inline'})))) +
-            _skip(slider, html.Div([SLIDER_GROUP.add(id='slider-'+tbl_safe_name, step=None, register=slider,
+            _skip(slider, html.Div([SLIDER_GROUP.add(id='slider-'+fig_name, step=None, register=slider,
                                                      tooltip={'always_visible': False,
                                                               'placement': 'top'},
                                                      updatemode='mouseup')])),
             style={'display': 'inline-block', 'margin': '1em'})
         return out
 
-    def get_graphs_of_type(derived_type, **kwargs):
-        graphs = [(tbl_name, build_graph_html(tbl_name, tbl_safe_name, **kwargs))
-                  for tbl_safe_name, tbl_name in iter_safe_names(reader, derived_type)]
+    def get_graphs_of_type(manager_type, **kwargs):
+        graphs = [(fig.name, build_graph_html(fig.tag, fig.name, **kwargs))
+                  for fig in reader.get_figure_recs(manager=manager_type)]
         graphs = group_plots(graphs)
         return graphs
     #
-    scalars = get_graphs_of_type('Float')
-    figures = get_graphs_of_type('FigureType', slider=True)
-    histograms = get_graphs_of_type('HistogramType', slider=True)
+    scalars = reader.get_figure_recs(manager=ScalarsManager)
+    figures = []  # get_graphs_of_type('FigureType', slider=True)
+    histograms = []  # get_graphs_of_type('HistogramType', slider=True)
 
     # Layout
     layout = html.Div(
@@ -166,46 +166,13 @@ def create_layout(reader, update_interval):
 #             [Input('expand-'+tbl_safe_name, 'value')])(
 #                 lambda large: expand_graph(large))
 
-# Populate scalar callbacks.
 
-
-def smoothen(x, n):  # JS: Should pass this to javascript.
-    if x is None:
-        return x
-
-    def smoothing_kernel(n):
-        # The nth point will contribute 1e-2 as much as the first point.
-        w = np.array([1.0]) if n == 1 else np.exp(
-            np.arange(n) * (np.log(1e-2)/(n-1)))
-        return w/w.sum()
-    w = smoothing_kernel(n)
-    smoothed = np.convolve(x, w, mode='full')[:len(x)]
-    # Normalize the filter in the first points.
-    smoothed[:n] /= (w.cumsum())[:len(smoothed)]
-    return smoothed
-
-
-def update_scalar(table_name):
+def update_scalar(figure_name):
     reader = Reader(DB_PATH)
-    values = np.array([(_x['global_step'], _x['content'])
-                       for _x in list(reader.select(table_name))], dtype=np.float)
-    try:
-        smoothed = smoothen(values[:, 1], 100)
-    except:
-        print('**********VALUES:', values[:, 1])
-        raise
-
-    #
-    mode = 'lines' + ('+markers' if len(values) < 10 else '')
-    fig = go.Figure([
-        go.Scatter(x=values[:, 0], y=values[:, 1], mode=mode,
-                   line=dict(color='hsl(217, 59%, 80%)')),
-        go.Scatter(x=values[:, 0], y=smoothed, mode=mode,
-                   line=dict(color='hsl(217, 59%, 50%)')),
-    ])
+    figure_rec = reader.get_figure_recs(name=figure_name)[0]
+    fig = reader.load_figure(figure_rec)
     fig.update_layout(height=HEIGHT, width=WIDTH, showlegend=False,
                       margin=go.layout.Margin(**dict(zip('lrbt', [0]*4), pad=4)))
-    #fig = px.line(x=values[:,0], y=values[:,1], height=HEIGHT, width=WIDTH)
     return fig
 
 
@@ -224,30 +191,32 @@ def create_toolbar_callbacks():
 
 def create_update_scalar_callbacks(reader):
     _g = globals()
-    for tbl_safe_name, tbl_name in iter_safe_names(reader, 'Float'):
-        _g['update_scalar_'+tbl_safe_name] = APP.callback(
-            Output(tbl_safe_name, 'figure'),
+    for _fig in reader.get_figure_recs(manager=ScalarsManager):
+        import ipdb
+        ipdb.set_trace()
+        _g['update_scalar_'+_fig.name] = APP.callback(
+            Output(_fig.name, 'figure'),
             [Input('interval-component', 'n_intervals')])(
-                lambda _n, tbl_name=tbl_name: update_scalar(table_name=tbl_name))
+                lambda _n, _fig_name=_fig.name: update_scalar(_fig_name))
 
 # Retrieve graph callbacks
 # Input: slider.value, Output:graph.figure
 
 
-def retrieve_graph(global_step, table_name):
+def retrieve_graph(global_step, figure_name):
     # Can happen when sliders are not yet initialized.
     if global_step is None:
         raise PreventUpdate
     #
     reader = Reader(DB_PATH)
-    records = list(reader.select(table_name, global_step))
+    records = reader.get_figure_recs(name=figure_name)
     #
     if len(records) > 1:
         raise Exception('Unexpected error!')
     elif len(records) == 0:
         figure = go.Figure()
     else:
-        figure = records[0]['content']
+        figure = reader.load_figure(recors[0])
     # figure.layout.width=WIDTH
     # figure.layout.height=HEIGHT
     figure.update_layout(height=HEIGHT, width=WIDTH, margin=go.layout.Margin(
@@ -256,6 +225,7 @@ def retrieve_graph(global_step, table_name):
     return figure
 
 
+# TODO
 def update_slider(table_name, slider_value, slider_output_keys):
     reader = Reader(DB_PATH)
     #
@@ -276,16 +246,16 @@ def update_slider(table_name, slider_value, slider_output_keys):
 
 def create_graph_callbacks(reader, figure_type):
     _g = globals()
-    # for k,tbl_name in enumerate(reader.figure_tables):
-    for tbl_safe_name, tbl_name in iter_safe_names(reader, figure_type):
-        slider_name = 'slider-'+tbl_safe_name
+
+    for fig_rec in reader.get_figure_recs(manager=figure_type):
+        slider_name = 'slider-'+fig_rec.name
 
         # Retrieve graph callbacks
-        _g['retrieve_graph_'+tbl_safe_name] = APP.callback(
-            Output(tbl_safe_name, 'figure'),
+        _g['retrieve_graph_'+fig_rec.name] = APP.callback(
+            Output(fig_rec.name, 'figure'),
             [Input(slider_name, 'value')])(
-                lambda _gs, tbl_name=tbl_name:
-                retrieve_graph(_gs, table_name=tbl_name))
+                lambda _gs, fig_name=fig_rec.name:
+                retrieve_graph(_gs, figure_name=fig_name))
 
         # # Update slider callbacks
         # slider_output_keys=['marks', 'min', 'max', 'value', 'disabled']
@@ -306,7 +276,7 @@ def create_graph_callbacks(reader, figure_type):
              Input('global-step-dropdown', 'disabled')],
             [State(slider_name, _x) for _x in slider_output_keys])
         def update_slider(n_intervals, global_step, global_step_disabled, *slider_state,
-                          table_name=tbl_name, slider_output_keys=slider_output_keys):
+                          figure_name=fig_rec.name, slider_output_keys=slider_output_keys):
             reader = Reader(DB_PATH)
             # Global step specified
             if not global_step_disabled and global_step is not None:
@@ -315,7 +285,7 @@ def create_graph_callbacks(reader, figure_type):
                 return [slider_state[key] for key in slider_output_keys]
 
             # Auto update
-            _marks = reader.global_steps(table_name)
+            _marks = reader.global_steps(figure_name)
             marks = dict(zip(_marks, ['']*len(_marks)))
             if len(marks) > 0:
                 for _m in [_marks[0], _marks[-1]]:
@@ -333,8 +303,18 @@ def create_graph_callbacks(reader, figure_type):
 _wd = 550
 
 
-@clx.command()
-@clx.option('path')
+@clx.group()
+def main():
+    pass
+
+
+@clx.parent()
+@clx.argument('path', help='Ploteries database file path.')
+def path_arg():
+    pass
+
+
+@main.command(parents=[path_arg])
 @clx.option('--interval', type=int, help='Seconds between automatic update of all plots.', default=300)
 @clx.option('--debug', action='store_true', help='Enables javascript debug console', default=False)
 @clx.option('--host', help='Host name.', default='0.0.0.0')
@@ -342,7 +322,10 @@ _wd = 550
 @clx.option('--workers', help='Number of workers (ignored in debug mode).', default=(mp.cpu_count() * 2) + 1)
 @clx.option('--height', help='Figure height,', type=int, default=_wd*(2/3))
 @clx.option('--width', help='Figure width,', type=int, default=_wd)
-def main(path, debug, host, interval, height, width, port, workers):
+def launch(path, debug, host, interval, height, width, port, workers):
+    """ 
+    Launch a ploteries visualization server.
+    """
     #
     global DB_PATH, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, SLIDER_GROUP
     DB_PATH = path
@@ -352,11 +335,12 @@ def main(path, debug, host, interval, height, width, port, workers):
     LARGE_WIDTH = 2*WIDTH
     reader = Reader(DB_PATH)
     #
-    #APP.layout = create_layout(reader, update_interval=interval)
+    # APP.layout = create_layout(reader, update_interval=interval)
     SLIDER_GROUP = SliderGroup()
     APP.layout = lambda: create_layout(None, update_interval=interval)
-    create_graph_callbacks(reader, 'FigureType')
-    create_graph_callbacks(reader, 'HistogramType')
+    # TODO : Enable these
+    # create_graph_callbacks(reader, 'FigureType')
+    # create_graph_callbacks(reader, 'HistogramType')
     create_update_scalar_callbacks(reader)
     create_toolbar_callbacks()
     SLIDER_GROUP.create_callbacks()
@@ -370,6 +354,20 @@ def main(path, debug, host, interval, height, width, port, workers):
             'workers': workers,
         }
         GunicornServer(APP.server, options).run()
+
+
+@main.command(parents=[path_arg])
+def create_test_db(path):
+    """ 
+    Create a test database.
+    """
+    writer = Writer(path)
+    arr = np.ones(3)
+    writer.add_scalars('scalars1', arr, 0)
+    writer.add_scalars('scalars1', arr*2, 1)
+    writer.add_scalars('scalars1', arr, 0)
+    writer.add_scalars('scalars1', arr*3, 2)
+    writer.flush()
 
 
 class GunicornServer(gunicorn.app.base.BaseApplication):

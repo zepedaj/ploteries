@@ -1,4 +1,5 @@
 from sqlalchemy import desc
+from sqlalchemy.engine.result import RowProxy
 import numpy as np
 from pglib.py import SliceSequence
 from itertools import zip_longest
@@ -29,27 +30,39 @@ class Colors:
         return f'hsl({255*hsl[0]:.0f}, {hsl[1]:.0%}, {hsl[2]:.0%})'
 
 
-def load_figure(writer, figure_tag, **kwargs):
+def load_figure(reader, figure, **kwargs):
     """
-    Loads a figure from the database and populates all its data.
+    Loads a figure from the database and populates all its data, returning a plotly.graph_objects.Figure object.
+
+    The kwargs can specify arguments such as the global_step.
+
+    reader: ploteries2.reader instance
+    figure: Figure id, tag or records RowProxy object.
     """
+
     # Retrieve figure data
-    figs_tbl = writer._figures
-    figure_rec = writer.execute(
-        writer._figures.select().where(figs_tbl.c.tag == figure_tag))[0]
-    manager = figure_rec.manager(writer, **kwargs)
-    return manager.load(figure_rec)
+    if isinstance(figure, (str, int)):
+        figs_tbl = reader._figures
+        query = figs_tbl.select().where(
+            (figs_tbl.c.id if isinstance(figure, int) else figs_tbl.c.tag) == figure)
+        figure = reader.execute(query)[0]
+    elif not isinstance(figure, RowProxy):
+        raise Exception('Invalid input.')
+
+    return figure.manager(reader, **kwargs).load(figure)
 
 
 class FigureManager:
-    def __init__(self, writer, limit=0, sort=True, global_step=None, global_step_field='global_step'):
+    widgets = tuple()  # e.g., 'slider',
+
+    def __init__(self, reader, limit=0, sort=True, global_step=None, global_step_field='global_step'):
         """
         limit: Set to N>0 to limit the number of query outputs
         sort: Set to True to sort the query by global_step
         global_step: If set to an integer, limit and sort are ignored, and a where clause is added.
         global_step_field: Specifies the query's global_step field name.
         """
-        self.writer = writer
+        self.reader = reader
         self.limit = limit
         self.sort = sort
         self.global_step_field = global_step_field
@@ -69,7 +82,7 @@ class FigureManager:
 
         # Format query and execute
         sql = self.process_sql(sql)
-        sql_output = self.writer.execute(sql)
+        sql_output = self.reader.execute(sql)
 
         # Concatenate outputs to numpy arrays.
         if len(sql_output) == 0:
@@ -84,8 +97,8 @@ class FigureManager:
         # figure = self.load_figure_record(figure_tag)
 
         # Retrieve data maps
-        datt_tbl = self.writer._data_templates
-        data_templates = self.writer.execute(
+        datt_tbl = self.reader._data_templates
+        data_templates = self.reader.execute(
             datt_tbl.select().where(datt_tbl.c.figure_id == figure_id))
         out = []
         for _dt in data_templates:
@@ -97,7 +110,6 @@ class FigureManager:
         return out
 
     def load(self, figure_rec):
-        #figure_rec = self.load_figure_record(figure_tag)
         data_maps = self.load_data(figure_rec.id)
         figure = figure_rec.figure
 
@@ -142,11 +154,11 @@ class ScalarsManager(FigureManager):
         smoothed[:n] /= (w.cumsum())[:len(smoothed)]
         return smoothed
 
-    @classmethod
+    @ classmethod
     def add_scalar(cls, *args, **kwargs):
         return cls.add_scalar(*args, **kwargs)
 
-    @classmethod
+    @ classmethod
     def add_scalars(cls, writer, tag, values, global_step, **kwargs):
         #
         mode = 'lines'  # + ('+markers' if len(values) < 10 else '')

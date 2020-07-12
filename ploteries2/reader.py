@@ -1,11 +1,12 @@
 import sqlite3
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy import create_engine, MetaData, event, Table, Column, Integer, String, \
-    ForeignKey, types, insert, UniqueConstraint, func, exc
+    ForeignKey, types, insert, UniqueConstraint, func, exc, column, text, select
 from sqlalchemy.engine import Engine
 from .figure_managers import load_figure
 from pglib.sqlalchemy import PlotlyFigureType, ClassType, sql_query_type_builder
 from ._sql_data_types import DataMapperType
+import re
 
 
 def sqlite3_concurrent_engine(path):
@@ -73,3 +74,23 @@ class Reader(object):
                                             nullable=False),
                                      Column('data_mapper', DataMapperType,
                                             nullable=False))
+
+    def get_figure_recs(self, tag=None, id=None, manager=None, name=None):
+        # Add derived fields.
+        query = select(
+            [self._figures, ('fig_' + self._figures.c.id.cast(String)).label('name')])
+
+        # Map name to id
+        if name is not None:
+            if id is not None:
+                raise Exception('Invalid combimation of arguments.')
+            id = int(re.match('^fig_(\d+)$', name).groups()[0])
+
+        # Build query
+        if tag is not None:
+            query = query.where(self._figures.c.tag == tag)
+        if id is not None:
+            query = query.where(self._figures.c.id == id)
+        if manager is not None:
+            query = query.where(self._figures.c.manager == manager)
+        return self.execute(query)

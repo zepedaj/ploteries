@@ -201,4 +201,5 @@ class Writer(Reader):
     #     self._add_generic(tag, pst.HistogramType, fig, global_step, write_time)
 
 
+# REGISTER ALL add_* methods in all FigureManager-derived classes in module figure_managers.
 Writer.register_module_add_classmethods(figure_managers)
