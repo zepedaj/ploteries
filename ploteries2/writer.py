@@ -1,11 +1,10 @@
-from sqlalchemy.engine import Engine
-from sqlalchemy import event
-from sqlalchemy import create_engine, Table, Column, Integer, String, MetaData, \
-    ForeignKey, types, insert, UniqueConstraint, func
-from sqlalchemy.orm import scoped_session, sessionmaker
+from .reader import Reader
+from dateutil.tz import tzlocal
+import re
+from sqlalchemy import Table, Column, Integer, String, \
+    ForeignKey, types, insert, UniqueConstraint, func, exc
 from sqlalchemy.ext.serializer import loads, dumps
-from sqlalchemy import exc
-from pglib.sqlalchemy import NumpyType, PlotlyFigureType
+from pglib.sqlalchemy import NumpyType
 from datetime import datetime as _dt
 import pytz
 import os.path as osp
@@ -19,8 +18,8 @@ from pglib.py import SliceSequence
 import numpy as np
 # TODO: Why does removing this generate numpy warning?
 from plotly import express as px
-import sqlite3
-from ._sql_data_types import DataMapperType, sql_query_type_builder
+from . import figure_managers
+from inspect import isclass
 
 
 RESERVED_TABLE_NAMES = ['__figures__', '__data_templates__']
@@ -30,72 +29,43 @@ def utc_now():
     return _dt.now(pytz.utc)
 
 
-def sqlite3_concurrent_engine(path):
-    # if ro: path+='?mode=ro'
-    # connection = sqlite3.connect('file:' + path, uri=True, isolation_level=None)
-    # sqlite3.connect('/tmp/wal.db', isolation_level=None)
-    def creator():
-        connection = sqlite3.connect(path, isolation_level=None)
-        connection.execute('pragma journal_mode=wal;')
-        return connection
-    engine = create_engine('sqlite:///', creator=creator)
-    return engine
-
-
-@event.listens_for(Engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA journal_mode=WAL")
-    #cursor.execute('PRAGMA synchronous=OFF')
-    cursor.close()
-
-
-class Writer(object):
+class Writer(Reader):
     #
     def __init__(self, path, flush_sec=10):
         if osp.isdir(path):
-            path = osp.join(path, utc_now().strftime(
+            path = osp.join(path, utc_now().localize(tzlocal).strftime(
                 '%Y-%m-%d_%Hh%Mm%S.%f.sql'))
         self.path = path
-        self.engine = create_engine('sqlite:///' + path)
-        self._metadata = MetaData(bind=self.engine)
-        self.SQLQueryType = sql_query_type_builder(
-            scoped_session(sessionmaker(bind=self.engine)), self._metadata)
-        self._init_tables()
+        super().__init__(path, check_exists=False)
+
+        #self.engine = create_engine('sqlite:///' + path)
+        #self._metadata = MetaData(bind=self.engine)
+
         self._cache = {}
         self._last_flush = time.time()
         self.flush_sec = flush_sec
 
-    # sqlalchemy helper functions
-    # def _execute(self, cmd, *args, **
-    #             kwargs): return self._connection.execute(cmd, *args, **kwargs)
+    @classmethod
+    def register_add_method(cls, name, method):
+        setattr(cls, name,
+                (lambda *args, method=method, **kwargs: method(*args, **kwargs)))
 
-    def execute(self, *args, **kwargs):
-        with self.engine.begin() as conn:
-            result = conn.execute(*args, **kwargs).fetchall()
-        return result
+    @classmethod
+    def register_module_add_classmethods(cls, module):
+        """
+        Add all add_* class methods in all .figure_managers.FigureManager-derived classes in the module.
+        """
+        for manager in [
+                val for key, val in vars(module).items() if
+                isclass(val) and issubclass(val, figure_managers.FigureManager)]:
+            for name, method in [
+                (name, method) for name, method in
+                    vars(manager).items() if re.match('add_.*', name)]:
+                cls.register_add_method(name, getattr(manager, name))
 
-    def _init_tables(self):
-
-        # Create figures table
-        self._figures = Table('__figures__', self._metadata,
-                              Column('id', Integer, primary_key=True),
-                              Column('tag', types.String,
-                                     unique=True, nullable=False),
-                              Column('figure', PlotlyFigureType, nullable=False))
+    def _init_headers(self):
+        super()._init_headers()
         self._figures.create()
-
-        # Create data templates table. Specifies replacements of the following type:
-        # sql: is a query object with labeled columns (e.g., table.c.colname.label('field1')
-        # data_mapper: [(<figure object slice sequence>, <sql output slice_sequence>)]
-        self._data_templates = Table('__data_templates__', self._metadata,
-                                     Column('id', Integer, primary_key=True),
-                                     Column('figure_id', Integer, ForeignKey(
-                                         '__figures__.id'), nullable=False),
-                                     Column('sql', self.SQLQueryType,
-                                            nullable=False),
-                                     Column('data_mapper', DataMapperType,
-                                            nullable=False))
         self._data_templates.create()
 
     def _create_table(self, name,  content_type, **kwargs):
@@ -143,14 +113,15 @@ class Writer(object):
             self.flush()
 
     # Register display
-    def register_display(self, tag, figure, *sources):
+    def register_display(self, tag, figure, manager, *sources):
         """
         Registers a plotly figure for display by storing the json representation of the figure in the table.
 
         tag: Figure name used in ploteries board.
         figure: Plotly figure object, with empty data placeholders.
-        sources: Each source is a (sql query, [(figure slice sequence, sql query slice sequence), ...] ) tuple. 
-        The sql query is an sql alchemy query object. Each slice sequence applies to a figure object, and the sql output, 
+        manager: Manager used to load figure.
+        sources: Each source is a (sql query, [(figure slice sequence, sql query slice sequence), ...] ) tuple.
+        The sql query is an sql alchemy query object. Each slice sequence applies to a figure object, and the sql output,
         respectively
         """
 
@@ -160,7 +131,7 @@ class Writer(object):
 
             # Insert figure
             figure = conn.execute(
-                self._figures.insert(), {'tag': tag, 'figure': figure})
+                self._figures.insert(), {'tag': tag, 'figure': figure, 'manager': manager})
 
             # Insert data mapper
             for sql, data_mapper in sources:
@@ -181,53 +152,53 @@ class Writer(object):
             # Get table
         self._last_flush = time.time()
 
-    # All add methods
-    # TODO
+    # # Base add methods.
+    # def add_figure(self, tag, figure, global_step, write_time=None):
+    #     self._add_generic(tag, pst.FigureType, figure, global_step, write_time)
 
-    # Base add methods.
-    def add_figure(self, tag, figure, global_step, write_time=None):
-        self._add_generic(tag, pst.FigureType, figure, global_step, write_time)
+    # def add_histogram(self, tag, dat, global_step, write_time=None, **kwargs):
 
-    def add_histogram(self, tag, dat, global_step, write_time=None, **kwargs):
+    #     # Compute histogram.
+    #     bin_centers, hist = self._compute_histogram(dat, **kwargs)
+    #     self._plot_histograms(tag, (bin_centers, hist),
+    #                           dat, global_step, write_time=write_time)
 
-        # Compute histogram.
-        bin_centers, hist = self._compute_histogram(dat, **kwargs)
-        self._plot_histograms(tag, (bin_centers, hist),
-                              dat, global_step, write_time=write_time)
+    # @ staticmethod
+    # def _compute_histogram(dat, bins=10, bin_centers=None, normalize=True):
+    #     """
+    #     'bins': Num bins or bin edges (passed to numpy.histogram to create a histogram).
+    #     'bin_centers': Overrides 'bins' and specifies the bin centers instead of the edges.
+    #         The first and last bin centers are assumed to extend to +/- infinity.
+    #     """
+    #     dat = numtor.asnumpy(dat)
+    #     dat = dat.reshape(-1)
 
-    @staticmethod
-    def _compute_histogram(dat, bins=10, bin_centers=None, normalize=True):
-        """
-        'bins': Num bins or bin edges (passed to numpy.histogram to create a histogram).
-        'bin_centers': Overrides 'bins' and specifies the bin centers instead of the edges.
-            The first and last bin centers are assumed to extend to +/- infinity.
-        """
-        dat = numtor.asnumpy(dat)
-        dat = dat.reshape(-1)
+    #     # Infer bin edges
+    #     if bin_centers is not None:
+    #         bins = np.block(
+    #             [-np.inf, np.convolve(bin_centers, [0.5, 0.5], mode='valid'), np.inf])
 
-        # Infer bin edges
-        if bin_centers is not None:
-            bins = np.block(
-                [-np.inf, np.convolve(bin_centers, [0.5, 0.5], mode='valid'), np.inf])
+    #     # Build histogram
+    #     hist, edges = np.histogram(dat, bins=bins)
 
-        # Build histogram
-        hist, edges = np.histogram(dat, bins=bins)
+    #     # Infer bin centers
+    #     if bin_centers is None:
+    #         bin_centers = np.convolve(edges, [0.5, 0.5], mode='valid')
+    #         for k in [0, -1]:
+    #             if not np.isfinite(bin_centers[k]):
+    #                 bin_centers[k] = edges[k]
 
-        # Infer bin centers
-        if bin_centers is None:
-            bin_centers = np.convolve(edges, [0.5, 0.5], mode='valid')
-            for k in [0, -1]:
-                if not np.isfinite(bin_centers[k]):
-                    bin_centers[k] = edges[k]
+    #     # Normalize histogram
+    #     if normalize:
+    #         hist = hist/dat.size
 
-        # Normalize histogram
-        if normalize:
-            hist = hist/dat.size
+    #     return bin_centers, hist
 
-        return bin_centers, hist
+    # def _plot_histogram(self, tag, dat, global_step, write_time=None):
+    #     # Build figure
+    #     bin_centers, hist = dat
+    #     fig = px.line(x=bin_centers, y=hist)
+    #     self._add_generic(tag, pst.HistogramType, fig, global_step, write_time)
 
-    def _plot_histogram(self, tag, dat, global_step, write_time=None):
-        # Build figure
-        bin_centers, hist = dat
-        fig = px.line(x=bin_centers, y=hist)
-        self._add_generic(tag, pst.HistogramType, fig, global_step, write_time)
+
+Writer.register_module_add_classmethods(figure_managers)

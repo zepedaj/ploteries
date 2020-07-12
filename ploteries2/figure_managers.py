@@ -7,6 +7,39 @@ import plotly.express as px
 from plotly import graph_objects as go
 import sqlalchemy as sqa
 
+import colorsys
+
+
+class Colors:
+    def __init__(self, name='Plotly', increase_lightness=0):
+        """
+        scale_lightness: [0,1]
+        """
+        self._rgb = list(map(lambda rgb: colorsys.rgb_to_hls(
+            rgb[0]/255, rgb[1]/255, rgb[2]/255), map(px.colors.hex_to_rgb, getattr(px.colors.qualitative, name))))
+        self.increase_lightness = increase_lightness
+
+    def __len__(self):
+        return len(self._rgb)
+
+    def __getitem__(self, k):
+        k = k % len(self._rgb)
+        hls = colorsys.rgb_to_hls(*self._rgb[k])
+        hsl = hls[0], hls[2], hls[1] + (1.0 - hls[1])*self.increase_lightness
+        return f'hsl({255*hsl[0]:.0f}, {hsl[1]:.0%}, {hsl[2]:.0%})'
+
+
+def load_figure(writer, figure_tag, **kwargs):
+    """
+    Loads a figure from the database and populates all its data.
+    """
+    # Retrieve figure data
+    figs_tbl = writer._figures
+    figure_rec = writer.execute(
+        writer._figures.select().where(figs_tbl.c.tag == figure_tag))[0]
+    manager = figure_rec.manager(writer, **kwargs)
+    return manager.load(figure_rec)
+
 
 class FigureManager:
     def __init__(self, writer, limit=0, sort=True, global_step=None, global_step_field='global_step'):
@@ -46,17 +79,14 @@ class FigureManager:
                 [record[field] for record in sql_output]) for field in sql_output[0].keys()}
         return sql_output
 
-    def load_data(self, figure_tag):
-
-        # Retrieve figure data
-        figs_tbl = self.writer._figures
-        figure = self.writer.execute(
-            self.writer._figures.select().where(figs_tbl.c.tag == figure_tag))[0]
+    def load_data(self, figure_id):
+        #
+        # figure = self.load_figure_record(figure_tag)
 
         # Retrieve data maps
         datt_tbl = self.writer._data_templates
         data_templates = self.writer.execute(
-            datt_tbl.select().where(datt_tbl.c.figure_id == figure.id))
+            datt_tbl.select().where(datt_tbl.c.figure_id == figure_id))
         out = []
         for _dt in data_templates:
             sql_output = self._load_sql(_dt.sql)
@@ -64,10 +94,13 @@ class FigureManager:
                         for figure_slice, data_slice in _dt.data_mapper])
 
         #
-        return figure.figure, out
+        return out
 
-    def load(self, figure_tag):
-        figure, data_maps = self.load_data(figure_tag)
+    def load(self, figure_rec):
+        #figure_rec = self.load_figure_record(figure_tag)
+        data_maps = self.load_data(figure_rec.id)
+        figure = figure_rec.figure
+
         for fig_slice, value in data_maps:
             SliceSequence(fig_slice).assign(figure, value)
         return figure
@@ -109,12 +142,12 @@ class ScalarsManager(FigureManager):
         smoothed[:n] /= (w.cumsum())[:len(smoothed)]
         return smoothed
 
-    @staticmethod
-    def add_scalar(*args, **kwargs):
-        return self.add_scalar(*args, **kwargs)
+    @classmethod
+    def add_scalar(cls, *args, **kwargs):
+        return cls.add_scalar(*args, **kwargs)
 
-    @staticmethod
-    def add_scalars(writer, tag, values, global_step, **kwargs):
+    @classmethod
+    def add_scalars(cls, writer, tag, values, global_step, **kwargs):
         #
         mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
 
@@ -127,14 +160,17 @@ class ScalarsManager(FigureManager):
         # Register display if not done yet
         if len(writer.execute(writer._figures.select().where(writer._figures.c.tag == tag))) == 0:
             #
+            colors = Colors()
+            light_colors = Colors(increase_lightness=0.5)
+            #
             writer.flush()
             fig = go.Figure(
-                # Original data
+                # Original data 'hsl(217, 59%, 80%)'
                 [go.Scatter(x=[], y=[], mode=mode, line=dict(
-                    color='hsl(217, 59%, 80%)'))] * len(values) + \
+                    color=light_colors[k])) for k in range(len(values))] + \
                 # Smoothed data
                 [go.Scatter(x=[], y=[], mode=mode, line=dict(
-                    color='hsl(217, 59%, 50%)'))] * len(values))
+                    color=colors[k])) for k in range(len(values))])
             #
             table = writer.get_table(tag)
             data_mappers = []
@@ -146,4 +182,4 @@ class ScalarsManager(FigureManager):
 
             #
             writer.register_display(
-                tag, fig, (sqa.select([table.c.global_step, table.c.content]), data_mappers))
+                tag, fig, cls, (sqa.select([table.c.global_step, table.c.content]), data_mappers))

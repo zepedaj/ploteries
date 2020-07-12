@@ -20,7 +20,8 @@ class TestScalarsManager(TestCase):
             writer.flush()
 
             # Load and verify.
-            out = mdl.ScalarsManager(writer).load('scalars1')
+            #out = mdl.ScalarsManager(writer).load('scalars1')
+            out = mdl.load_figure(writer, 'scalars1')
             #
             self.assertEqual(len(out['data']), 6)
             #
