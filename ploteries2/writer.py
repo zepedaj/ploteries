@@ -5,7 +5,7 @@ import re
 from sqlalchemy import Table, Column, Integer, String, \
     ForeignKey, types, insert, UniqueConstraint, func, exc
 from sqlalchemy.ext.serializer import loads, dumps
-from pglib.sqlalchemy import NumpyType
+from pglib.sqlalchemy import NumpyType, begin_connection
 from datetime import datetime as _dt
 import pytz
 import os.path as osp
@@ -67,10 +67,11 @@ class Writer(Reader):
         self._data_templates.create()
         self._content_types.create()
 
-    def _create_data_table(self, name,  content_type):
+    def _create_data_table(self, name,  content_type, connection=None):
         #
         if name in self.RESERVED_TABLE_NAMES:
             raise Exception(f"The specified name '{name}' is reserved!")
+
         #
         # content_type_mappings = [(numbers.Real, types.Float),
         #                          (np.ndarray, NumpyType)]
@@ -79,43 +80,48 @@ class Writer(Reader):
         content_type = {np.ndarray: NumpyType}[content_type]
 
         # Create table
-        try:
-            table = Table(name, self._metadata,
-                          Column('id', Integer, primary_key=True),
-                          Column('global_step', Integer, nullable=False),
-                          Column('write_time', types.DateTime, nullable=False),
-                          Column('content', content_type, nullable=True))  # Need nullable for NaN values
-            with self.engine.begin() as conn:
-                table.create(conn)
-                conn.execute(self._content_types.insert(
-                    {'table_name': name, 'content_type': content_type}))
-        except:  # TODO: Check if error is "table exists"
-            raise
+        table = Table(name, self._metadata,
+                      Column('id', Integer, primary_key=True),
+                      Column('global_step', Integer, nullable=False),
+                      Column('write_time', types.DateTime, nullable=False),
+                      Column('content', content_type, nullable=True))  # Need nullable for NaN values
 
-    def get_data_table(self, tag, content_type=None):
-        try:
-            table = self._metadata.tables[tag]
-        except KeyError:
-            if content_type is None:
-                # Creation not requested
-                raise
-            self._create_data_table(tag, content_type)
-            table = self._metadata.tables[tag]
+        with begin_connection(self.engine, connection) as conn:
+            table.create(conn)
+            conn.execute(self._content_types.insert(
+                {'table_name': name, 'content_type': content_type}))
+
+    def get_data_table(self, name, content_type=None):
+        # try:
+        table = self._metadata.tables[name]
+        # except KeyError:
+        #     if content_type is None:
+        #         # Creation not requested
+        #         raise
+        #     self._create_data_table(tag, content_type, connection=connection)
+        #     table = self._metadata.tables[tag]
         return table
 
     # Add content
-    def add_data(self, name, content, global_step, write_time=None):
+    def add_data(self, name, content, global_step, write_time=None, connection=None):
         # content_type = {np.ndarray: LargeBinary, # CB2
         # Cache results
         content_type = type(content)
         write_time = write_time or utc_now()
-        # Creates table if does not exist.
-        self.get_data_table(name, content_type)
-        self._cache.setdefault(name, []).append(
-            dict(content=content, global_step=global_step, write_time=write_time))
-        #
-        if self.flush_sec is None or time.time()-self._last_flush > self.flush_sec:
-            self.flush()
+
+        new_data = dict(content=content, global_step=global_step,
+                        write_time=write_time)
+        if not name in self._metadata.tables.keys():
+            # Table does not exist, create it and add data (atomically as part of potential parent transaction)
+            with begin_connection(self.engine, connection) as conn:
+                self._create_data_table(name, content_type, connection=conn)
+                table = self.get_data_table(name)
+                conn.execute(table.insert(new_data))
+        else:
+            # Table exists, cache data
+            self._cache.setdefault(name, []).append(new_data)
+            if self.flush_sec is None or time.time()-self._last_flush > self.flush_sec:
+                self.flush()
 
     # Register display
     def register_display(self, tag, figure, manager, *sources):

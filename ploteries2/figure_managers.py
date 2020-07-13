@@ -52,7 +52,7 @@ def load_figure(reader, *args, manager_kwargs={}, **kwargs):
 
     figure = figure_recs[0]
 
-    return figure.manager(reader, **manager_kwargs).load(figure)
+    return figure.manager(reader, **manager_kwargs).load_figure(figure)
 
 
 class FigureManager:
@@ -112,7 +112,7 @@ class FigureManager:
         #
         return out
 
-    def load(self, figure_rec):
+    def load_figure(self, figure_rec):
         data_maps = self.load_data(figure_rec.id)
         figure = figure_rec.figure
 
@@ -127,9 +127,9 @@ class ScalarsManager(FigureManager):
         super().__init__(writer, limit=0, sort=True, global_step=None, **kwargs)
         self.n = n
 
-    def load(self, *args, **kwargs):
+    def load_figure(self, *args, **kwargs):
         #
-        figure = super().load(*args, **kwargs)
+        figure = super().load_figure(*args, **kwargs)
 
         # Add smoothed curves
         if self.n > 0:
@@ -207,4 +207,45 @@ class ScalarsManager(FigureManager):
 
 
 class PlotsManager(FigureManager):
-    pass
+    @ classmethod
+    def add_plots(cls, writer, tag, values, global_step, names=None, **kwargs):
+        """
+        values: List of entities that can each converted to np.ndarrays of 2 rows (x and y) and arbitrary columns.
+        """
+
+        #
+        mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
+
+        # Get and verify numpy arrays.
+        values = [np.require(_v) for _v in values]
+        if not all((_v.ndim == 2 and _v.shape[0] == 2 for _v in values)):
+            raise Exception('Invalid input value shapes.')
+
+        # Add data (create all related tables atomically).
+        with writer.engine.begin() as conn:
+            [writer.add_data(tag + f'__<{k}>', _v, global_step, connection=conn, **kwargs) for
+             _k, _v in enumerate(values)]
+
+        # Register display if not done yet
+        if len(writer.execute(writer._figures.select().where(writer._figures.c.tag == tag))) == 0:
+            #
+            colors = Colors()
+            #
+            writer.flush()
+            fig = go.Figure(
+                # Original data
+                [go.Scatter(x=[], y=[], mode=mode, showlegend=(names is not None),
+                            line=dict(color=colors[k]), name=names[k] if names is not None else None)
+                 for k in range(len(values))])
+            #
+            table = writer.get_data_table(tag)
+            data_mappers = []
+            for k in range(len(values)):
+                data_mappers.append(
+                    (['data', k, 'x'], ['global_step']))
+                data_mappers.append(
+                    (['data', k, 'y'], SliceSequence()['content'][:, k]))
+
+            #
+            writer.register_display(
+                tag, fig, cls, (sqa.select([table.c.global_step, table.c.content]), data_mappers))
