@@ -95,18 +95,9 @@ class TestWriter(TestCase):
                 [writer._figures]).where(sqa.column('tag') == 'scalars1'))
             self.assertEqual(len(dat), 1)
 
-    # def test_writer_reader(self):
+    # def test_float_type(self):
     #     with NamedTemporaryFile() as tmpfo:
-    #         path = tmpfo.name
-    #         writer = mdl.Writer(path)
-    #         arr = np.ones(3)
-    #         writer.add_scalars('scalars1', arr, 0)
-    #         # writer.add_scalars('scalars1', arr*2, 1)
-    #         # writer.add_scalars('scalars1', arr, 2)
-    #         # writer.add_scalars('scalars1', arr*3, 3)
-    #         writer.flush()
-    #         # writer.engine.close()
-
-    #         reader = Reader(path)
-    #         fig_rec = reader.load_figure_recs()[0]
-    #         fig_obj = reader.load_figure(fig_rec)
+    #         writer = mdl.Writer(tmpfo.name)
+    #         writer.add_scalars('float_scalars', 1.0, 0)
+    #         self.assertEqual(
+    #             writer._metadata.tables['float_scalars'].c.type, sqa.types.Float)

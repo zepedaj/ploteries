@@ -1,4 +1,5 @@
 from .reader import Reader
+import numbers
 from dateutil.tz import tzlocal
 import re
 from sqlalchemy import Table, Column, Integer, String, \
@@ -35,8 +36,8 @@ class Writer(Reader):
         self.path = path
         super().__init__(path, check_exists=False)
 
-        #self.engine = create_engine('sqlite:///' + path)
-        #self._metadata = MetaData(bind=self.engine)
+        # self.engine = create_engine('sqlite:///' + path)
+        # self._metadata = MetaData(bind=self.engine)
 
         self._cache = {}
         self._last_flush = time.time()
@@ -71,8 +72,10 @@ class Writer(Reader):
         if name in self.RESERVED_TABLE_NAMES:
             raise Exception(f"The specified name '{name}' is reserved!")
         #
-        # content_type = {float: types.Float,
-        #                np.ndarray: NumpyType}[content_type]
+        # content_type_mappings = [(numbers.Real, types.Float),
+        #                          (np.ndarray, NumpyType)]
+        # content_type = next(
+        #     filter(lambda x: issubclass(content_type, x[0]), content_type_mappings))[1]
         content_type = {np.ndarray: NumpyType}[content_type]
 
         # Create table

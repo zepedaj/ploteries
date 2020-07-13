@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os.path as osp
 import re
 import numpy as np
 import climax as clx
@@ -12,8 +13,9 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from plotly import graph_objects as go
 import plotly.express as px
-import multiprocessing as mp
-import gunicorn.app.base
+from multiprocessing import cpu_count
+from pglib.gunicorn import GunicornServer
+
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 #
 global DB_PATH, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, APP, SLIDER_GROUP
@@ -63,11 +65,11 @@ class SliderGroup(object):
 #             for _t in reader.tables_of_type(content_type)]
 
 
-def group_plots(figures_tags, depth=1):
+def group_plots(tags_and_figures, depth=1):
     # Groups figures into html Summaries based on table name.
     # figures: [(table_name, dcc/html), ... ]
     group_ids = [('/'.join(figure_tag.split('/')[:depth]), html)
-                 for figure_tag, html in figure_tags]
+                 for figure_tag, html in tags_and_figures]
     groups = {}
 
     # Create groups.
@@ -117,12 +119,13 @@ def create_layout(reader, update_interval):
         return out
 
     def get_graphs_of_type(manager_type, **kwargs):
-        graphs = [(fig.name, build_graph_html(fig.tag, fig.name, **kwargs))
+        graphs = [(fig.tag, build_graph_html(fig.tag, fig.name, **kwargs))
                   for fig in reader.load_figure_recs(manager=manager_type)]
         graphs = group_plots(graphs)
         return graphs
     #
-    scalars = reader.load_figure_recs(manager=ScalarsManager)
+    # reader.load_figure_recs(manager=ScalarsManager)
+    scalars = get_graphs_of_type(ScalarsManager)
     figures = []  # get_graphs_of_type('FigureType', slider=True)
     histograms = []  # get_graphs_of_type('HistogramType', slider=True)
 
@@ -171,8 +174,17 @@ def update_scalar(figure_name):
     reader = Reader(DB_PATH)
     figure_rec = reader.load_figure_recs(name=figure_name)[0]
     fig = reader.load_figure(figure_rec)
-    fig.update_layout(height=HEIGHT, width=WIDTH, showlegend=False,
-                      margin=go.layout.Margin(**dict(zip('lrbt', [0]*4), pad=4)))
+    fig.update_layout(
+        height=HEIGHT, width=WIDTH,  # showlegend=False,
+        margin=go.layout.Margin(**dict(zip('lrbt', [0]*4), pad=4)),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ))
+
     return fig
 
 
@@ -192,8 +204,8 @@ def create_toolbar_callbacks():
 def create_update_scalar_callbacks(reader):
     _g = globals()
     for _fig in reader.load_figure_recs(manager=ScalarsManager):
-        import ipdb
-        ipdb.set_trace()
+        # import ipdb
+        # ipdb.set_trace()
         _g['update_scalar_'+_fig.name] = APP.callback(
             Output(_fig.name, 'figure'),
             [Input('interval-component', 'n_intervals')])(
@@ -219,8 +231,16 @@ def retrieve_graph(global_step, figure_name):
         figure = reader.load_figure(recors[0])
     # figure.layout.width=WIDTH
     # figure.layout.height=HEIGHT
-    figure.update_layout(height=HEIGHT, width=WIDTH, margin=go.layout.Margin(
-        **dict(zip('lrbt', [0]*4), pad=4)))
+    figure.update_layout(
+        height=HEIGHT, width=WIDTH, margin=go.layout.Margin(
+            **dict(zip('lrbt', [0]*4), pad=4)),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ))
     #
     return figure
 
@@ -319,7 +339,7 @@ def path_arg():
 @clx.option('--debug', action='store_true', help='Enables javascript debug console', default=False)
 @clx.option('--host', help='Host name.', default='0.0.0.0')
 @clx.option('--port', help='Port number.', default='8000')
-@clx.option('--workers', help='Number of workers (ignored in debug mode).', default=(mp.cpu_count() * 2) + 1)
+@clx.option('--workers', help='Number of workers (ignored in debug mode).', default=(cpu_count() * 2) + 1)
 @clx.option('--height', help='Figure height,', type=int, default=_wd*(2/3))
 @clx.option('--width', help='Figure width,', type=int, default=_wd)
 def launch(path, debug, host, interval, height, width, port, workers):
@@ -357,36 +377,30 @@ def launch(path, debug, host, interval, height, width, port, workers):
 
 
 @main.command(parents=[path_arg])
-def create_test_db(path):
+@clx.option('--overwrite', action='store_true', help='overwrite database', default=False)
+def create_test_db(path, overwrite):
     """ 
     Create a test database.
     """
+    if overwrite:
+        with open(path, 'w'):
+            pass
+    elif osp.isfile(path):
+        raise Exception('File already exists.')
     writer = Writer(path)
-    arr = np.ones(3)
-    writer.add_scalars('scalars1', arr, 0)
-    writer.add_scalars('scalars1', arr*2, 1)
-    writer.add_scalars('scalars1', arr, 2)
-    writer.add_scalars('scalars1', arr*3, 3)
+    N = 5
+    arr = np.random.rand(N)
+    writer.add_scalars('scalars/scalars1', np.random.rand(N), 0,
+                       names=[f'plot{k}' for k in range(N)])
+    writer.add_scalars('scalars/scalars1', np.random.rand(N), 1)
+    writer.add_scalars('scalars/scalars1', np.random.rand(N), 2)
+    writer.add_scalars('scalars/scalars1', np.random.rand(N), 3)
+    #
+    writer.add_scalars('scalars/scalars2', np.random.rand(1), 0)
+    writer.add_scalars('scalars/scalars2', np.random.rand(1), 1)
+    writer.add_scalars('scalars/scalars2', np.random.rand(1), 2)
+    writer.add_scalars('scalars/scalars2', np.random.rand(1), 3)
     writer.flush()
-
-
-class GunicornServer(gunicorn.app.base.BaseApplication):
-    _dflt_options = {'bind': '0.0.0.0:8060', 'workers': mp.cpu_count() * 2 + 1}
-
-    def __init__(self, app, options={}):
-        self.options = dict(self._dflt_options)
-        self.options.update(options)
-        self.application = app
-        super().__init__()
-
-    def load_config(self):
-        config = {key: value for key, value in self.options.items()
-                  if key in self.cfg.settings and value is not None}
-        for key, value in config.items():
-            self.cfg.set(key.lower(), value)
-
-    def load(self):
-        return self.application
 
 
 if __name__ == '__main__':

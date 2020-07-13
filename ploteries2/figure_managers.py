@@ -9,6 +9,7 @@ from plotly import graph_objects as go
 import sqlalchemy as sqa
 
 import colorsys
+import numbers
 
 
 class Colors:
@@ -16,8 +17,8 @@ class Colors:
         """
         scale_lightness: [0,1]
         """
-        self._rgb = list(map(lambda rgb: colorsys.rgb_to_hls(
-            rgb[0]/255, rgb[1]/255, rgb[2]/255), map(px.colors.hex_to_rgb, getattr(px.colors.qualitative, name))))
+        self._rgb = list(map(lambda rgb: (rgb[0]/255, rgb[1]/255, rgb[2]/255),
+                             map(px.colors.hex_to_rgb, getattr(px.colors.qualitative, name))))
         self.increase_lightness = increase_lightness
 
     def __len__(self):
@@ -27,7 +28,11 @@ class Colors:
         k = k % len(self._rgb)
         hls = colorsys.rgb_to_hls(*self._rgb[k])
         hsl = hls[0], hls[2], hls[1] + (1.0 - hls[1])*self.increase_lightness
-        return f'hsl({255*hsl[0]:.0f}, {hsl[1]:.0%}, {hsl[2]:.0%})'
+        out = f'hsl({360*hsl[0]:.0f}, {hsl[1]:.0%}, {hsl[2]:.0%})'
+        # print('**** COLORS *** : ', k, [x*255 for x in self._rgb[k]], out)
+        return out
+        # rgb = self._rgb[k]
+        # return f'rgb({255*rgb[0]}, {255*rgb[1]}, {255*rgb[2]})'
 
 
 def load_figure(reader, *args, manager_kwargs={}, **kwargs):
@@ -117,7 +122,6 @@ class FigureManager:
 
 
 class ScalarsManager(FigureManager):
-    register = ['add_scalars', 'add_scalar']
 
     def __init__(self, writer, n=100, **kwargs):
         super().__init__(writer, limit=0, sort=True, global_step=None, **kwargs)
@@ -153,16 +157,21 @@ class ScalarsManager(FigureManager):
         return smoothed
 
     @ classmethod
-    def add_scalar(cls, *args, **kwargs):
+    def add_scalar(cls, *args, name=None, **kwargs):
+        kwargs['names'] = None if name is None else [name]
         return cls.add_scalar(*args, **kwargs)
 
     @ classmethod
-    def add_scalars(cls, writer, tag, values, global_step, **kwargs):
+    def add_scalars(cls, writer, tag, values, global_step, names=None, **kwargs):
         #
         mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
 
-        if not isinstance(values, np.ndarray):
-            values = np.ndarray(values).reshape(1, -1)
+        # Cast all non-scalars to numpy array, check dtype is a real number.
+        values = np.require(values)
+        # if not isinstance(values, numbers.Real):
+        #     values = np.require(values).reshape(1, -1)
+        #     assert (np.issubdtype(values.dtype, np.number) and not np.issubdtype(
+        #         values.dtype, np.complexfloating)), f'Invalid dtype {values.dtype}.'
 
         # Add data.
         writer.add_data(tag, values, global_step, **kwargs)
@@ -171,16 +180,18 @@ class ScalarsManager(FigureManager):
         if len(writer.execute(writer._figures.select().where(writer._figures.c.tag == tag))) == 0:
             #
             colors = Colors()
-            light_colors = Colors(increase_lightness=0.5)
+            light_colors = Colors(increase_lightness=0.7)
             #
             writer.flush()
             fig = go.Figure(
-                # Original data 'hsl(217, 59%, 80%)'
-                [go.Scatter(x=[], y=[], mode=mode, line=dict(
-                    color=light_colors[k])) for k in range(len(values))] + \
+                # Original data
+                [go.Scatter(x=[], y=[], mode=mode, showlegend=False,
+                            line=dict(color=light_colors[k]))
+                 for k in range(len(values))] + \
                 # Smoothed data
-                [go.Scatter(x=[], y=[], mode=mode, line=dict(
-                    color=colors[k])) for k in range(len(values))])
+                [go.Scatter(x=[], y=[], mode=mode, showlegend=(names is not None),
+                            line=dict(color=colors[k]), name=names[k] if names is not None else None)
+                 for k in range(len(values))])
             #
             table = writer.get_data_table(tag)
             data_mappers = []
@@ -193,3 +204,7 @@ class ScalarsManager(FigureManager):
             #
             writer.register_display(
                 tag, fig, cls, (sqa.select([table.c.global_step, table.c.content]), data_mappers))
+
+
+class PlotsManager(FigureManager):
+    pass
