@@ -87,19 +87,25 @@ class Writer(Reader):
                       Column('content', content_type, nullable=True))  # Need nullable for NaN values
 
         with begin_connection(self.engine, connection) as conn:
-            table.create(conn)
+            table.create(conn, checkfirst=False)
             conn.execute(self._content_types.insert(
                 {'table_name': name, 'content_type': content_type}))
 
+    def figure_exists(self, tag):
+        """ 
+        Checks if a figure with the given tag has been registered
+        """
+        num_fig_recs = len(self.execute(
+            self._figures.select().where(self._figures.c.tag == tag)))
+        if num_fig_recs == 0:
+            return False
+        elif num_fig_recs == 1:
+            return True
+        else:
+            raise Excepction('Unexpected case!')
+
     def get_data_table(self, name, content_type=None):
-        # try:
         table = self._metadata.tables[name]
-        # except KeyError:
-        #     if content_type is None:
-        #         # Creation not requested
-        #         raise
-        #     self._create_data_table(tag, content_type, connection=connection)
-        #     table = self._metadata.tables[tag]
         return table
 
     # Add content
@@ -124,7 +130,7 @@ class Writer(Reader):
                 self.flush()
 
     # Register display
-    def register_display(self, tag, figure, manager, *sources):
+    def register_display(self, tag, figure, manager, *sources, connection=None):
         """
         Registers a plotly figure for display by storing the json representation of the figure in the table.
 
@@ -137,7 +143,7 @@ class Writer(Reader):
         """
 
         # Insert figure
-        with self.engine.begin() as conn:
+        with begin_connection(self.engine, connection) as conn:
             # TODO: Inconsistent state if failure after "insert figure".
 
             # Insert figure

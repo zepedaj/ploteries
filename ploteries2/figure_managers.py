@@ -1,7 +1,10 @@
 from sqlalchemy import desc
+from sqlalchemy.sql import func
+from sqlalchemy.sql.expression import alias
 from sqlalchemy.engine.result import RowProxy
 import numpy as np
 from pglib.py import SliceSequence
+from pglib.sqlalchemy import begin_connection
 from itertools import zip_longest
 
 import plotly.express as px
@@ -207,27 +210,22 @@ class ScalarsManager(FigureManager):
 
 
 class PlotsManager(FigureManager):
-    @ classmethod
-    def add_plots(cls, writer, tag, values, global_step, names=None, **kwargs):
-        """
-        values: List of entities that can each converted to np.ndarrays of 2 rows (x and y) and arbitrary columns.
-        """
 
-        #
-        mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
+    @classmethod
+    def derived_table_name(cls, tag, k):
+        return f'{tag}__{k}'
 
-        # Get and verify numpy arrays.
-        values = [np.require(_v) for _v in values]
-        if not all((_v.ndim == 2 and _v.shape[0] == 2 for _v in values)):
-            raise Exception('Invalid input value shapes.')
-
-        # Add data (create all related tables atomically).
-        with writer.engine.begin() as conn:
-            [writer.add_data(tag + f'__<{k}>', _v, global_step, connection=conn, **kwargs) for
-             _k, _v in enumerate(values)]
-
+    @classmethod
+    def register_figure(cls, writer, tag, num_tables, connection=None, names=None):
         # Register display if not done yet
-        if len(writer.execute(writer._figures.select().where(writer._figures.c.tag == tag))) == 0:
+        ###################################
+        # Create data tables
+        with begin_connection(writer, connection) as conn:
+            #
+            mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
+
+            [writer._create_data_table(cls.derived_table_name(tag, _k), np.ndarray, connection=conn) for
+             _k in range(num_tables)]
             #
             colors = Colors()
             #
@@ -236,16 +234,56 @@ class PlotsManager(FigureManager):
                 # Original data
                 [go.Scatter(x=[], y=[], mode=mode, showlegend=(names is not None),
                             line=dict(color=colors[k]), name=names[k] if names is not None else None)
-                 for k in range(len(values))])
-            #
-            table = writer.get_data_table(tag)
-            data_mappers = []
-            for k in range(len(values)):
-                data_mappers.append(
-                    (['data', k, 'x'], ['global_step']))
-                data_mappers.append(
-                    (['data', k, 'y'], SliceSequence()['content'][:, k]))
+                 for k in range(num_tables)])
 
             #
+            data_mappers = []
+            for k in range(num_tables):
+                data_mappers.append(
+                    (['data', k, f'x{k}'], [f'content{k}', 0]))
+                data_mappers.append(
+                    (['data', k, f'y{k}'], [f'content{k}', 1]))
+
+            # Build sql outer joins across all tables, keep all global_step values, even when not present in all tables.
+            tables = [writer.get_data_table(cls.derived_table_name(tag, k))
+                      for k in range(num_tables)]
+            sql = alias(sqa.select(
+                [tables[0].c.global_step, tables[0].c.content]))
+            content_cols = [sql.c.content.label('content0')]
+            for k, curr_table in enumerate(tables[1:]):
+                sql = alias(sqa.select([
+                    func.ifnull(sql.c.global_step, curr_table.c.global_step).label(
+                        'global_step'),
+                    curr_table.c.content]).select_from(
+                        sql.outerjoin(curr_table, curr_table.c.global_step == sql.c.global_step)))
+                content_cols.append(
+                    sql.c.content.label(f'content{k+1}'))
+
+            sql = sqa.select([sql.c.global_step] +
+                             content_cols).select_from(sql)
+
             writer.register_display(
-                tag, fig, cls, (sqa.select([table.c.global_step, table.c.content]), data_mappers))
+                tag, fig, cls, (sql, data_mappers), connection=conn)
+
+    @ classmethod
+    def add_plots(cls, writer, tag, values, global_step, names=None, connection=None, **kwargs):
+        """
+        values: List of entities that can each be converted to np.ndarrays of 2 rows (x and y) and arbitrary columns.
+        kwargs: passed to writer.add_data function
+        """
+
+        # Get and verify numpy arrays.
+        values = [np.require(_v) for _v in values]
+        if not all((_v.ndim == 2 and _v.shape[0] == 2 for _v in values)):
+            raise Exception('Invalid input value shapes.')
+
+        with begin_connection(writer.engine, connection) as conn:
+            # Register figure if it does not exist yet.
+            if not writer.figure_exists(tag):
+                cls.register_figure(writer, tag, len(
+                    values), connection=conn, names=names)
+
+            # Add data (create all related tables atomically).
+            # ##################
+            [writer.add_data(cls.derived_table_name(tag, _k), _v, global_step, connection=conn, **kwargs) for
+             _k, _v in enumerate(values)]
