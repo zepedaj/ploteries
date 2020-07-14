@@ -106,7 +106,7 @@ class FigureManager:
         sql_output = self.reader.execute(sql)
 
         #
-        def fuse(x): return x if not as_np_arrays else lambda x: np.array(x)
+        def fuse(x): return x if not as_np_arrays else np.array(x)
 
         # Concatenate outputs to numpy arrays.
         if len(sql_output) == 0:
