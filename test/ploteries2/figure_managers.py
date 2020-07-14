@@ -9,6 +9,21 @@ import numpy.testing as npt
 from pglib.py import SliceSequence
 
 
+class TestFunctions(TestCase):
+    def test_global_steps(self):
+        with NamedTemporaryFile() as tmpfo:
+            writer = Writer(tmpfo.name)
+            mdl.ScalarsManager.add_scalars(
+                writer, 'scalars1', np.array([0, 1, 2]), 0)
+            mdl.ScalarsManager.add_scalars(
+                writer, 'scalars1', np.array([3, 4, 5]), 1)
+            writer.flush()
+
+            # Check global steps
+            self.assertEqual(mdl.global_steps(
+                writer, tag='scalars1'), [0, 1])
+
+
 class TestScalarsManager(TestCase):
     def test_load(self):
         with NamedTemporaryFile() as tmpfo:
@@ -33,6 +48,7 @@ class TestScalarsManager(TestCase):
             npt.assert_equal(out['data'][0]['x'], [0, 1])
             npt.assert_equal(out['data'][1]['x'], [0, 1])
             npt.assert_equal(out['data'][2]['x'], [0, 1])
+            #
 
     def test_add_scalars(self):
         with NamedTemporaryFile() as tmpfo:
@@ -98,10 +114,21 @@ class TestPlotsManager(TestCase):
             # #
             self.assertEqual(len(out['data']), 2)
             # #
-            npt.assert_equal(out['data'][0]['x'], dat10[0])
+            npt.assert_equal(out['data'][0]['x'], dat00[0])
+            npt.assert_equal(out['data'][0]['y'], dat00[1])
             # npt.assert_equal(out['data'][1]['y'], [1, 4])
             # npt.assert_equal(out['data'][2]['y'], [2, 5])
             # #
             # npt.assert_equal(out['data'][0]['x'], [0, 1])
             # npt.assert_equal(out['data'][1]['x'], [0, 1])
             # npt.assert_equal(out['data'][2]['x'], [0, 1])
+
+
+class TestHistogramsManager(TestCase):
+    def test_add_histograms(self):
+        with NamedTemporaryFile() as tmpfo:
+            # Create data and figure
+            writer = Writer(tmpfo.name)
+            mdl.HistogramsManager.add_histograms(
+                writer, 'histo1', [np.arange(6), np.arange(6, 12)], 0)
+            writer.flush()

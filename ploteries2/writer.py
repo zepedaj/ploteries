@@ -49,17 +49,29 @@ class Writer(Reader):
                 (lambda *args, method=method, **kwargs: method(*args, **kwargs)))
 
     @classmethod
-    def register_module_add_classmethods(cls, module):
+    def register_figure_manager_class(cls, manager):
+        """ 
+        Will only register classmethods define in the specified manager class (including overloads), and not_equal
+        those defined in the parent class.
+        """
+        for name, method in [
+                (name, method) for name, method in
+                vars(manager).items() if re.match('add_.*', name)]:
+            # Check if method was defined in the current manager class (including overloads).
+            #B.classmethod.__qualname__.split('.')[0] == B.__qualname__
+            if method.__func__.__qualname__.split('.')[0] == manager.__qualname__:
+                # if not skip_inherited or not hasattr(super(manager, manager), method.__func__.__name__):
+                cls.register_add_method(name, getattr(manager, name))
+
+    @classmethod
+    def register_figure_manager_module(cls, module):
         """
         Add all add_* class methods in all .figure_managers.FigureManager-derived classes in the module.
         """
         for manager in [
-                val for key, val in vars(module).items() if
-                isclass(val) and issubclass(val, figure_managers.FigureManager)]:
-            for name, method in [
-                (name, method) for name, method in
-                    vars(manager).items() if re.match('add_.*', name)]:
-                cls.register_add_method(name, getattr(manager, name))
+                mdl_cls for key, mdl_cls in vars(module).items() if
+                isclass(mdl_cls) and issubclass(mdl_cls, figure_managers.FigureManager)]:
+            cls.register_figure_manager_class(manager)
 
     def _init_headers(self):
         super()._init_headers()
@@ -93,7 +105,7 @@ class Writer(Reader):
                 {'table_name': name, 'content_type': content_type}))
 
     def figure_exists(self, tag):
-        """ 
+        """
         Checks if a figure with the given tag has been registered
         """
         num_fig_recs = len(self.execute(
@@ -217,4 +229,4 @@ class Writer(Reader):
 
 
 # REGISTER ALL add_* methods in all FigureManager-derived classes in module figure_managers.
-Writer.register_module_add_classmethods(figure_managers)
+Writer.register_figure_manager_module(figure_managers)

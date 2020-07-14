@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from time import sleep
+from itertools import islice
+#
 import os.path as osp
 import re
 import numpy as np
 import climax as clx
-from ploteries2 import Reader, Writer, ScalarsManager
+from ploteries2 import Reader, Writer, ScalarsManager, PlotsManager, HistogramsManager
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -126,8 +129,8 @@ def create_layout(reader, update_interval):
     #
     # reader.load_figure_recs(manager=ScalarsManager)
     scalars = get_graphs_of_type(ScalarsManager)
-    figures = []  # get_graphs_of_type('FigureType', slider=True)
-    histograms = []  # get_graphs_of_type('HistogramType', slider=True)
+    figures = get_graphs_of_type(PlotsManager, slider=True)
+    histograms = get_graphs_of_type(HistogramsManager, slider=True)
 
     # Layout
     layout = html.Div(
@@ -228,7 +231,8 @@ def retrieve_graph(global_step, figure_name):
     elif len(records) == 0:
         figure = go.Figure()
     else:
-        figure = reader.load_figure(recors[0])
+        figure = reader.load_figure(records[0], manager_kwargs={
+                                    'global_step': global_step})
     # figure.layout.width=WIDTH
     # figure.layout.height=HEIGHT
     figure.update_layout(
@@ -246,10 +250,10 @@ def retrieve_graph(global_step, figure_name):
 
 
 # TODO
-def update_slider(table_name, slider_value, slider_output_keys):
+def update_slider(figure_name, slider_value, slider_output_keys):
     reader = Reader(DB_PATH)
     #
-    _marks = reader.global_steps(table_name)
+    _marks = reader.global_steps(name=figure_name)
     marks = dict(zip(_marks, ['']*len(_marks)))
     if len(marks) > 0:
         for _m in [_marks[0], _marks[-1]]:
@@ -305,7 +309,7 @@ def create_graph_callbacks(reader, figure_type):
                 return [slider_state[key] for key in slider_output_keys]
 
             # Auto update
-            _marks = reader.global_steps(figure_name)
+            _marks = reader.global_steps(name=figure_name)
             marks = dict(zip(_marks, ['']*len(_marks)))
             if len(marks) > 0:
                 for _m in [_marks[0], _marks[-1]]:
@@ -343,7 +347,7 @@ def path_arg():
 @clx.option('--height', help='Figure height,', type=int, default=_wd*(2/3))
 @clx.option('--width', help='Figure width,', type=int, default=_wd)
 def launch(path, debug, host, interval, height, width, port, workers):
-    """ 
+    """
     Launch a ploteries visualization server.
     """
     #
@@ -359,7 +363,7 @@ def launch(path, debug, host, interval, height, width, port, workers):
     SLIDER_GROUP = SliderGroup()
     APP.layout = lambda: create_layout(None, update_interval=interval)
     # TODO : Enable these
-    # create_graph_callbacks(reader, 'FigureType')
+    create_graph_callbacks(reader, PlotsManager)
     # create_graph_callbacks(reader, 'HistogramType')
     create_update_scalar_callbacks(reader)
     create_toolbar_callbacks()
@@ -379,7 +383,7 @@ def launch(path, debug, host, interval, height, width, port, workers):
 @main.command(parents=[path_arg])
 @clx.option('--overwrite', action='store_true', help='overwrite database', default=False)
 def create_test_db(path, overwrite):
-    """ 
+    """
     Create a test database.
     """
     if overwrite:
@@ -387,20 +391,44 @@ def create_test_db(path, overwrite):
             pass
     elif osp.isfile(path):
         raise Exception('File already exists.')
+
+    # Data generation
+    def random_walk(start=0, var=1.0):
+        val, std = start, var**0.5
+        while True:
+            yield val + np.random.randn()*(std/10)
+            val += np.random.randn()*std
+
+    def random_walks(N=3, start=0, var=1.0):
+        walkers = [iter(random_walk(start=start, var=var)) for _ in range(N)]
+        while True:
+            yield [next(_w) for _w in walkers]
+
     writer = Writer(path)
-    N = 5
-    arr = np.random.rand(N)
-    writer.add_scalars('scalars/scalars1', np.random.rand(N), 0,
-                       names=[f'plot{k}' for k in range(N)])
-    writer.add_scalars('scalars/scalars1', np.random.rand(N), 1)
-    writer.add_scalars('scalars/scalars1', np.random.rand(N), 2)
-    writer.add_scalars('scalars/scalars1', np.random.rand(N), 3)
-    #
-    writer.add_scalars('scalars/scalars2', np.random.rand(1), 0)
-    writer.add_scalars('scalars/scalars2', np.random.rand(1), 1)
-    writer.add_scalars('scalars/scalars2', np.random.rand(1), 2)
-    writer.add_scalars('scalars/scalars2', np.random.rand(1), 3)
-    writer.flush()
+    k = -1
+    N = 3
+    scalars1 = iter(random_walks(N=N))
+    scalars2 = iter(random_walks(N=N))
+    plot1 = iter(random_walk())
+    plot2 = iter(random_walk())
+    while True:
+        k += 1
+        print(k)
+        # Add scalars
+        writer.add_scalars('scalars/scalars1', next(scalars1), k,
+                           names=[f'plot{_l}' for _l in range(N)])
+        writer.add_scalars('scalars/scalars2', next(scalars2), k)
+
+        # Add plots
+        X = list(range(50))
+        if k % 100 == 0:
+            writer.add_plots('plots/plot1', [(X, list(islice(plot1, 50))) for _ in range(N)], k,
+                             names=[f'plot{_l}' for _l in range(N)])
+            writer.add_plots('plots/plot2', [(X, list(islice(plot1, 50))) for _ in range(N)], k,
+                             names=[f'plot{_l}' for _l in range(N)])
+
+        # Sleep
+        sleep(.5)
 
 
 if __name__ == '__main__':

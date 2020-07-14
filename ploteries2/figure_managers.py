@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from pglib.nnets import numtor
 from sqlalchemy import desc, asc
 from sqlalchemy.sql import func
 from sqlalchemy.sql.expression import alias
@@ -14,6 +15,18 @@ import sqlalchemy as sqa
 
 import colorsys
 import numbers
+
+# from functools import wraps
+# def register_add_method(func):
+#     """
+#     Signals that this method needs to be registered as an add method.
+#     Prevents overwrite of add_* methods when
+#     """
+#     @wraps
+#     def wrapper(*args, **kwargs):
+#         func.registered_add_method = {'class': args[0]}
+#         return func(*args, **kwargs)
+#     return wrapper
 
 
 class Colors:
@@ -48,15 +61,18 @@ def load_figure(reader, *args, manager_kwargs={}, **kwargs):
     reader: ploteries2.reader instance
     figure: Figure id, tag or records RowProxy object.
     """
-
-    figure_recs = reader.load_figure_recs(*args, **kwargs)
-    if len(figure_recs) > 1:
-        raise Exception(
-            'More than one figure record matched the query specificaiton.')
-
-    figure = figure_recs[0]
+    figure = reader.load_figure_recs(
+        *args, check_single=True, **kwargs)[0]
 
     return figure.manager(reader, **manager_kwargs).load_figure(figure)
+
+
+def global_steps(reader, *args, **kwargs):
+    # Get figure record
+    figure = reader.load_figure_recs(
+        *args, check_single=True, **kwargs)[0]
+
+    return figure.manager.global_steps(reader, figure)
 
 
 class FigureManager:
@@ -75,6 +91,29 @@ class FigureManager:
     # @classmethod
     # def add_*(cls, writer, tag, values, global_step, *args, connection=None, **kwargs):
     #    pass
+
+    @classmethod
+    def global_steps(cls, reader, figure_rec):
+        """
+        Get all global steps for which the figure is available.
+        """
+
+        # Retrieve data maps
+        datt_tbl = reader._data_templates
+        data_templates = reader.execute(
+            datt_tbl.select().where(datt_tbl.c.figure_id == figure_rec.id))
+
+        # Carry out all queries in all data maps.
+        manager = cls(reader, limit=None, global_step=None, sort='ascending')
+        queries = []
+        for _dt in data_templates:
+            qry = manager._process_sql(_dt.sql)
+            queries.append(sqa.select([qry.c.global_step]))
+
+        # Get union of all queries to produces global steps.
+        qry = sqa.union(*queries)
+        qry = qry.order_by(qry.c.global_step)
+        return [x[0] for x in reader.execute(sqa.select([qry.c.global_step]).distinct())]
 
     def __init__(self, reader, limit=None, sort='descending', global_step=None):
         """
@@ -117,6 +156,9 @@ class FigureManager:
         return sql_output
 
     def load_data(self, figure_id, as_np_arrays=True):
+        """
+        as_np_arrays: Fuse all fields of all records into a single numpy array.
+        """
         #
         # figure = self.load_figure_record(figure_tag)
 
@@ -145,7 +187,9 @@ class FigureManager:
 class ScalarsManager(FigureManager):
 
     def __init__(self, writer, smoothing_n=100, **kwargs):
-        super().__init__(writer, limit=None, sort='ascending', global_step=None, **kwargs)
+        dflt_kwargs = dict(limit=None, sort='ascending', global_step=None)
+        dflt_kwargs.update(kwargs)
+        super().__init__(writer, **dflt_kwargs)
         self.smoothing_n = smoothing_n
 
     def load_figure(self, *args, **kwargs):
@@ -177,7 +221,7 @@ class ScalarsManager(FigureManager):
         smoothed[:smoothing_n] /= (w.cumsum())[:len(smoothed)]
         return smoothed
 
-    @classmethod
+    @ classmethod
     def register_figure(cls, writer, tag, num_scalars, names=None, connection=None):
         #
         mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
@@ -209,13 +253,13 @@ class ScalarsManager(FigureManager):
             writer.register_figure(
                 tag, fig, cls, (sqa.select([table.c.global_step, table.c.content]), data_mappers), connection=conn)
 
-    @classmethod
+    @ classmethod
     def add_scalar(cls, *args, name=None, **kwargs):
         kwargs['names'] = None if name is None else [name]
         return cls.add_scalar(*args, **kwargs)
 
-    @classmethod
-    def add_scalars(cls, writer, tag, values, global_step, names=None, connection=None, **kwargs):
+    @ classmethod
+    def add_scalars(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None):
         #
 
         # Cast all non-scalars to numpy array, check dtype is a real number.
@@ -231,7 +275,7 @@ class ScalarsManager(FigureManager):
                     values), names=names, connection=conn)
 
             # Add data.
-            writer.add_data(tag, values, global_step, **kwargs)
+            writer.add_data(tag, values, global_step, write_time=write_time)
 
 
 class PlotsManager(FigureManager):
@@ -243,11 +287,23 @@ class PlotsManager(FigureManager):
         super().__init__(
             writer, global_step=global_step, **default_kwargs)
 
-    @classmethod
+    @ classmethod
     def derived_table_name(cls, tag, k):
         return f'{tag}__{k}'
 
-    @classmethod
+    @ classmethod
+    def build_figure_template(cls, num_traces, names):
+        mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
+        colors = Colors()
+        #
+        fig = go.Figure(
+            [go.Scatter(x=[], y=[], mode=mode, showlegend=(names is not None and names[k] is not None),
+                        line=dict(color=colors[k]), name=names[k] if names is not None else None)
+             for k in range(num_traces)])
+        #
+        return fig
+
+    @ classmethod
     def register_figure(cls, writer, tag, num_tables, connection=None, names=None):
         # Register display if not done yet
         ###################################
@@ -257,16 +313,10 @@ class PlotsManager(FigureManager):
             [writer.create_data_table(
                 cls.derived_table_name(tag, _k), np.ndarray, connection=conn, indexed_global_step=(num_tables > 1))
              for _k in range(num_tables)]
+            # writer.flush()
+
             #
-            mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
-            colors = Colors()
-            #
-            writer.flush()
-            fig = go.Figure(
-                # Original data
-                [go.Scatter(x=[], y=[], mode=mode, showlegend=(names is not None and names[k] is not None),
-                            line=dict(color=colors[k]), name=names[k] if names is not None else None)
-                 for k in range(num_tables)])
+            fig = cls.build_figure_template(num_tables, names)
 
             #
             data_mappers = []
@@ -297,11 +347,11 @@ class PlotsManager(FigureManager):
             writer.register_figure(
                 tag, fig, cls, (sql, data_mappers), connection=conn)
 
-    @classmethod
-    def add_plots(cls, writer, tag, values, global_step, names=None, connection=None, **kwargs):
+    @ classmethod
+    def add_plots(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None):
         """
         values: List of entities that can each be converted to np.ndarrays of 2 rows (x and y) and arbitrary columns.
-        kwargs: passed to writer.add_data function
+        write_time: passed to writer.add_data function
         """
 
         # Get and verify numpy arrays.
@@ -312,10 +362,75 @@ class PlotsManager(FigureManager):
         with begin_connection(writer.engine, connection) as conn:
             # Register figure if it does not exist yet.
             if not writer.figure_exists(tag):
-                cls.register_figure(writer, tag, len(
-                    values), connection=conn, names=names)
+                cls.register_figure(writer, tag,
+                                    len(values), connection=conn, names=names)
 
             # Add data (create all related tables atomically).
             # ##################
-            [writer.add_data(cls.derived_table_name(tag, _k), _v, global_step, connection=conn, **kwargs) for
+            [writer.add_data(cls.derived_table_name(tag, _k), _v, global_step, connection=conn, write_time=write_time) for
              _k, _v in enumerate(values)]
+
+
+class HistogramsManager(PlotsManager):
+    @ classmethod
+    def build_figure_template(cls, num_traces, names):
+        colors = Colors()
+        light_colors = Colors(increase_lightness=0.7)
+        #
+        fig = go.Figure(
+            [go.Bar(x=[], y=[], showlegend=(names is not None and names[k] is not None),
+                    marker_color=light_colors[k], marker_line_color=colors[k], marker_line_width=1.5, opacity=0.7,
+                    name=names[k] if names is not None else None)
+             for k in range(num_traces)])
+        fig.update_layout(bargap=0.1, bargroupgap=0.05, barmode='group')
+        #
+        return fig
+
+    @ classmethod
+    def add_histograms(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None, **histo_kwargs):
+        """
+        values: list of entities convertible to np.ndarray of 1 dimension.
+        """
+
+        # Compute histogram.
+        dat = np.concatenate(values)
+        if dat.ndim != 1:
+            raise Exception('Invalid input shapes.')
+        bin_centers, hist = cls._compute_histogram(dat, **histo_kwargs)
+        plot_values = [cls._compute_histogram(_val, bin_centers=bin_centers)
+                       for _val in values]
+
+        # Add figure data
+        cls.add_plots(
+            writer, tag, plot_values, global_step, names=names, connection=connection, write_time=write_time)
+
+    @ staticmethod
+    def _compute_histogram(dat, bins=20, bin_centers=None, normalize=True):
+        """
+        'bins': Num bins or bin edges (passed to numpy.histogram to create a histogram).
+        'bin_centers': Overrides 'bins' and specifies the bin centers instead of the edges.
+            The first and last bin centers are assumed to extend to +/- infinity.
+        """
+        dat = numtor.asnumpy(dat)
+        dat = dat.reshape(-1)
+
+        # Infer bin edges
+        if bin_centers is not None:
+            bins = np.block(
+                [-np.inf, np.convolve(bin_centers, [0.5, 0.5], mode='valid'), np.inf])
+
+        # Build histogram
+        hist, edges = np.histogram(dat, bins=bins)
+
+        # Infer bin centers
+        if bin_centers is None:
+            bin_centers = np.convolve(edges, [0.5, 0.5], mode='valid')
+            for k in [0, -1]:
+                if not np.isfinite(bin_centers[k]):
+                    bin_centers[k] = edges[k]
+
+        # Normalize histogram
+        if normalize:
+            hist = hist/dat.size
+
+        return bin_centers, hist

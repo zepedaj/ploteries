@@ -6,7 +6,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy import create_engine, MetaData, event, Table, Column, Integer, String, \
     ForeignKey, types, insert, UniqueConstraint, func, exc, column, text, select
 from sqlalchemy.engine import Engine
-from .figure_managers import load_figure as figure_manager_load_figure
+from .figure_managers import load_figure as figure_manager_load_figure, global_steps as figure_manager_global_steps
 from pglib.sqlalchemy import PlotlyFigureType, ClassType, sql_query_type_builder
 from ._sql_data_types import DataMapperType
 import re
@@ -112,7 +112,10 @@ class Reader(object):
                                     Column('content_type', ClassType,
                                            nullable=False))
 
-    def load_figure_recs(self, *args, **kwargs):
+    def global_steps(self, *args, **kwargs):
+        return figure_manager_global_steps(self, *args, **kwargs)
+
+    def load_figure_recs(self, *args, check_single=False, **kwargs):
         """
         load_figure_recs(row_proxy) : Returns the input arg.
         load_figure_recs([tag=tag | id=id | manager=manager | name=name]) : Gets matching rows.
@@ -140,14 +143,22 @@ class Reader(object):
         for key, val in kwargs.items():
             query = query.where(getattr(self._figures.c, key) == val)
 
-        return self.execute(query)
+        # Execute query
+        figure_recs = self.execute(query)
+
+        # Check single
+        if check_single and len(figure_recs) != 1:
+            raise Exception(
+                'Did not find exactly figure record matched the query specification.')
+
+        return figure_recs
 
     @classmethod
     def join_data_tables(cls, tables, **join_kwargs):
         """
         Builds an sql query to create a (inner by default) join (on global_step) of the input tables.
 
-        Use isouter=True for left-outer join, and outer_join_data_tables for full full outer join.
+        Use isouter=True for left-outer join, and cls.outer_join_data_tables for full outer join.
 
         tables: list of table or list of (table, content_field_name)-tuples.
         """
