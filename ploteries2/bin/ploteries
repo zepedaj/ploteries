@@ -428,7 +428,7 @@ def create_test_db(path, overwrite):
                              names=[f'plot{_l}' for _l in range(N)])
 
         # Sleep
-        sleep(.5)
+        sleep(5)
 
 
 if __name__ == '__main__':

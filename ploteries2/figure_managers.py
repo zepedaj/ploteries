@@ -128,21 +128,21 @@ class FigureManager:
                      None: None}[sort]
         self.global_step = global_step
 
-    def _process_sql(self, sql):
+    def _process_sql(self, qry):
         if self.global_step is not None:
-            sql = sql.where(sql.c.global_step == self.global_step)
+            qry = qry.where(qry.c.global_step == self.global_step)
         else:
             if self.sort is not None:
-                sql = sql.order_by(self.sort(sql.c.global_step))
+                qry = qry.order_by(self.sort(qry.c.global_step))
             if self.limit is not None:
-                sql = sql.limit(self.limit)
-        return sql
+                qry = qry.limit(self.limit)
+        return qry
 
-    def _load_sql(self, sql, as_np_arrays=True):
+    def _load_sql(self, qry, as_np_arrays=True):
 
         # Format query and execute
-        sql = self._process_sql(sql)
-        sql_output = self.reader.execute(sql)
+        qry = self._process_sql(qry)
+        sql_output = self.reader.execute(qry)
 
         #
         def fuse(x): return x if not as_np_arrays else np.array(x)
