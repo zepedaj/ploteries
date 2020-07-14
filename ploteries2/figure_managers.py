@@ -1,4 +1,5 @@
-from sqlalchemy import desc
+from abc import abstractmethod
+from sqlalchemy import desc, asc
 from sqlalchemy.sql import func
 from sqlalchemy.sql.expression import alias
 from sqlalchemy.engine.result import RowProxy
@@ -61,44 +62,61 @@ def load_figure(reader, *args, manager_kwargs={}, **kwargs):
 class FigureManager:
     widgets = tuple()  # e.g., 'slider',
 
-    def __init__(self, reader, limit=0, sort=True, global_step=None, global_step_field='global_step'):
+    @classmethod
+    @abstractmethod
+    def derived_table_name(cls, tag, k):
+        return f'{tag}__{k}'
+
+    @classmethod
+    @abstractmethod
+    def register_figure(cls, writer, tag, num_tables, connection=None, names=None):
+        pass
+
+    # @classmethod
+    # def add_*(cls, writer, tag, values, global_step, *args, connection=None, **kwargs):
+    #    pass
+
+    def __init__(self, reader, limit=None, sort='descending', global_step=None):
         """
         limit: Set to N>0 to limit the number of query outputs
         sort: Set to True to sort the query by global_step
         global_step: If set to an integer, limit and sort are ignored, and a where clause is added.
-        global_step_field: Specifies the query's global_step field name.
         """
         self.reader = reader
         self.limit = limit
-        self.sort = sort
-        self.global_step_field = global_step_field
+        self.sort = {'ascending': sqa.asc,
+                     'descending': sqa.desc,
+                     None: None}[sort]
         self.global_step = global_step
 
-    def process_sql(self, sql):
+    def _process_sql(self, sql):
         if self.global_step is not None:
-            sql = sql.where(f'{self.global_step_field}=self.global_step')
+            sql = sql.where(sql.c.global_step == self.global_step)
         else:
-            if self.sort:
-                sql = sql.order_by(desc(self.global_step))
-            if self.limit > 0:
-                sql = sql.limit(limit)
+            if self.sort is not None:
+                sql = sql.order_by(self.sort(sql.c.global_step))
+            if self.limit is not None:
+                sql = sql.limit(self.limit)
         return sql
 
-    def _load_sql(self, sql):
+    def _load_sql(self, sql, as_np_arrays=True):
 
         # Format query and execute
-        sql = self.process_sql(sql)
+        sql = self._process_sql(sql)
         sql_output = self.reader.execute(sql)
+
+        #
+        def fuse(x): return x if not as_np_arrays else lambda x: np.array(x)
 
         # Concatenate outputs to numpy arrays.
         if len(sql_output) == 0:
             return None
         else:
-            sql_output = {field: np.array(
+            sql_output = {field: fuse(
                 [record[field] for record in sql_output]) for field in sql_output[0].keys()}
         return sql_output
 
-    def load_data(self, figure_id):
+    def load_data(self, figure_id, as_np_arrays=True):
         #
         # figure = self.load_figure_record(figure_tag)
 
@@ -108,7 +126,7 @@ class FigureManager:
             datt_tbl.select().where(datt_tbl.c.figure_id == figure_id))
         out = []
         for _dt in data_templates:
-            sql_output = self._load_sql(_dt.sql)
+            sql_output = self._load_sql(_dt.sql, as_np_arrays=as_np_arrays)
             out.extend([(figure_slice, data_slice(sql_output))
                         for figure_slice, data_slice in _dt.data_mapper])
 
@@ -126,16 +144,16 @@ class FigureManager:
 
 class ScalarsManager(FigureManager):
 
-    def __init__(self, writer, n=100, **kwargs):
-        super().__init__(writer, limit=0, sort=True, global_step=None, **kwargs)
-        self.n = n
+    def __init__(self, writer, smoothing_n=100, **kwargs):
+        super().__init__(writer, limit=None, sort='ascending', global_step=None, **kwargs)
+        self.smoothing_n = smoothing_n
 
     def load_figure(self, *args, **kwargs):
         #
         figure = super().load_figure(*args, **kwargs)
 
         # Add smoothed curves
-        if self.n > 0:
+        if self.smoothing_n > 0:
             for _dat, _smooth_dat in zip_longest(figure.data[:len(figure.data)//2],
                                                  figure.data[len(figure.data)//2:]):
                 _smooth_dat.x = _dat.x
@@ -144,72 +162,86 @@ class ScalarsManager(FigureManager):
         return figure
 
     def smoothen(self, x):  # JS: Should pass this to javascript.
-        n = self.n
+        smoothing_n = self.smoothing_n
         if x is None:
             return x
 
-        def smoothing_kernel(n):
+        def smoothing_kernel(smoothing_n):
             # The nth point will contribute 1e-2 as much as the first point.
-            w = np.array([1.0]) if n == 1 else np.exp(
-                np.arange(n) * (np.log(1e-2)/(n-1)))
+            w = np.array([1.0]) if smoothing_n == 1 else np.exp(
+                np.arange(smoothing_n) * (np.log(1e-2)/(smoothing_n-1)))
             return w/w.sum()
-        w = smoothing_kernel(n)
+        w = smoothing_kernel(smoothing_n)
         smoothed = np.convolve(x, w, mode='full')[:len(x)]
         # Normalize the filter in the first points.
-        smoothed[:n] /= (w.cumsum())[:len(smoothed)]
+        smoothed[:smoothing_n] /= (w.cumsum())[:len(smoothed)]
         return smoothed
 
-    @ classmethod
+    @classmethod
+    def register_figure(cls, writer, tag, num_scalars, names=None, connection=None):
+        #
+        mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
+        colors = Colors()
+        light_colors = Colors(increase_lightness=0.7)
+        #
+        writer.flush()
+        fig = go.Figure(
+            # Original data
+            [go.Scatter(x=[], y=[], mode=mode, showlegend=False,
+                        line=dict(color=light_colors[k]))
+             for k in range(num_scalars)] + \
+            # Smoothed data
+            [go.Scatter(x=[], y=[], mode=mode, showlegend=(names is not None and names[k] is not None),
+                        line=dict(color=colors[k]), name=names[k] if names is not None else None)
+             for k in range(num_scalars)])
+        #
+        data_mappers = []
+        for k in range(num_scalars):
+            data_mappers.append(
+                (['data', k, 'x'], ['global_step']))
+            data_mappers.append(
+                (['data', k, 'y'], SliceSequence()['content'][:, k]))
+
+        # Create data table and add figure record to database
+        with begin_connection(writer.engine, connection) as conn:
+            writer.create_data_table(tag, np.ndarray, connection=conn)
+            table = writer.get_data_table(tag)
+            writer.register_figure(
+                tag, fig, cls, (sqa.select([table.c.global_step, table.c.content]), data_mappers), connection=conn)
+
+    @classmethod
     def add_scalar(cls, *args, name=None, **kwargs):
         kwargs['names'] = None if name is None else [name]
         return cls.add_scalar(*args, **kwargs)
 
-    @ classmethod
-    def add_scalars(cls, writer, tag, values, global_step, names=None, **kwargs):
+    @classmethod
+    def add_scalars(cls, writer, tag, values, global_step, names=None, connection=None, **kwargs):
         #
-        mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
 
         # Cast all non-scalars to numpy array, check dtype is a real number.
         values = np.require(values)
-        # if not isinstance(values, numbers.Real):
-        #     values = np.require(values).reshape(1, -1)
-        #     assert (np.issubdtype(values.dtype, np.number) and not np.issubdtype(
-        #         values.dtype, np.complexfloating)), f'Invalid dtype {values.dtype}.'
+        if not (values.ndim == 1 and np.issubdtype(values.dtype, np.number) and not np.issubdtype(
+                values.dtype, np.complexfloating)):
+            raise Exception(f'Invalid dtype {values.dtype}.')
 
-        # Add data.
-        writer.add_data(tag, values, global_step, **kwargs)
+        with begin_connection(writer.engine, connection) as conn:
+            # Register figure if not done yet
+            if not writer.figure_exists(tag):
+                cls.register_figure(writer, tag, len(
+                    values), names=names, connection=conn)
 
-        # Register display if not done yet
-        if len(writer.execute(writer._figures.select().where(writer._figures.c.tag == tag))) == 0:
-            #
-            colors = Colors()
-            light_colors = Colors(increase_lightness=0.7)
-            #
-            writer.flush()
-            fig = go.Figure(
-                # Original data
-                [go.Scatter(x=[], y=[], mode=mode, showlegend=False,
-                            line=dict(color=light_colors[k]))
-                 for k in range(len(values))] + \
-                # Smoothed data
-                [go.Scatter(x=[], y=[], mode=mode, showlegend=(names is not None),
-                            line=dict(color=colors[k]), name=names[k] if names is not None else None)
-                 for k in range(len(values))])
-            #
-            table = writer.get_data_table(tag)
-            data_mappers = []
-            for k in range(len(values)):
-                data_mappers.append(
-                    (['data', k, 'x'], ['global_step']))
-                data_mappers.append(
-                    (['data', k, 'y'], SliceSequence()['content'][:, k]))
-
-            #
-            writer.register_display(
-                tag, fig, cls, (sqa.select([table.c.global_step, table.c.content]), data_mappers))
+            # Add data.
+            writer.add_data(tag, values, global_step, **kwargs)
 
 
 class PlotsManager(FigureManager):
+
+    def __init__(self, writer, global_step=None, **kwargs):
+        default_kwargs = {
+            'limit': 1, 'sort': 'descending'}
+        default_kwargs.update(kwargs)
+        super().__init__(
+            writer, global_step=global_step, **default_kwargs)
 
     @classmethod
     def derived_table_name(cls, tag, k):
@@ -222,17 +254,17 @@ class PlotsManager(FigureManager):
         # Create data tables
         with begin_connection(writer, connection) as conn:
             #
-            mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
-
-            [writer._create_data_table(cls.derived_table_name(tag, _k), np.ndarray, connection=conn) for
-             _k in range(num_tables)]
+            [writer.create_data_table(
+                cls.derived_table_name(tag, _k), np.ndarray, connection=conn, indexed_global_step=(num_tables > 1))
+             for _k in range(num_tables)]
             #
+            mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
             colors = Colors()
             #
             writer.flush()
             fig = go.Figure(
                 # Original data
-                [go.Scatter(x=[], y=[], mode=mode, showlegend=(names is not None),
+                [go.Scatter(x=[], y=[], mode=mode, showlegend=(names is not None and names[k] is not None),
                             line=dict(color=colors[k]), name=names[k] if names is not None else None)
                  for k in range(num_tables)])
 
@@ -240,9 +272,9 @@ class PlotsManager(FigureManager):
             data_mappers = []
             for k in range(num_tables):
                 data_mappers.append(
-                    (['data', k, f'x{k}'], [f'content{k}', 0]))
+                    (['data', k, f'x'], [f'content{k}', 0, 0]))
                 data_mappers.append(
-                    (['data', k, f'y{k}'], [f'content{k}', 1]))
+                    (['data', k, f'y'], [f'content{k}', 0, 1]))
 
             # Build sql outer joins across all tables, keep all global_step values, even when not present in all tables.
             tables = [writer.get_data_table(cls.derived_table_name(tag, k))
@@ -259,13 +291,13 @@ class PlotsManager(FigureManager):
                 content_cols.append(
                     sql.c.content.label(f'content{k+1}'))
 
-            sql = sqa.select([sql.c.global_step] +
+            sql = sqa.select([sql.c.global_step.label('global_step')] +
                              content_cols).select_from(sql)
 
-            writer.register_display(
+            writer.register_figure(
                 tag, fig, cls, (sql, data_mappers), connection=conn)
 
-    @ classmethod
+    @classmethod
     def add_plots(cls, writer, tag, values, global_step, names=None, connection=None, **kwargs):
         """
         values: List of entities that can each be converted to np.ndarrays of 2 rows (x and y) and arbitrary columns.

@@ -67,7 +67,7 @@ class Writer(Reader):
         self._data_templates.create()
         self._content_types.create()
 
-    def _create_data_table(self, name,  content_type, connection=None):
+    def create_data_table(self, name,  content_type, connection=None, indexed_global_step=False):
         #
         if name in self.RESERVED_TABLE_NAMES:
             raise Exception(f"The specified name '{name}' is reserved!")
@@ -82,7 +82,8 @@ class Writer(Reader):
         # Create table
         table = Table(name, self._metadata,
                       Column('id', Integer, primary_key=True),
-                      Column('global_step', Integer, nullable=False),
+                      Column('global_step', Integer, nullable=False,
+                             index=indexed_global_step),
                       Column('write_time', types.DateTime, nullable=False),
                       Column('content', content_type, nullable=True))  # Need nullable for NaN values
 
@@ -104,10 +105,6 @@ class Writer(Reader):
         else:
             raise Excepction('Unexpected case!')
 
-    def get_data_table(self, name, content_type=None):
-        table = self._metadata.tables[name]
-        return table
-
     # Add content
     def add_data(self, name, content, global_step, write_time=None, connection=None):
         # content_type = {np.ndarray: LargeBinary, # CB2
@@ -120,7 +117,7 @@ class Writer(Reader):
         if not name in self._metadata.tables.keys():
             # Table does not exist, create it and add data (atomically as part of potential parent transaction)
             with begin_connection(self.engine, connection) as conn:
-                self._create_data_table(name, content_type, connection=conn)
+                self.create_data_table(name, content_type, connection=conn)
                 table = self.get_data_table(name)
                 conn.execute(table.insert(new_data))
         else:
@@ -130,7 +127,7 @@ class Writer(Reader):
                 self.flush()
 
     # Register display
-    def register_display(self, tag, figure, manager, *sources, connection=None):
+    def register_figure(self, tag, figure, manager, *sources, connection=None):
         """
         Registers a plotly figure for display by storing the json representation of the figure in the table.
 
@@ -156,7 +153,8 @@ class Writer(Reader):
                     self._data_templates.insert(),
                     {'figure_id': figure.inserted_primary_key[0], 'sql': (sql,), 'data_mapper': data_mapper})
 
-    def __del__(self): self.flush()
+    def __del__(self):
+        self.flush()
 
     def flush(self):
         # CB2: Flush in background process or separate thread.

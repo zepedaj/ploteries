@@ -1,4 +1,7 @@
 import sqlite3
+from collections import deque
+import sqlalchemy as sqa
+from sqlalchemy.sql.expression import alias
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy import create_engine, MetaData, event, Table, Column, Integer, String, \
     ForeignKey, types, insert, UniqueConstraint, func, exc, column, text, select
@@ -31,7 +34,7 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 
 #
-#event.listen(Table, "column_reflect", do_this_on_column_reflect)
+# event.listen(Table, "column_reflect", do_this_on_column_reflect)
 # @event.listens_for(Table, "column_reflect")
 def _reflect_custom_types(inspector, table, column_info, _content_types_table):
 
@@ -76,6 +79,10 @@ class Reader(object):
         with self.engine.begin() as conn:
             result = conn.execute(*args, **kwargs).fetchall()
         return result
+
+    def get_data_table(self, name, content_type=None):
+        table = self._metadata.tables[name]
+        return table
 
     def _init_headers(self):
         self._figures = Table('__figures__', self._metadata,
@@ -135,17 +142,62 @@ class Reader(object):
 
         return self.execute(query)
 
-        # # Map name to id
-        # if name is not None:
-        #     if id is not None:
-        #         raise Exception('Invalid combimation of arguments.')
-        #     id = int(re.match('^fig_(\d+)$', name).groups()[0])
+    @classmethod
+    def join_data_tables(cls, tables, **join_kwargs):
+        """
+        Builds an sql query to create a (inner by default) join (on global_step) of the input tables.
 
-        # # Build query
-        # if tag is not None:
-        #     query = query.where(self._figures.c.tag == tag)
-        # if id is not None:
-        #     query = query.where(self._figures.c.id == id)
-        # if manager is not None:
-        #     query = query.where(self._figures.c.manager == manager)
-        # return self.execute(query)
+        Use isouter=True for left-outer join, and outer_join_data_tables for full full outer join.
+
+        tables: list of table or list of (table, content_field_name)-tuples.
+        """
+
+        if isinstance(tables[0], (tuple, list)):
+            content_fields = [_fld for _tbl, _fld in tables]
+            tables = [_tbl for _tbl, _fld in tables]
+        else:
+            content_fields = [f'content{_k}' for _k in range(len(tables))]
+
+        # Build sql outer joins across all tables, keep all global_step values, even when not present in all tables.
+        qry = sqa.select(
+            [tables[0].c.global_step, tables[0].c.content.label(content_fields[0])])
+        for k, curr_table in zip(range(1, len(tables)), tables[1:]):
+            qry = alias(qry)
+            qry = sqa.select(
+                # Always is left outer or inner join, so global_step always non-null
+                [qry.c.global_step.label('global_step')] +
+                # [func.ifnull(qry.c.global_step, curr_table.c.global_step).label('global_step')] +
+                [getattr(qry.c, content_fields[_l]) for _l in range(k)] +
+                [curr_table.c.content.label(content_fields[k])]).select_from(
+                    qry.join(curr_table, curr_table.c.global_step == qry.c.global_step, **join_kwargs))
+
+        return qry
+
+    @classmethod
+    def outer_join_data_tables(cls, tables):
+        """
+        Builds an sql query to create an full outer join (on global_step) of the input tables. 
+        Each row in each table is guaranteed ot appear once in the output.
+
+        tables: list of table or list of (table, content_field_name)-tuples.
+        """
+
+        # Add content fields
+        if not isinstance(tables[0], (tuple, list)):
+            tables = [(_tbl, f'content{_k}') for _k, _tbl in enumerate(tables)]
+
+        # For each table, do left join with all tables
+        dq_tables = deque(tables)
+        queries = []
+        for k in range(len(tables)):
+            queries.append(cls.join_data_tables(list(dq_tables), isouter=True))
+            dq_tables.rotate(1)
+
+        # Order fields to same order.
+        field_order = queries[0].c.keys()
+        queries = [
+            sqa.select([getattr(_qry.c, _fld) for _fld in field_order])
+            for _qry in queries]
+        qry = sqa.union(*queries)
+
+        return qry

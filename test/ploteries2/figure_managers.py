@@ -76,3 +76,32 @@ class TestPlotsManager(TestCase):
                         "is already defined for this MetaData instance.  Specify 'extend_existing=True' "
                         "to redefine options and columns on an existing Table object."), err.args[0]):
                     raise
+
+    def test_load(self):
+        with NamedTemporaryFile() as tmpfo:
+            # Create data and figure
+            writer = Writer(tmpfo.name)
+            dat00, dat01 = np.random.randn(2, 10), np.random.randn(2, 7)
+            dat10, dat11 = np.random.randn(2, 6), np.random.randn(2, 11)
+            mdl.PlotsManager.add_plots(
+                writer, 'plots1', [dat00, dat01], 0)
+            mdl.PlotsManager.add_plots(
+                writer, 'plots1', [dat10, dat11], 1)
+            writer.flush()
+
+            #
+            pm = mdl.PlotsManager(writer, limit=None)
+            dat = pm.load_data(1, as_np_arrays=False)
+
+            # Load and verify.
+            out = mdl.load_figure(writer, tag='plots1')
+            # #
+            self.assertEqual(len(out['data']), 2)
+            # #
+            npt.assert_equal(out['data'][0]['x'], dat10[0])
+            # npt.assert_equal(out['data'][1]['y'], [1, 4])
+            # npt.assert_equal(out['data'][2]['y'], [2, 5])
+            # #
+            # npt.assert_equal(out['data'][0]['x'], [0, 1])
+            # npt.assert_equal(out['data'][1]['x'], [0, 1])
+            # npt.assert_equal(out['data'][2]['x'], [0, 1])

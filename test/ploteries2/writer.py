@@ -15,7 +15,7 @@ class TestWriter(TestCase):
     def test_create_data_table_and_add_data(self):
         with NamedTemporaryFile() as tmpfo:
             writer = mdl.Writer(tmpfo.name)
-            writer._create_data_table('np_data1', np.ndarray)
+            writer.create_data_table('np_data1', np.ndarray)
             arr = np.array([0, 1, 2, 3])
             writer.add_data('np_data1', arr, 0)
             writer.flush()
@@ -25,10 +25,10 @@ class TestWriter(TestCase):
                     [writer.get_data_table('np_data1').c.content])).fetchall()
             npt.assert_equal(out[0][0], arr)
 
-    def test_register_display(self):
+    def test_register_figure(self):
         with NamedTemporaryFile() as tmpfo:
             writer = mdl.Writer(tmpfo.name)
-            writer._create_data_table('np_data1', np.ndarray)
+            writer.create_data_table('np_data1', np.ndarray)
 
             figure = go.Figure()
             #
@@ -44,7 +44,7 @@ class TestWriter(TestCase):
 
             # Fail registration of new display, check  no inconsistent state
             try:
-                writer.register_display(
+                writer.register_figure(
                     'plots/figure1', figure, ScalarsManager,
                     (None, [(['data', 0, 'x'], ['content'], 'error_source')]))
                 raise Exception('Should raise error.')
@@ -61,7 +61,7 @@ class TestWriter(TestCase):
 
             # Successfully register new display.
             orig_sql = sqa.select([np_data1.c.content, np_data1.c.global_step])
-            writer.register_display(
+            writer.register_figure(
                 'plots/figure2', figure, ScalarsManager,
                 (orig_sql, [(['data', 0, 'x'], ['content'])]))
 
