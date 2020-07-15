@@ -134,7 +134,7 @@ def create_layout(reader, update_interval):
 
     # Layout
     layout = html.Div(
-        children=[html.H2(children='Ploteries'),
+        children=[html.H2(children='Ploteries', style={'float': 'right'}),
                   html.Div([
                       daq.ToggleSwitch(id='auto-update-switch', size=20,
                                        value=True,
@@ -195,7 +195,7 @@ def create_toolbar_callbacks():
     # Auto update switch
     def auto_update_switch(enabled):
         enabled = bool(enabled)
-        return enabled, 'Auto update '+['disabled', 'enabled'][enabled]
+        return not enabled, 'Auto update '+['disabled', 'enabled'][enabled]
     _g = globals()
     _g['auto_update_switch'] = APP.callback(
         [Output('interval-component', 'disabled'),
@@ -339,7 +339,7 @@ def path_arg():
 
 
 @main.command(parents=[path_arg])
-@clx.option('--interval', type=int, help='Seconds between automatic update of all plots.', default=300)
+@clx.option('--interval', type=float, help='Seconds between automatic update of all plots.', default=300)
 @clx.option('--debug', action='store_true', help='Enables javascript debug console', default=False)
 @clx.option('--host', help='Host name.', default='0.0.0.0')
 @clx.option('--port', help='Port number.', default='8000')
@@ -364,7 +364,7 @@ def launch(path, debug, host, interval, height, width, port, workers):
     APP.layout = lambda: create_layout(None, update_interval=interval)
     # TODO : Enable these
     create_graph_callbacks(reader, PlotsManager)
-    # create_graph_callbacks(reader, 'HistogramType')
+    create_graph_callbacks(reader, HistogramsManager)
     create_update_scalar_callbacks(reader)
     create_toolbar_callbacks()
     SLIDER_GROUP.create_callbacks()
@@ -411,6 +411,8 @@ def create_test_db(path, overwrite):
     scalars2 = iter(random_walks(N=N))
     plot1 = iter(random_walk())
     plot2 = iter(random_walk())
+    histo1 = iter(random_walk())
+    histo2 = iter(random_walk())
     while True:
         k += 1
         print(k)
@@ -424,8 +426,15 @@ def create_test_db(path, overwrite):
         if k % 100 == 0:
             writer.add_plots('plots/plot1', [(X, list(islice(plot1, 50))) for _ in range(N)], k,
                              names=[f'plot{_l}' for _l in range(N)])
-            writer.add_plots('plots/plot2', [(X, list(islice(plot1, 50))) for _ in range(N)], k,
+            writer.add_plots('plots/plot2', [(X, list(islice(plot2, 50))) for _ in range(N)], k,
                              names=[f'plot{_l}' for _l in range(N)])
+
+        # Add histograms
+        if k % 100 == 0:
+            writer.add_histograms('histograms/histogram1', [list(islice(histo1, 1000)) for _ in range(N)], k,
+                                  names=[f'histo{_l}' for _l in range(N)])
+            writer.add_histograms('histograms/histogram2', [list(islice(histo2, 1000)) for _ in range(N)], k,
+                                  names=[f'histo{_l}' for _l in range(N)])
 
         # Sleep
         sleep(.5)
