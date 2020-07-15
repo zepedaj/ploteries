@@ -28,6 +28,8 @@ APP = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 # Helper functions.
 
+CONTROL_WIDGET_STYLE = {'float': 'left', 'margin': '0em 1em 0em 1em'}
+
 
 class SliderGroup(object):
     def __init__(self):
@@ -134,24 +136,29 @@ def create_layout(reader, update_interval):
 
     # Layout
     layout = html.Div(
-        children=[html.H2(children='Ploteries', style={'float': 'right'}),
-                  html.Div([
-                      daq.ToggleSwitch(id='auto-update-switch', size=20,
-                                       value=True,
-                                       label=' ',
-                                       style={'display': 'inline-block'}),
-                      html.Label(['Global step:', dcc.Dropdown(
-                           id='global-step-dropdown')])
-                  ]),
-                  dcc.Tabs([
-                      dcc.Tab(label='Scalars', children=scalars),
-                      dcc.Tab(label='Figures', children=figures),
-                      dcc.Tab(label='Histograms', children=histograms)]),
-                  dcc.Interval(
-            id='interval-component',
-            interval=update_interval*1000,  # in milliseconds
-            n_intervals=0
-        )]
+        children=[
+            html.Div([
+                html.H2(children='Ploteries', style={
+                        'float': 'right', 'margin-right': '1em', 'font-family': 'Courier New'}),
+                # html.Div([
+                html.Div([
+                    daq.ToggleSwitch(id='auto-update-switch', size=20,
+                                     value=True,
+                                     label=' ',
+                                     style=CONTROL_WIDGET_STYLE),  # 'display': 'inline-block'
+                    html.Label(['Global step:', dcc.Dropdown(
+                        id='global-step-dropdown')], style=dict(**{'min-width': '20em'}, **CONTROL_WIDGET_STYLE))], )
+            ], style={'content': "", 'clear': 'both', 'display': 'table', 'width': '100%'}),
+            # ]),
+            dcc.Tabs([
+                dcc.Tab(label='Scalars', children=scalars),
+                dcc.Tab(label='Figures', children=figures),
+                dcc.Tab(label='Histograms', children=histograms)]),
+            dcc.Interval(
+                id='interval-component',
+                interval=update_interval*1000,  # in milliseconds
+                n_intervals=0
+            )]
     )
     return layout
 
@@ -232,7 +239,7 @@ def retrieve_graph(global_step, figure_name):
         figure = go.Figure()
     else:
         figure = reader.load_figure(records[0], manager_kwargs={
-                                    'global_step': global_step})
+            'global_step': global_step})
     # figure.layout.width=WIDTH
     # figure.layout.height=HEIGHT
     figure.update_layout(
@@ -293,7 +300,7 @@ def create_graph_callbacks(reader, figure_type):
         # Update slider callbacks
         slider_output_keys = ['marks', 'min', 'max', 'value', 'disabled']
 
-        @APP.callback(
+        @ APP.callback(
             [Output(slider_name, _x) for _x in slider_output_keys],
             [Input('interval-component', 'n_intervals'),
              Input('global-step-dropdown', 'value'),
@@ -327,25 +334,25 @@ def create_graph_callbacks(reader, figure_type):
 _wd = 550
 
 
-@clx.group()
+@ clx.group()
 def main():
     pass
 
 
-@clx.parent()
-@clx.argument('path', help='Ploteries database file path.')
+@ clx.parent()
+@ clx.argument('path', help='Ploteries database file path.')
 def path_arg():
     pass
 
 
-@main.command(parents=[path_arg])
-@clx.option('--interval', type=float, help='Seconds between automatic update of all plots.', default=300)
-@clx.option('--debug', action='store_true', help='Enables javascript debug console', default=False)
-@clx.option('--host', help='Host name.', default='0.0.0.0')
-@clx.option('--port', help='Port number.', default='8000')
-@clx.option('--workers', help='Number of workers (ignored in debug mode).', default=(cpu_count() * 2) + 1)
-@clx.option('--height', help='Figure height,', type=int, default=_wd*(2/3))
-@clx.option('--width', help='Figure width,', type=int, default=_wd)
+@ main.command(parents=[path_arg])
+@ clx.option('--interval', type=float, help='Seconds between automatic update of all plots.', default=300)
+@ clx.option('--debug', action='store_true', help='Enables javascript debug console', default=False)
+@ clx.option('--host', help='Host name.', default='0.0.0.0')
+@ clx.option('--port', help='Port number.', default='8000')
+@ clx.option('--workers', help='Number of workers (ignored in debug mode).', default=(cpu_count() * 2) + 1)
+@ clx.option('--height', help='Figure height,', type=int, default=_wd*(2/3))
+@ clx.option('--width', help='Figure width,', type=int, default=_wd)
 def launch(path, debug, host, interval, height, width, port, workers):
     """
     Launch a ploteries visualization server.
@@ -380,8 +387,8 @@ def launch(path, debug, host, interval, height, width, port, workers):
         GunicornServer(APP.server, options).run()
 
 
-@main.command(parents=[path_arg])
-@clx.option('--overwrite', action='store_true', help='overwrite database', default=False)
+@ main.command(parents=[path_arg])
+@ clx.option('--overwrite', action='store_true', help='overwrite database', default=False)
 def create_test_db(path, overwrite):
     """
     Create a test database.
