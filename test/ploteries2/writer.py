@@ -1,4 +1,5 @@
 from unittest import TestCase
+import warnings
 from ploteries2 import writer as mdl
 from ploteries2.figure_managers import ScalarsManager
 from tempfile import NamedTemporaryFile
@@ -94,6 +95,92 @@ class TestWriter(TestCase):
             dat = writer.execute(sqa.select(
                 [writer._figures]).where(sqa.column('tag') == 'scalars1'))
             self.assertEqual(len(dat), 1)
+
+    def test_rollback_table_creation(self):
+        with NamedTemporaryFile() as tmpfo:
+            writer = mdl.Writer(tmpfo.name)
+            try:
+                with writer.engine.begin() as conn:
+                    writer.create_data_table(
+                        'abc', np.ndarray, connection=conn)
+                    raise Exception('Dummy')
+            except Exception as err:
+                if err.args[0] != 'Dummy':
+                    raise
+
+            with self.assertRaises(KeyError):
+                writer.get_data_table('abc')
+
+    def test_rollback_table_creation(self):
+        if True:
+            warnings.warn(
+                'Skipping current test due to lack of table creation rollback support in sqlite3.')
+            return
+        with NamedTemporaryFile() as tmpfo:
+            writer = mdl.Writer(tmpfo.name)
+            try:
+                with writer.engine.begin() as conn:
+                    writer.create_data_table(
+                        'abc', np.ndarray, connection=conn)
+                    raise Exception('Dummy')
+            except Exception as err:
+                if err.args[0] != 'Dummy':
+                    raise
+
+            with self.assertRaises(KeyError):
+                writer.get_data_table('abc')
+
+    def test_rollback_table_creation_sqaalchemy(self):
+        if True:
+            warnings.warn(
+                'Skipping current test due to lack of table creation rollback support in sqlite3.')
+            return
+        from sqlalchemy import inspect   # need to be running 0.8 for this
+
+        with NamedTemporaryFile() as tmpfo:
+            engine = sqa.create_engine('sqlite:///' + tmpfo.name)
+            metadata = sqa.MetaData()
+            table = sqa.Table('test_table', metadata,
+                              sqa.Column('id', sqa.Integer, primary_key=True),
+                              sqa.Column('tag', sqa.types.String,
+                                         unique=True, nullable=False))
+
+            with engine.connect() as conn:
+                trans = conn.begin()
+                metadata.create_all(conn)
+                inspector = inspect(conn)
+                table_names = inspector.get_table_names()
+                trans.rollback()
+
+                inspector = inspect(conn)
+                rolled_back_table_names = inspector.get_table_names()
+                print(rolled_back_table_names)
+
+    def test_rollback_table_creation_sqaalchemy(self):
+        if True:
+            warnings.warn(
+                'Skipping current test due to lack of table creation rollback support in sqlite3.')
+            return
+        from sqlalchemy import inspect   # need to be running 0.8 for this
+
+        with NamedTemporaryFile() as tmpfo:
+            engine = sqa.create_engine('sqlite:///' + tmpfo.name)
+            metadata = sqa.MetaData()
+            table = sqa.Table('test_table', metadata,
+                              sqa.Column('id', sqa.Integer, primary_key=True),
+                              sqa.Column('tag', sqa.types.String,
+                                         unique=True, nullable=False))
+
+            with engine.connect() as conn:
+                trans = conn.begin()
+                metadata.create_all(conn)
+                inspector = inspect(conn)
+                table_names = inspector.get_table_names()
+                trans.rollback()
+
+                inspector = inspect(conn)
+                rolled_back_table_names = inspector.get_table_names()
+                print(rolled_back_table_names)
 
     # def test_float_type(self):
     #     with NamedTemporaryFile() as tmpfo:

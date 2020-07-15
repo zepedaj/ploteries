@@ -104,21 +104,11 @@ class Writer(Reader):
             conn.execute(self._content_types.insert(
                 {'table_name': name, 'content_type': content_type}))
 
-    def figure_exists(self, tag):
-        """
-        Checks if a figure with the given tag has been registered
-        """
-        num_fig_recs = len(self.execute(
-            self._figures.select().where(self._figures.c.tag == tag)))
-        if num_fig_recs == 0:
-            return False
-        elif num_fig_recs == 1:
-            return True
-        else:
-            raise Excepction('Unexpected case!')
-
     # Add content
-    def add_data(self, name, content, global_step, write_time=None, connection=None):
+    def add_data(self, name, content, global_step, write_time=None, connection=None, create=True):
+        """
+        create: Create table if it does not yet exist.
+        """
         # content_type = {np.ndarray: LargeBinary, # CB2
         # Cache results
         content_type = type(content)
@@ -127,6 +117,8 @@ class Writer(Reader):
         new_data = dict(content=content, global_step=global_step,
                         write_time=write_time)
         if not name in self._metadata.tables.keys():
+            if not create:
+                raise Exception(f'Table {name} does not exist!')
             # Table does not exist, create it and add data (atomically as part of potential parent transaction)
             with begin_connection(self.engine, connection) as conn:
                 self.create_data_table(name, content_type, connection=conn)

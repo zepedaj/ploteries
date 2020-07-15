@@ -7,6 +7,7 @@ import sqlalchemy as sqa
 import numpy as np
 import numpy.testing as npt
 from pglib.py import SliceSequence
+import warnings
 
 
 class TestFunctions(TestCase):
@@ -79,7 +80,7 @@ class TestPlotsManager(TestCase):
                 writer, 'plots1', [np.arange(6).reshape(2, 3), np.arange(6, 12).reshape(2, 3)], 0)
             writer.flush()
 
-    def test_atomic_creation_of_tables(self):
+    def test_atomic_creation_of_tables__derived_table_exists(self):
         with NamedTemporaryFile() as tmpfo:
             # Create table with name that crashes with derived table names.
             writer = Writer(tmpfo.name)
@@ -87,11 +88,55 @@ class TestPlotsManager(TestCase):
             try:
                 mdl.PlotsManager.add_plots(
                     writer, 'plots1', [np.arange(6).reshape(2, 3), np.arange(6, 12).reshape(2, 3)], 0)
+                raise Exception('Expected exception!')
             except sqa.exc.InvalidRequestError as err:
                 if not re.match(re.escape('Table ')+'.*'+re.escape(
                         "is already defined for this MetaData instance.  Specify 'extend_existing=True' "
                         "to redefine options and columns on an existing Table object."), err.args[0]):
                     raise
+            # Check no records were created
+            self.assertEqual(len(writer.load_figure_recs(tag='plots1')), 0)
+            # First table exists.
+            writer.get_data_table('plots1__0')
+            # Second table does not exist.
+            with self.assertRaises(KeyError):
+                writer.get_data_table('plots1__1')
+
+    def test_atomic_creation_of_tables__figure_exists(self):
+        with NamedTemporaryFile() as tmpfo:
+            # Create scalar figure with name that crashes with derived table names.
+            writer = Writer(tmpfo.name)
+            writer.add_scalars('plots1', np.array([0, 1, 2]), 0)
+            if not writer.figure_exists('plots1', {'manager': mdl.ScalarsManager}):
+                raise Exception('Unexpected error.')
+            writer.get_data_table('plots1')  # Ensure data table exists.
+
+            # Attemp to create plots figure
+            try:
+                mdl.PlotsManager.add_plots(
+                    writer, 'plots1', [np.arange(6).reshape(2, 3), np.arange(6, 12).reshape(2, 3)], 0)
+                raise Exception('Expected exception!')
+            except Exception as err:  # sqa.exc.InvalidRequestError
+                if err.args[0] != "Retrieved figure record (1, 'plots1', <class 'ploteries2.figure_managers.ScalarsManager'>, Figure({\n    'data': [{'line': {'color': 'hsl(236, 94%, 91%)'},\n              'mode': 'lines',\n              'showlegend': False,\n              'type' ... (950 characters truncated) ...             'showlegend': False,\n              'type': 'scatter',\n              'x': [],\n              'y': []}],\n    'layout': {'template': '...'}\n})) does not match expected values {'manager': <class 'ploteries2.figure_managers.PlotsManager'>}.":
+                    import ipdb
+                    ipdb.set_trace()
+                    raise
+
+            # Check no records were created
+            self.assertEqual(len(writer.load_figure_recs(tag='plots1')), 1)
+
+            # Check content type of original table did not change.
+            if not writer.figure_exists('plots1', {'manager': mdl.ScalarsManager}):
+                raise Exception('Unexpected error.')
+
+            # Check both derived tables do not exist.
+            with self.assertRaises(KeyError):
+                writer.get_data_table('plots1__0')
+            with self.assertRaises(KeyError):
+                writer.get_data_table('plots1__1')
+
+            # Avoids __del__ flush exception due to missing tmp file.
+            writer.flush()
 
     def test_load(self):
         with NamedTemporaryFile() as tmpfo:
@@ -109,19 +154,44 @@ class TestPlotsManager(TestCase):
             pm = mdl.PlotsManager(writer, limit=None)
             dat = pm.load_data(1, as_np_arrays=False)
 
-            # Load and verify.
-            out = mdl.load_figure(writer, tag='plots1')
+            # Load and verify - should get the latest bar.
+            fig = mdl.load_figure(writer, tag='plots1')
             # #
-            self.assertEqual(len(out['data']), 2)
+            self.assertEqual(len(fig['data']), 2)
             # #
-            npt.assert_equal(out['data'][0]['x'], dat00[0])
-            npt.assert_equal(out['data'][0]['y'], dat00[1])
-            # npt.assert_equal(out['data'][1]['y'], [1, 4])
-            # npt.assert_equal(out['data'][2]['y'], [2, 5])
+            npt.assert_equal(fig['data'][1]['x'], dat11[0])
+            npt.assert_equal(fig['data'][1]['y'], dat11[1])
+            # npt.assert_equal(fig['data'][1]['y'], [1, 4])
+            # npt.assert_equal(fig['data'][2]['y'], [2, 5])
             # #
-            # npt.assert_equal(out['data'][0]['x'], [0, 1])
-            # npt.assert_equal(out['data'][1]['x'], [0, 1])
-            # npt.assert_equal(out['data'][2]['x'], [0, 1])
+            # npt.assert_equal(fig['data'][0]['x'], [0, 1])
+            # npt.assert_equal(fig['data'][1]['x'], [0, 1])
+            # npt.assert_equal(fig['data'][2]['x'], [0, 1])
+
+    def test_register_figure_atomicity(self):
+        if True:
+            warnings.warn(
+                'Skipping current test due to lack of table creation rollback support in sqlite3.')
+            return
+        with NamedTemporaryFile() as tmpfo:
+            # Create data and figure
+            writer = Writer(tmpfo.name)
+            try:
+                mdl.PlotsManager.register_figure(
+                    writer, 'plots1', 3, _test_exceptions={'post_create_tables'})  # , 'pre_sql'})
+                raise Exception('Unraised exception.')
+            except Exception as err:
+                if err.args[0] != 'post_create_tables':  # 'pre_sql':
+                    raise
+                if writer.figure_exists('plots1'):
+                    raise Exception('Figure not expected.')
+                for k in range(3):
+                    table_name = f'plots1__{k}'
+                    with self.assertRaises(KeyError, msg=f'Table {table_name} not expected.'):
+                        writer.get_data_table(table_name)
+                import ipdb
+                ipdb.set_trace()
+                pass
 
 
 class TestHistogramsManager(TestCase):

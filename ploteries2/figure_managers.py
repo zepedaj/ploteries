@@ -130,7 +130,10 @@ class FigureManager:
 
     def _process_sql(self, qry):
         if self.global_step is not None:
-            qry = qry.where(qry.c.global_step == self.global_step)
+            qry = alias(qry)
+            qry = sqa.select([qry]).where(
+                qry.c.global_step == self.global_step)
+            #qry = qry.where(qry.c.global_step == self.global_step)
         else:
             if self.sort is not None:
                 qry = qry.order_by(self.sort(qry.c.global_step))
@@ -270,12 +273,13 @@ class ScalarsManager(FigureManager):
 
         with begin_connection(writer.engine, connection) as conn:
             # Register figure if not done yet
-            if not writer.figure_exists(tag):
+            if not writer.figure_exists(tag, {'manager': cls}):
                 cls.register_figure(writer, tag, len(
                     values), names=names, connection=conn)
 
             # Add data.
-            writer.add_data(tag, values, global_step, write_time=write_time)
+            writer.add_data(tag, values, global_step,
+                            write_time=write_time, create=False)
 
 
 class PlotsManager(FigureManager):
@@ -303,16 +307,18 @@ class PlotsManager(FigureManager):
         #
         return fig
 
-    @ classmethod
-    def register_figure(cls, writer, tag, num_tables, connection=None, names=None):
+    @classmethod
+    def register_figure(cls, writer, tag, num_tables, connection=None, names=None, _test_exceptions=[]):
         # Register display if not done yet
         ###################################
         # Create data tables
-        with begin_connection(writer, connection) as conn:
+        with begin_connection(writer.engine, connection) as conn:
             #
             [writer.create_data_table(
-                cls.derived_table_name(tag, _k), np.ndarray, connection=conn, indexed_global_step=(num_tables > 1))
+                cls.derived_table_name(tag, _k), np.ndarray, connection=conn, indexed_global_step=True)
              for _k in range(num_tables)]
+            if 'post_create_tables' in _test_exceptions:
+                raise Exception('post_create_tables')
             # writer.flush()
 
             #
@@ -327,22 +333,26 @@ class PlotsManager(FigureManager):
                     (['data', k, f'y'], [f'content{k}', 0, 1]))
 
             # Build sql outer joins across all tables, keep all global_step values, even when not present in all tables.
-            tables = [writer.get_data_table(cls.derived_table_name(tag, k))
+            tables = [(writer.get_data_table(cls.derived_table_name(tag, k)), f'content{k}')
                       for k in range(num_tables)]
-            sql = alias(sqa.select(
-                [tables[0].c.global_step, tables[0].c.content]))
-            content_cols = [sql.c.content.label('content0')]
-            for k, curr_table in enumerate(tables[1:]):
-                sql = alias(sqa.select([
-                    func.ifnull(sql.c.global_step, curr_table.c.global_step).label(
-                        'global_step'),
-                    curr_table.c.content]).select_from(
-                        sql.outerjoin(curr_table, curr_table.c.global_step == sql.c.global_step)))
-                content_cols.append(
-                    sql.c.content.label(f'content{k+1}'))
+            if 'pre_sql' in _test_exceptions:
+                raise Exception('pre_sql')
+            sql = writer.outer_join_data_tables(tables)
+            # sql = alias(sqa.select(
+            #     [tables[0].c.global_step, tables[0].c.content]))
+            # content_cols = [sql.c.content.label('content0')]
+            # for k, curr_table in enumerate(tables[1:]):
+            #     sql = reader.outer_join_data_tables
+            #     sql = alias(sqa.select([
+            #         func.ifnull(sql.c.global_step, curr_table.c.global_step).label(
+            #             'global_step'),
+            #         curr_table.c.content]).select_from(
+            #             sql.outerjoin(curr_table, curr_table.c.global_step == sql.c.global_step)))
+            #     content_cols.append(
+            #         sql.c.content.label(f'content{k+1}'))
 
-            sql = sqa.select([sql.c.global_step.label('global_step')] +
-                             content_cols).select_from(sql)
+            # sql = sqa.select([sql.c.global_step.label('global_step')] +
+            #                  content_cols).select_from(sql)
 
             writer.register_figure(
                 tag, fig, cls, (sql, data_mappers), connection=conn)
@@ -360,15 +370,16 @@ class PlotsManager(FigureManager):
             raise Exception('Invalid input value shapes.')
 
         with begin_connection(writer.engine, connection) as conn:
-            # Register figure if it does not exist yet.
-            if not writer.figure_exists(tag):
+            # Register figure if it does not exist yet, create all related tables atomically.
+            if not writer.figure_exists(tag, {'manager': cls}):
                 cls.register_figure(writer, tag,
                                     len(values), connection=conn, names=names)
 
-            # Add data (create all related tables atomically).
-            # ##################
-            [writer.add_data(cls.derived_table_name(tag, _k), _v, global_step, connection=conn, write_time=write_time) for
-             _k, _v in enumerate(values)]
+        # Add data.
+        # ##################
+        [writer.add_data(
+            cls.derived_table_name(tag, _k), _v, global_step, connection=conn, write_time=write_time, create=False)
+         for _k, _v in enumerate(values)]
 
 
 class HistogramsManager(PlotsManager):

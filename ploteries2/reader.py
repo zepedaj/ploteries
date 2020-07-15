@@ -1,4 +1,5 @@
 import sqlite3
+import warnings
 from collections import deque
 import sqlalchemy as sqa
 from sqlalchemy.sql.expression import alias
@@ -45,8 +46,15 @@ def _reflect_custom_types(inspector, table, column_info, _content_types_table):
     with inspector.engine.begin() as conn:
         content_type_recs = conn.execute(_content_types_table.select().where(
             _content_types_table.c.table_name == table.name)).fetchall()
-        assert len(content_type_recs) == 1
-        column_info['type'] = content_type_recs[0].content_type
+        if len(content_type_recs) == 1:
+            column_info['type'] = content_type_recs[0].content_type
+        elif len(content_type_recs) > 1:
+            raise Exception('Unexpected case.')
+        else:
+            warnings.warn(
+                f'Found orphan table `{table.name}` without entry in content types table. '
+                'Possibly due to sqlite\'s non-transactional table creation that prevents atomicity '
+                'of `register_figure` functions.')
 
 
 class Reader(object):
@@ -113,7 +121,33 @@ class Reader(object):
                                            nullable=False))
 
     def global_steps(self, *args, **kwargs):
+        """
+        Returns all global steps associted to a given figure.
+        """
         return figure_manager_global_steps(self, *args, **kwargs)
+
+    def figure_exists(self, tag, expected={}):
+        """
+        Checks if a figure with the given tag has been registered and returns the 
+        RowProxy record (casts to True) or None (casts to False).
+        tag: Figure tag string.
+        expected: If a figure record is found, these values will be checked against record values and 
+            an error will be raised if these do not match. Can be used, e.g., to check an expected
+            manager class.
+        """
+        fig_recs = self.execute(
+            self._figures.select().where(self._figures.c.tag == tag))
+        if len(fig_recs) == 0:
+            out = None
+        elif len(fig_recs) == 1:
+            out = fig_recs[0]
+            if not all([getattr(out, key) == expected[key] for key in expected.keys()]):
+                raise Exception(
+                    f'Retrieved figure record {out} does not match expected values {expected}.')
+        else:
+            raise Exception('Unexpected case!')
+
+        return out
 
     def load_figure_recs(self, *args, check_single=False, **kwargs):
         """
