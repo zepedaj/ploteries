@@ -1,6 +1,7 @@
 from .reader import Reader
 import numbers
 from dateutil.tz import tzlocal
+from pytz import reference
 import re
 from sqlalchemy import Table, Column, Integer, String, \
     ForeignKey, types, insert, UniqueConstraint, func, exc
@@ -31,7 +32,7 @@ class Writer(Reader):
     #
     def __init__(self, path, flush_sec=10):
         if osp.isdir(path):
-            path = osp.join(path, utc_now().localize(tzlocal).strftime(
+            path = osp.join(path, utc_now().astimezone().strftime(
                 '%Y-%m-%d_%Hh%Mm%S.%f.sql'))
         self.path = path
         super().__init__(path, check_exists=False)
@@ -160,15 +161,14 @@ class Writer(Reader):
     def __del__(self):
         self.flush()
 
-    def flush(self):
+    def flush(self, connection=None):
         # CB2: Flush in background process or separate thread.
-        _cache = self._cache
-        self._cache = {}
-        for table_name, records in _cache.items():
-            table = self._metadata.tables[table_name]
-            with self.engine.begin() as conn:
-                conn.execute(table.insert(), records)
-            # Get table
+        if hasattr(self, '_cache'):
+            for table_name in list(self._cache.keys()):
+                table = self._metadata.tables[table_name]
+                with begin_connection(self.engine, connection) as conn:
+                    conn.execute(table.insert(), self._cache[table_name])
+                self._cache.pop(table_name)
         self._last_flush = time.time()
 
     # # Base add methods.

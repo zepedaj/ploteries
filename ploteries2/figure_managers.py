@@ -259,7 +259,7 @@ class ScalarsManager(FigureManager):
     @ classmethod
     def add_scalar(cls, *args, name=None, **kwargs):
         kwargs['names'] = None if name is None else [name]
-        return cls.add_scalar(*args, **kwargs)
+        return cls.add_scalars(*args, **kwargs)
 
     @ classmethod
     def add_scalars(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None):
@@ -267,9 +267,11 @@ class ScalarsManager(FigureManager):
 
         # Cast all non-scalars to numpy array, check dtype is a real number.
         values = np.require(values)
-        if not (values.ndim == 1 and np.issubdtype(values.dtype, np.number) and not np.issubdtype(
+        if not (values.ndim <= 1 and np.issubdtype(values.dtype, np.number) and not np.issubdtype(
                 values.dtype, np.complexfloating)):
             raise Exception(f'Invalid dtype {values.dtype}.')
+        if values.ndim == 0:
+            values.shape = (1,)
 
         with begin_connection(writer.engine, connection) as conn:
             # Register figure if not done yet
