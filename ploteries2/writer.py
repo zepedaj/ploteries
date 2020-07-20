@@ -1,4 +1,5 @@
 from .reader import Reader
+from sqlalchemy.sql.type_api import TypeEngine
 import numbers
 from dateutil.tz import tzlocal
 from pytz import reference
@@ -15,7 +16,6 @@ import time
 # import plotly
 # import plotly.graph_objects as go
 # from . import types as pst
-from pglib.nnets import numtor
 from pglib.py import SliceSequence
 import numpy as np
 # TODO: Why does removing this generate numpy warning?
@@ -76,11 +76,11 @@ class Writer(Reader):
 
     def _init_headers(self):
         super()._init_headers()
-        self._figures.create()
-        self._data_templates.create()
-        self._content_types.create()
+        self._figures.create(checkfirst=True)
+        self._data_templates.create(checkfirst=True)
+        self._content_types.create(checkfirst=True)
 
-    def create_data_table(self, name,  content_type, connection=None, indexed_global_step=False):
+    def create_data_table(self, name,  content_type, connection=None, indexed_global_step=False, checkfirst=False):
         #
         if name in self.RESERVED_TABLE_NAMES:
             raise Exception(f"The specified name '{name}' is reserved!")
@@ -90,20 +90,22 @@ class Writer(Reader):
         #                          (np.ndarray, NumpyType)]
         # content_type = next(
         #     filter(lambda x: issubclass(content_type, x[0]), content_type_mappings))[1]
-        content_type = {np.ndarray: NumpyType}[content_type]
+        if not issubclass(content_type, TypeEngine):
+            content_type = {np.ndarray: NumpyType}[content_type]
 
         # Create table
-        table = Table(name, self._metadata,
-                      Column('id', Integer, primary_key=True),
-                      Column('global_step', Integer, nullable=False,
-                             index=indexed_global_step),
-                      Column('write_time', types.DateTime, nullable=False),
-                      Column('content', content_type, nullable=True))  # Need nullable for NaN values
+        if not checkfirst or name not in self._metadata.tables:
+            table = Table(name, self._metadata,
+                          Column('id', Integer, primary_key=True),
+                          Column('global_step', Integer, nullable=False,
+                                 index=indexed_global_step),
+                          Column('write_time', types.DateTime, nullable=False),
+                          Column('content', content_type, nullable=True))  # Need nullable for NaN values
 
-        with begin_connection(self.engine, connection) as conn:
-            table.create(conn, checkfirst=False)
-            conn.execute(self._content_types.insert(
-                {'table_name': name, 'content_type': content_type}))
+            with begin_connection(self.engine, connection) as conn:
+                table.create(conn, checkfirst=checkfirst)
+                conn.execute(self._content_types.insert(
+                    {'table_name': name, 'content_type': content_type}))
 
     # Add content
     def add_data(self, name, content, global_step, write_time=None, connection=None, create=True):

@@ -187,60 +187,38 @@ class FigureManager:
         return figure
 
 
-class ScalarsManager(FigureManager):
+class GenericScalarsManager(FigureManager):
 
-    def __init__(self, writer, smoothing_n=100, **kwargs):
+    def __init__(self, writer, **kwargs):
         dflt_kwargs = dict(limit=None, sort='ascending', global_step=None)
         dflt_kwargs.update(kwargs)
         super().__init__(writer, **dflt_kwargs)
-        self.smoothing_n = smoothing_n
-
-    def load_figure(self, *args, **kwargs):
-        #
-        figure = super().load_figure(*args, **kwargs)
-
-        # Add smoothed curves
-        if self.smoothing_n > 0:
-            for _dat, _smooth_dat in zip_longest(figure.data[:len(figure.data)//2],
-                                                 figure.data[len(figure.data)//2:]):
-                _smooth_dat.x = _dat.x
-                _smooth_dat.y = self.smoothen(_dat.y)
-        #
-        return figure
-
-    def smoothen(self, x):  # JS: Should pass this to javascript.
-        smoothing_n = self.smoothing_n
-        if x is None:
-            return x
-
-        def smoothing_kernel(smoothing_n):
-            # The nth point will contribute 1e-2 as much as the first point.
-            w = np.array([1.0]) if smoothing_n == 1 else np.exp(
-                np.arange(smoothing_n) * (np.log(1e-2)/(smoothing_n-1)))
-            return w/w.sum()
-        w = smoothing_kernel(smoothing_n)
-        smoothed = np.convolve(x, w, mode='full')[:len(x)]
-        # Normalize the filter in the first points.
-        smoothed[:smoothing_n] /= (w.cumsum())[:len(smoothed)]
-        return smoothed
 
     @ classmethod
-    def register_figure(cls, writer, tag, num_scalars, names=None, connection=None):
+    def build_figure_template(cls, num_scalars, names, colors=Colors(), trace_kwargs=None):
+        """
+        names=( None | [name1, name2, None, name4])
+        trace_kwargs = ( None | [{kws1}, {kws2}, None, {kws4}] | {kws} )
+        """
+
         #
-        mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
-        colors = Colors()
-        light_colors = Colors(increase_lightness=0.7)
+        mode = 'lines'
         #
-        writer.flush()
         fig = go.Figure(
-            # Original data
-            [go.Scatter(x=[], y=[], mode=mode, showlegend=False,
-                        line=dict(color=light_colors[k]))
-             for k in range(num_scalars)] + \
-            # Smoothed data
             [go.Scatter(x=[], y=[], mode=mode, showlegend=(names is not None and names[k] is not None),
-                        line=dict(color=colors[k]), name=names[k] if names is not None else None)
+                        line=dict(color=colors[k]), name=names[k] if names is not None else None,
+                        **({} if trace_kwargs is None else
+                           trace_kwargs if isinstance(trace_kwargs, dict) else
+                           trace_kwargs[k]))
              for k in range(num_scalars)])
+        #
+        return fig
+
+    @ classmethod
+    def register_figure(cls, writer, tag, num_scalars, names=None, connection=None, trace_kwargs=None, **kwargs):
+        writer.flush()
+        fig = cls.build_figure_template(
+            num_scalars, names=names, trace_kwargs=trace_kwargs, **kwargs)
         #
         data_mappers = []
         for k in range(num_scalars):
@@ -257,13 +235,8 @@ class ScalarsManager(FigureManager):
                 tag, fig, cls, (sqa.select([table.c.global_step, table.c.content]), data_mappers), connection=conn)
 
     @ classmethod
-    def add_scalar(cls, *args, name=None, **kwargs):
-        kwargs['names'] = None if name is None else [name]
-        return cls.add_scalars(*args, **kwargs)
-
-    @ classmethod
-    def add_scalars(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None):
-        #
+    def add_generic_scalars(
+            cls, writer, tag, values, global_step, names=None, connection=None, write_time=None, trace_kwargs=None):
 
         # Cast all non-scalars to numpy array, check dtype is a real number.
         values = np.require(values)
@@ -277,11 +250,176 @@ class ScalarsManager(FigureManager):
             # Register figure if not done yet
             if not writer.figure_exists(tag, {'manager': cls}):
                 cls.register_figure(writer, tag, len(
-                    values), names=names, connection=conn)
+                    values), names=names, connection=conn, trace_kwargs=trace_kwargs)
 
             # Add data.
             writer.add_data(tag, values, global_step,
                             write_time=write_time, create=False)
+
+
+class SmoothenedScalarsManager(GenericScalarsManager):
+
+    def __init__(self, writer, smoothing_n=100, **kwargs):
+        super().__init__(writer, **kwargs)
+        self.smoothing_n = smoothing_n
+
+    def load_figure(self, *args, **kwargs):
+        #
+        figure = super().load_figure(*args, **kwargs)
+
+        # Add smoothed curves
+        if self.smoothing_n > 0:
+            for _dat, _smooth_dat in zip_longest(figure.data[:len(figure.data)//2],
+                                                 figure.data[len(figure.data)//2:]):
+                _smooth_dat.x = _dat.x
+                _smooth_dat.y = self.smoothen(_dat.y)
+        #
+        return figure
+
+    def smoothen(self, x):  # TODO: Should pass this to javascript.
+        smoothing_n = self.smoothing_n
+        if x is None:
+            return x
+
+        def smoothing_kernel(smoothing_n):
+            # The nth point will contribute 1e-2 as much as the first point.
+            w = np.array([1.0]) if smoothing_n == 1 else np.exp(
+                np.arange(smoothing_n) * (np.log(1e-2)/(smoothing_n-1)))
+            return w/w.sum()
+        w = smoothing_kernel(smoothing_n)
+        smoothed = np.convolve(x, w, mode='full')[:len(x)]
+        # Normalize the filter in the first points.
+        smoothed[:smoothing_n] /= (w.cumsum())[:len(smoothed)]
+        return smoothed
+
+    @ classmethod
+    def build_figure_template(cls, num_scalars, names, trace_kwargs=None):
+        #
+        colors = Colors()
+        light_colors = Colors(increase_lightness=0.7)
+        #
+        all_colors = ([light_colors[k] for k in range(num_scalars)] +
+                      [colors[k] for k in range(num_scalars)])
+        all_names = None if names is None else ([None]*num_scalars + names)
+        #
+        fig = super().build_figure_template(
+            2*num_scalars, all_names, all_colors, trace_kwargs=trace_kwargs)
+        #
+        return fig
+
+    @ classmethod
+    def add_scalar(cls, *args, name=None, **kwargs):
+        kwargs['names'] = None if name is None else [name]
+        return cls.add_scalars(*args, **kwargs)
+
+    @ classmethod
+    def add_scalars(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None):
+        #
+        super().add_generic_scalars(
+            writer, tag, values, global_step, names=None, connection=None, write_time=None)
+
+
+# class ScalarsManager_old(FigureManager):
+
+#     def __init__(self, writer, smoothing_n=100, **kwargs):
+#         dflt_kwargs = dict(limit=None, sort='ascending', global_step=None)
+#         dflt_kwargs.update(kwargs)
+#         super().__init__(writer, **dflt_kwargs)
+#         self.smoothing_n = smoothing_n
+
+#     def load_figure(self, *args, **kwargs):
+#         #
+#         figure = super().load_figure(*args, **kwargs)
+
+#         # Add smoothed curves
+#         if self.smoothing_n > 0:
+#             for _dat, _smooth_dat in zip_longest(figure.data[:len(figure.data)//2],
+#                                                  figure.data[len(figure.data)//2:]):
+#                 _smooth_dat.x = _dat.x
+#                 _smooth_dat.y = self.smoothen(_dat.y)
+#         #
+#         return figure
+
+#     def smoothen(self, x):  # TODO: Should pass this to javascript.
+#         smoothing_n = self.smoothing_n
+#         if x is None:
+#             return x
+
+#         def smoothing_kernel(smoothing_n):
+#             # The nth point will contribute 1e-2 as much as the first point.
+#             w = np.array([1.0]) if smoothing_n == 1 else np.exp(
+#                 np.arange(smoothing_n) * (np.log(1e-2)/(smoothing_n-1)))
+#             return w/w.sum()
+#         w = smoothing_kernel(smoothing_n)
+#         smoothed = np.convolve(x, w, mode='full')[:len(x)]
+#         # Normalize the filter in the first points.
+#         smoothed[:smoothing_n] /= (w.cumsum())[:len(smoothed)]
+#         return smoothed
+
+#     @ classmethod
+#     def build_figure_template(cls, num_scalars, names):
+#         #
+#         mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
+#         colors = Colors()
+#         light_colors = Colors(increase_lightness=0.7)
+#         #
+#         fig = go.Figure(
+#             # Original data
+#             [go.Scatter(x=[], y=[], mode=mode, showlegend=False,
+#                         line=dict(color=light_colors[k]))
+#              for k in range(num_scalars)] + \
+#             # Smoothed data
+#             [go.Scatter(x=[], y=[], mode=mode, showlegend=(names is not None and names[k] is not None),
+#                         line=dict(color=colors[k]), name=names[k] if names is not None else None)
+#              for k in range(num_scalars)])
+#         #
+#         return fig
+
+#     @ classmethod
+#     def register_figure(cls, writer, tag, num_scalars, names=None, connection=None):
+#         writer.flush()
+#         fig = cls.build_figure_template(num_scalars, names=names)
+#         #
+#         data_mappers = []
+#         for k in range(num_scalars):
+#             data_mappers.append(
+#                 (['data', k, 'x'], ['global_step']))
+#             data_mappers.append(
+#                 (['data', k, 'y'], SliceSequence()['content'][:, k]))
+
+#         # Create data table and add figure record to database
+#         with begin_connection(writer.engine, connection) as conn:
+#             writer.create_data_table(tag, np.ndarray, connection=conn)
+#             table = writer.get_data_table(tag)
+#             writer.register_figure(
+#                 tag, fig, cls, (sqa.select([table.c.global_step, table.c.content]), data_mappers), connection=conn)
+
+#     @ classmethod
+#     def add_scalar(cls, *args, name=None, **kwargs):
+#         kwargs['names'] = None if name is None else [name]
+#         return cls.add_scalars(*args, **kwargs)
+
+#     @ classmethod
+#     def add_scalars(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None):
+#         #
+
+#         # Cast all non-scalars to numpy array, check dtype is a real number.
+#         values = np.require(values)
+#         if not (values.ndim <= 1 and np.issubdtype(values.dtype, np.number) and not np.issubdtype(
+#                 values.dtype, np.complexfloating)):
+#             raise Exception(f'Invalid dtype {values.dtype}.')
+#         if values.ndim == 0:
+#             values.shape = (1,)
+
+#         with begin_connection(writer.engine, connection) as conn:
+#             # Register figure if not done yet
+#             if not writer.figure_exists(tag, {'manager': cls}):
+#                 cls.register_figure(writer, tag, len(
+#                     values), names=names, connection=conn)
+
+#             # Add data.
+#             writer.add_data(tag, values, global_step,
+#                             write_time=write_time, create=False)
 
 
 class PlotsManager(FigureManager):

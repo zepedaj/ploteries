@@ -14,9 +14,9 @@ class TestFunctions(TestCase):
     def test_global_steps(self):
         with NamedTemporaryFile() as tmpfo:
             writer = Writer(tmpfo.name)
-            mdl.ScalarsManager.add_scalars(
+            mdl.SmoothenedScalarsManager.add_scalars(
                 writer, 'scalars1', np.array([0, 1, 2]), 0)
-            mdl.ScalarsManager.add_scalars(
+            mdl.SmoothenedScalarsManager.add_scalars(
                 writer, 'scalars1', np.array([3, 4, 5]), 1)
             writer.flush()
 
@@ -25,19 +25,19 @@ class TestFunctions(TestCase):
                 writer, tag='scalars1'), [0, 1])
 
 
-class TestScalarsManager(TestCase):
+class TestSmoothenedScalarsManager(TestCase):
     def test_load(self):
         with NamedTemporaryFile() as tmpfo:
             # Create data and figure
             writer = Writer(tmpfo.name)
-            mdl.ScalarsManager.add_scalars(
+            mdl.SmoothenedScalarsManager.add_scalars(
                 writer, 'scalars1', np.array([0, 1, 2]), 0)
-            mdl.ScalarsManager.add_scalars(
+            mdl.SmoothenedScalarsManager.add_scalars(
                 writer, 'scalars1', np.array([3, 4, 5]), 1)
             writer.flush()
 
             # Load and verify.
-            # out = mdl.ScalarsManager(writer).load('scalars1')
+            # out = mdl.SmoothenedScalarsManager(writer).load('scalars1')
             out = mdl.load_figure(writer, tag='scalars1')
             #
             self.assertEqual(len(out['data']), 6)
@@ -54,9 +54,9 @@ class TestScalarsManager(TestCase):
     def test_add_scalars(self):
         with NamedTemporaryFile() as tmpfo:
             writer = Writer(tmpfo.name)
-            mdl.ScalarsManager.add_scalars(
+            mdl.SmoothenedScalarsManager.add_scalars(
                 writer, 'scalars1', np.array([0, 1, 2]), 0)
-            mdl.ScalarsManager.add_scalars(
+            mdl.SmoothenedScalarsManager.add_scalars(
                 writer, 'scalars1', np.array([3, 4, 5]), 1)
             writer.flush()
 
@@ -107,7 +107,7 @@ class TestPlotsManager(TestCase):
             # Create scalar figure with name that crashes with derived table names.
             writer = Writer(tmpfo.name)
             writer.add_scalars('plots1', np.array([0, 1, 2]), 0)
-            if not writer.figure_exists('plots1', {'manager': mdl.ScalarsManager}):
+            if not writer.figure_exists('plots1', {'manager': mdl.SmoothenedScalarsManager}):
                 raise Exception('Unexpected error.')
             writer.get_data_table('plots1')  # Ensure data table exists.
 
@@ -117,7 +117,7 @@ class TestPlotsManager(TestCase):
                     writer, 'plots1', [np.arange(6).reshape(2, 3), np.arange(6, 12).reshape(2, 3)], 0)
                 raise Exception('Expected exception!')
             except Exception as err:  # sqa.exc.InvalidRequestError
-                if err.args[0] != "Retrieved figure record (1, 'plots1', <class 'ploteries2.figure_managers.ScalarsManager'>, Figure({\n    'data': [{'line': {'color': 'hsl(236, 94%, 91%)'},\n              'mode': 'lines',\n              'showlegend': False,\n              'type' ... (950 characters truncated) ...             'showlegend': False,\n              'type': 'scatter',\n              'x': [],\n              'y': []}],\n    'layout': {'template': '...'}\n})) does not match expected values {'manager': <class 'ploteries2.figure_managers.PlotsManager'>}.":
+                if err.args[0] != "Retrieved figure record (1, 'plots1', <class 'ploteries2.figure_managers.SmoothenedScalarsManager'>, Figure({\n    'data': [{'line': {'color': 'hsl(236, 94%, 91%)'},\n              'mode': 'lines',\n              'showlegend': False,\n              'type' ... (950 characters truncated) ...             'showlegend': False,\n              'type': 'scatter',\n              'x': [],\n              'y': []}],\n    'layout': {'template': '...'}\n})) does not match expected values {'manager': <class 'ploteries2.figure_managers.PlotsManager'>}.":
                     import ipdb
                     ipdb.set_trace()
                     raise
@@ -126,7 +126,7 @@ class TestPlotsManager(TestCase):
             self.assertEqual(len(writer.load_figure_recs(tag='plots1')), 1)
 
             # Check content type of original table did not change.
-            if not writer.figure_exists('plots1', {'manager': mdl.ScalarsManager}):
+            if not writer.figure_exists('plots1', {'manager': mdl.SmoothenedScalarsManager}):
                 raise Exception('Unexpected error.')
 
             # Check both derived tables do not exist.

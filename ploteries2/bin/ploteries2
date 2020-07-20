@@ -7,7 +7,8 @@ import os.path as osp
 import re
 import numpy as np
 import climax as clx
-from ploteries2 import Reader, Writer, ScalarsManager, PlotsManager, HistogramsManager
+from ploteries2 import Reader, Writer, GenericScalarsManager, PlotsManager, HistogramsManager
+from ploteries2._ploteries2_helper import get_train_args
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -124,13 +125,16 @@ def create_layout(reader, update_interval):
         return out
 
     def get_graphs_of_type(manager_type, **kwargs):
-        graphs = [(fig.tag, build_graph_html(fig.tag, fig.name, **kwargs))
-                  for fig in reader.load_figure_recs(manager=manager_type)]
+
+        graphs = [(_fig.tag, build_graph_html(_fig.tag, _fig.name, **kwargs))
+                  for _fig in reader.load_figure_recs(manager_super=manager_type)]
+        # graphs = [(_fig.tag, build_graph_html(_fig.tag, _fig.name, **kwargs))
+        #          for _fig in reader.load_figure_recs(manager=manager_type)]
         graphs = group_plots(graphs)
         return graphs
     #
-    # reader.load_figure_recs(manager=ScalarsManager)
-    scalars = get_graphs_of_type(ScalarsManager)
+    # reader.load_figure_recs(manager=GenericScalarsManager)
+    scalars = get_graphs_of_type(GenericScalarsManager)
     figures = get_graphs_of_type(PlotsManager, slider=True)
     histograms = get_graphs_of_type(HistogramsManager, slider=True)
 
@@ -153,7 +157,8 @@ def create_layout(reader, update_interval):
             dcc.Tabs([
                 dcc.Tab(label='Scalars', children=scalars),
                 dcc.Tab(label='Figures', children=figures),
-                dcc.Tab(label='Histograms', children=histograms)]),
+                dcc.Tab(label='Histograms', children=histograms),
+                dcc.Tab(label='Settings', children=get_train_args(reader))]),
             dcc.Interval(
                 id='interval-component',
                 interval=update_interval*1000,  # in milliseconds
@@ -213,7 +218,7 @@ def create_toolbar_callbacks():
 
 def create_update_scalar_callbacks(reader):
     _g = globals()
-    for _fig in reader.load_figure_recs(manager=ScalarsManager):
+    for _fig in reader.load_figure_recs(manager_super=GenericScalarsManager):
         # import ipdb
         # ipdb.set_trace()
         _g['update_scalar_'+_fig.name] = APP.callback(
@@ -278,7 +283,7 @@ def update_slider(figure_name, slider_value, slider_output_keys):
 def create_graph_callbacks(reader, figure_type):
     _g = globals()
 
-    for fig_rec in reader.load_figure_recs(manager=figure_type):
+    for fig_rec in reader.load_figure_recs(manager_super=figure_type):
         slider_name = 'slider-'+fig_rec.name
 
         # Retrieve graph callbacks

@@ -1,7 +1,7 @@
 from unittest import TestCase
 from ploteries2.writer import Writer
 from ploteries2 import reader as mdl
-from ploteries2.figure_managers import ScalarsManager
+from ploteries2.figure_managers import SmoothenedScalarsManager
 from tempfile import NamedTemporaryFile
 import sqlalchemy as sqa
 import numpy as np
@@ -21,7 +21,8 @@ class TestReader(TestCase):
             writer.flush()
 
             # Filter by manager
-            figure_recs = writer.load_figure_recs(manager=ScalarsManager)
+            figure_recs = writer.load_figure_recs(
+                manager=SmoothenedScalarsManager)
             fig_objs = [writer.load_figure(_f) for _f in figure_recs]
             self.assertEqual(
                 list(map(lambda x: x.data[0].y.shape, fig_objs)), [(2,), (1,)])  # Order guaranteed?
@@ -38,7 +39,8 @@ class TestReader(TestCase):
                              'fig_1', 'fig_2'})
 
             # Filter by manager
-            figure_recs = reader.load_figure_recs(manager=ScalarsManager)
+            figure_recs = reader.load_figure_recs(
+                manager=SmoothenedScalarsManager)
             fig_obj = [reader.load_figure(_f) for _f in figure_recs]
             self.assertEqual(
                 set([x.tag for x in figure_recs]), {'scalars1', 'scalars2'})

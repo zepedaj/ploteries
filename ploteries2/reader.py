@@ -153,6 +153,8 @@ class Reader(object):
         """
         load_figure_recs(row_proxy) : Returns the input arg.
         load_figure_recs([tag=tag | id=id | manager=manager | name=name]) : Gets matching rows.
+        load_figure_recs(manager_super=manager_super_class): Returns all figures with managers that are sub-classes of 
+            manager_super_class.
         """
 
         # Return input RowProxy
@@ -162,23 +164,31 @@ class Reader(object):
             else:
                 raise Exception('Invalid input args.')
 
-        # Get id from name
-        if 'name' in kwargs:
-            if 'id' in kwargs:
-                Exception('Invalid input args.')
-            kwargs['id'] = re.match(
-                '^fig_(\d+)$', kwargs.pop('name')).groups()[0]
+        # Manager super class specified
+        if 'manager_super' in kwargs:
+            if len(args) != 0 or len(kwargs) != 1:
+                raise Exception('Invalid input arsg.')
+            figure_recs = [
+                _rec for _rec in self.load_figure_recs() if issubclass(_rec.manager, kwargs['manager_super'])]
 
-        # Add derived fields.
-        query = select(
-            [self._figures, ('fig_' + self._figures.c.id.cast(String)).label('name')])
+        else:
+            # Get id from name
+            if 'name' in kwargs:
+                if 'id' in kwargs:
+                    Exception('Invalid input args.')
+                kwargs['id'] = re.match(
+                    '^fig_(\d+)$', kwargs.pop('name')).groups()[0]
 
-        # Add query constraints.
-        for key, val in kwargs.items():
-            query = query.where(getattr(self._figures.c, key) == val)
+            # Add derived fields.
+            query = select(
+                [self._figures, ('fig_' + self._figures.c.id.cast(String)).label('name')])
 
-        # Execute query
-        figure_recs = self.execute(query)
+            # Add query constraints.
+            for key, val in kwargs.items():
+                query = query.where(getattr(self._figures.c, key) == val)
+
+            # Execute query
+            figure_recs = self.execute(query)
 
         # Check single
         if check_single and len(figure_recs) != 1:

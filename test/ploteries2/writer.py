@@ -1,7 +1,7 @@
 from unittest import TestCase
 import warnings
 from ploteries2 import writer as mdl
-from ploteries2.figure_managers import ScalarsManager
+from ploteries2.figure_managers import SmoothenedScalarsManager
 from tempfile import NamedTemporaryFile
 import sqlalchemy as sqa
 import numpy as np
@@ -12,6 +12,20 @@ from ploteries2.reader import Reader
 
 
 class TestWriter(TestCase):
+
+    def test_open_existing(self):
+        with NamedTemporaryFile() as tmpfo:
+            #
+            writer = mdl.Writer(tmpfo.name)
+            writer.create_data_table('np_data1', np.ndarray)
+            arr = np.array([0, 1, 2, 3])
+            writer.add_data('np_data1', arr, 0)
+            writer.flush()
+            writer.engine.dispose()
+            #
+            writer = mdl.Writer(tmpfo.name)
+            table = writer.get_data_table('np_data1')
+            npt.assert_equal(writer.execute(table.select())[0]['content'], arr)
 
     def test_create_data_table_and_add_data(self):
         with NamedTemporaryFile() as tmpfo:
@@ -46,7 +60,7 @@ class TestWriter(TestCase):
             # Fail registration of new display, check  no inconsistent state
             try:
                 writer.register_figure(
-                    'plots/figure1', figure, ScalarsManager,
+                    'plots/figure1', figure, SmoothenedScalarsManager,
                     (None, [(['data', 0, 'x'], ['content'], 'error_source')]))
                 raise Exception('Should raise error.')
             except sqa.exc.StatementError as err:
@@ -63,7 +77,7 @@ class TestWriter(TestCase):
             # Successfully register new display.
             orig_sql = sqa.select([np_data1.c.content, np_data1.c.global_step])
             writer.register_figure(
-                'plots/figure2', figure, ScalarsManager,
+                'plots/figure2', figure, SmoothenedScalarsManager,
                 (orig_sql, [(['data', 0, 'x'], ['content'])]))
 
             # Check insertions
