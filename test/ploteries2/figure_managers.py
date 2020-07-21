@@ -10,6 +10,10 @@ from pglib.py import SliceSequence
 import warnings
 
 
+def _xy(arrays):
+    return [dict(zip('xy', _arr)) for _arr in arrays]
+
+
 class TestFunctions(TestCase):
     def test_global_steps(self):
         with NamedTemporaryFile() as tmpfo:
@@ -77,17 +81,18 @@ class TestPlotsManager(TestCase):
             # Create data and figure
             writer = Writer(tmpfo.name)
             mdl.PlotsManager.add_plots(
-                writer, 'plots1', [np.arange(6).reshape(2, 3), np.arange(6, 12).reshape(2, 3)], 0)
+                writer, 'plots1',
+                _xy([np.arange(6).reshape(2, 3), np.arange(6, 12).reshape(2, 3)]), 0)
             writer.flush()
 
     def test_atomic_creation_of_tables__derived_table_exists(self):
         with NamedTemporaryFile() as tmpfo:
             # Create table with name that crashes with derived table names.
             writer = Writer(tmpfo.name)
-            writer.add_data('plots1__0', np.ndarray([0, 1, 2]), 0)
+            writer.add_data('plots1__0', {'content': np.ndarray([0, 1, 2])}, 0)
             try:
                 mdl.PlotsManager.add_plots(
-                    writer, 'plots1', [np.arange(6).reshape(2, 3), np.arange(6, 12).reshape(2, 3)], 0)
+                    writer, 'plots1', _xy([np.arange(6).reshape(2, 3), np.arange(6, 12).reshape(2, 3)]), 0)
                 raise Exception('Expected exception!')
             except sqa.exc.InvalidRequestError as err:
                 if not re.match(re.escape('Table ')+'.*'+re.escape(
@@ -114,12 +119,11 @@ class TestPlotsManager(TestCase):
             # Attemp to create plots figure
             try:
                 mdl.PlotsManager.add_plots(
-                    writer, 'plots1', [np.arange(6).reshape(2, 3), np.arange(6, 12).reshape(2, 3)], 0)
+                    writer, 'plots1',
+                    _xy([np.arange(6).reshape(2, 3), np.arange(6, 12).reshape(2, 3)]), 0)
                 raise Exception('Expected exception!')
             except Exception as err:  # sqa.exc.InvalidRequestError
                 if err.args[0] != "Retrieved figure record (1, 'plots1', <class 'ploteries2.figure_managers.SmoothenedScalarsManager'>, Figure({\n    'data': [{'line': {'color': 'hsl(236, 94%, 91%)'},\n              'mode': 'lines',\n              'showlegend': False,\n              'type' ... (950 characters truncated) ...             'showlegend': False,\n              'type': 'scatter',\n              'x': [],\n              'y': []}],\n    'layout': {'template': '...'}\n})) does not match expected values {'manager': <class 'ploteries2.figure_managers.PlotsManager'>}.":
-                    import ipdb
-                    ipdb.set_trace()
                     raise
 
             # Check no records were created
@@ -145,9 +149,10 @@ class TestPlotsManager(TestCase):
             dat00, dat01 = np.random.randn(2, 10), np.random.randn(2, 7)
             dat10, dat11 = np.random.randn(2, 6), np.random.randn(2, 11)
             mdl.PlotsManager.add_plots(
-                writer, 'plots1', [dat00, dat01], 0)
+                writer, 'plots1',
+                _xy([dat00, dat01]), 0)
             mdl.PlotsManager.add_plots(
-                writer, 'plots1', [dat10, dat11], 1)
+                writer, 'plots1', _xy([dat10, dat11]), 1)
             writer.flush()
 
             #
@@ -156,9 +161,9 @@ class TestPlotsManager(TestCase):
 
             # Load and verify - should get the latest bar.
             fig = mdl.load_figure(writer, tag='plots1')
-            # #
+            #
             self.assertEqual(len(fig['data']), 2)
-            # #
+            #
             npt.assert_equal(fig['data'][1]['x'], dat11[0])
             npt.assert_equal(fig['data'][1]['y'], dat11[1])
             # npt.assert_equal(fig['data'][1]['y'], [1, 4])
@@ -189,8 +194,6 @@ class TestPlotsManager(TestCase):
                     table_name = f'plots1__{k}'
                     with self.assertRaises(KeyError, msg=f'Table {table_name} not expected.'):
                         writer.get_data_table(table_name)
-                import ipdb
-                ipdb.set_trace()
                 pass
 
 

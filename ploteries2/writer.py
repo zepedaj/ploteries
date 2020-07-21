@@ -80,18 +80,39 @@ class Writer(Reader):
         self._data_templates.create(checkfirst=True)
         self._content_types.create(checkfirst=True)
 
-    def create_data_table(self, name,  content_type, connection=None, indexed_global_step=False, checkfirst=False):
-        #
-        if name in self.RESERVED_TABLE_NAMES:
-            raise Exception(f"The specified name '{name}' is reserved!")
-
+    def _map_content_types(self, content_type):
         #
         # content_type_mappings = [(numbers.Real, types.Float),
         #                          (np.ndarray, NumpyType)]
         # content_type = next(
         #     filter(lambda x: issubclass(content_type, x[0]), content_type_mappings))[1]
+
+        # Dictionary of content types.
+        if isinstance(content_type, dict):
+            if any((isinstance(_x, dict) for _x in content_type.values())):
+                raise Exception('Invalid content type.')
+            if any((_name in self.RESERVED_DATA_TABLE_COLUMN_NAMES for _name in content_type.values())):
+                raise Exception('Invalid column names.')
+            content_type = type(content_type)(
+                [(key, self._map_content_types(value)) for key, value in content_type.items()])
+            return content_type
+
         if not issubclass(content_type, TypeEngine):
             content_type = {np.ndarray: NumpyType}[content_type]
+
+        return content_type
+
+    def create_data_table(self, name,  content_types, connection=None, indexed_global_step=False, checkfirst=False):
+        #
+        if name in self.RESERVED_TABLE_NAMES:
+            raise Exception(f"The specified name '{name}' is reserved!")
+        #
+        content_types = self._map_content_types(content_types)
+        if not isinstance(content_types, dict):
+            content_types = {'content': content_types}
+
+        content_columns = [
+            Column(_name, _ct, nullable=True) for _name, _ct in content_types.items()]   # Need nullable for NaN values
 
         # Create table
         if not checkfirst or name not in self._metadata.tables:
@@ -100,31 +121,35 @@ class Writer(Reader):
                           Column('global_step', Integer, nullable=False,
                                  index=indexed_global_step),
                           Column('write_time', types.DateTime, nullable=False),
-                          Column('content', content_type, nullable=True))  # Need nullable for NaN values
+                          *content_columns)
 
             with begin_connection(self.engine, connection) as conn:
                 table.create(conn, checkfirst=checkfirst)
                 conn.execute(self._content_types.insert(
-                    {'table_name': name, 'content_type': content_type}))
+                    [{'table_name': name, 'content_name': content_name, 'content_type': content_type}
+                     for content_name, content_type in content_types.items()]))
 
     # Add content
-    def add_data(self, name, content, global_step, write_time=None, connection=None, create=True):
+    def add_data(self, name, data, global_step, write_time=None, connection=None, create=True):
         """
+        data: Dictionary. Each key corresponds to a table column.
         create: Create table if it does not yet exist.
         """
         # content_type = {np.ndarray: LargeBinary, # CB2
         # Cache results
-        content_type = type(content)
+        content_types = self._map_content_types(
+            {_key: type(_val) for _key, _val in data.items()})
         write_time = write_time or utc_now()
 
-        new_data = dict(content=content, global_step=global_step,
-                        write_time=write_time)
+        new_data = dict(global_step=global_step, write_time=write_time)
+        new_data.update(data)
+
         if not name in self._metadata.tables.keys():
             if not create:
                 raise Exception(f'Table {name} does not exist!')
             # Table does not exist, create it and add data (atomically as part of potential parent transaction)
             with begin_connection(self.engine, connection) as conn:
-                self.create_data_table(name, content_type, connection=conn)
+                self.create_data_table(name, content_types, connection=conn)
                 table = self.get_data_table(name)
                 conn.execute(table.insert(new_data))
         else:
@@ -134,7 +159,7 @@ class Writer(Reader):
                 self.flush()
 
     # Register display
-    def register_figure(self, tag, figure, manager, *sources, connection=None):
+    def register_figure(self, tag, figure, manager, sources, connection=None):
         """
         Registers a plotly figure for display by storing the json representation of the figure in the table.
 
@@ -145,7 +170,6 @@ class Writer(Reader):
         The sql query is an sql alchemy query object. Each slice sequence applies to a figure object, and the sql output,
         respectively
         """
-
         # Insert figure
         with begin_connection(self.engine, connection) as conn:
             # TODO: Inconsistent state if failure after "insert figure".

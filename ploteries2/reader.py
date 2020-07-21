@@ -40,26 +40,30 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 def _reflect_custom_types(inspector, table, column_info, _content_types_table):
 
     #
-    if table.name in Reader.RESERVED_TABLE_NAMES or column_info['name'] != 'content':
+    if table.name in Reader.RESERVED_TABLE_NAMES or column_info['name'] in Reader.RESERVED_DATA_TABLE_COLUMN_NAMES:
         return
 
     with inspector.engine.begin() as conn:
-        content_type_recs = conn.execute(_content_types_table.select().where(
-            _content_types_table.c.table_name == table.name)).fetchall()
+        content_type_recs = conn.execute(_content_types_table.select().where(sqa.and_(
+            _content_types_table.c.table_name == table.name,
+            _content_types_table.c.content_name == column_info['name']
+        ))).fetchall()
         if len(content_type_recs) == 1:
             column_info['type'] = content_type_recs[0].content_type
         elif len(content_type_recs) > 1:
             raise Exception('Unexpected case.')
         else:
             warnings.warn(
-                f'Found orphan table `{table.name}` without entry in content types table. '
+                f"Found orphan table/column `{table.name}/{column_info['name']}` without entry in content types table. "
                 'Possibly due to sqlite\'s non-transactional table creation that prevents atomicity '
                 'of `register_figure` functions.')
 
 
 class Reader(object):
-    RESERVED_TABLE_NAMES = ['__figures__',
-                            '__data_templates__', '__content_types__']
+    RESERVED_TABLE_NAMES = [
+        '__figures__', '__data_templates__', '__content_types__']
+    RESERVED_DATA_TABLE_COLUMN_NAMES = [
+        'id', 'global_step', 'write_time']
     #
 
     def __init__(self, path, check_exists=True):
@@ -116,6 +120,8 @@ class Reader(object):
         self._content_types = Table('__content_types__', self._metadata,
                                     Column('id', Integer, primary_key=True),
                                     Column('table_name', String,
+                                           nullable=False),
+                                    Column('content_name', String,
                                            nullable=False),
                                     Column('content_type', ClassType,
                                            nullable=False))

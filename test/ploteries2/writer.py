@@ -19,7 +19,7 @@ class TestWriter(TestCase):
             writer = mdl.Writer(tmpfo.name)
             writer.create_data_table('np_data1', np.ndarray)
             arr = np.array([0, 1, 2, 3])
-            writer.add_data('np_data1', arr, 0)
+            writer.add_data('np_data1', {'content': arr}, 0)
             writer.flush()
             writer.engine.dispose()
             #
@@ -32,7 +32,7 @@ class TestWriter(TestCase):
             writer = mdl.Writer(tmpfo.name)
             writer.create_data_table('np_data1', np.ndarray)
             arr = np.array([0, 1, 2, 3])
-            writer.add_data('np_data1', arr, 0)
+            writer.add_data('np_data1', {'content': arr}, 0)
             writer.flush()
 
             with writer.engine.begin() as conn:
@@ -61,7 +61,7 @@ class TestWriter(TestCase):
             try:
                 writer.register_figure(
                     'plots/figure1', figure, SmoothenedScalarsManager,
-                    (None, [(['data', 0, 'x'], ['content'], 'error_source')]))
+                    [(None, [(['data', 0, 'x'], ['content'], 'error_source')])])
                 raise Exception('Should raise error.')
             except sqa.exc.StatementError as err:
                 if not isinstance(err.orig, ValueError) or err.orig.args != (
@@ -78,7 +78,7 @@ class TestWriter(TestCase):
             orig_sql = sqa.select([np_data1.c.content, np_data1.c.global_step])
             writer.register_figure(
                 'plots/figure2', figure, SmoothenedScalarsManager,
-                (orig_sql, [(['data', 0, 'x'], ['content'])]))
+                [(orig_sql, [(['data', 0, 'x'], ['content'])])])
 
             # Check insertions
             out = writer.execute(

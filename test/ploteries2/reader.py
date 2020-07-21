@@ -74,12 +74,12 @@ class TestReader(TestCase):
             def gen_data(N): return [np.random.randn(np.random.randint(
                 2, 10), np.random.randint(2, 10)) for k in range(N)]
             content0 = gen_data(2)
-            writer.add_data('table0', content0[0], 0)
-            writer.add_data('table0', content0[1], 1)
+            writer.add_data('table0', {'content': content0[0]}, 0)
+            writer.add_data('table0', {'content': content0[1]}, 1)
 
             content1 = gen_data(2)
-            writer.add_data('table1', content1[0], 0)
-            writer.add_data('table1', content1[1], 1)
+            writer.add_data('table1', {'content': content1[0]}, 0)
+            writer.add_data('table1', {'content': content1[1]}, 1)
 
             # Outer joins don't work in sqlalchemy...
             # content2 = gen_data(2)
@@ -119,17 +119,17 @@ class TestReader(TestCase):
             def gen_data(N): return [rng.randn(rng.randint(
                 2, 10), rng.randint(2, 10)) for k in range(N)]
             content0 = gen_data(2)
-            writer.add_data('table0', content0[0], 0)
-            writer.add_data('table0', content0[1], 1)
+            writer.add_data('table0', {'content': content0[0]}, 0)
+            writer.add_data('table0', {'content': content0[1]}, 1)
 
             content1 = gen_data(2)
-            writer.add_data('table1', content1[0], 0)
-            writer.add_data('table1', content1[1], 1)
+            writer.add_data('table1', {'content': content1[0]}, 0)
+            writer.add_data('table1', {'content': content1[1]}, 1)
 
             content2 = gen_data(2)
-            writer.add_data('table2', content2[0], 0)
+            writer.add_data('table2', {'content': content2[0]}, 0)
             # Only content2 has global_step=2
-            writer.add_data('table2', content2[1], 2)
+            writer.add_data('table2', {'content': content2[1]}, 2)
 
             writer.flush()
 
