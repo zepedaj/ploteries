@@ -135,10 +135,8 @@ class Writer(Reader):
         data: Dictionary. Each key corresponds to a table column.
         create: Create table if it does not yet exist.
         """
-        # content_type = {np.ndarray: LargeBinary, # CB2
+
         # Cache results
-        content_types = self._map_content_types(
-            {_key: type(_val) for _key, _val in data.items()})
         write_time = write_time or utc_now()
 
         new_data = dict(global_step=global_step, write_time=write_time)
@@ -147,7 +145,11 @@ class Writer(Reader):
         if not name in self._metadata.tables.keys():
             if not create:
                 raise Exception(f'Table {name} does not exist!')
-            # Table does not exist, create it and add data (atomically as part of potential parent transaction)
+
+            # Table does not exist, create it and add data (
+            # atomically as part of potential parent transaction) - (sqllite does not support this!)
+            content_types = self._map_content_types(
+                {_key: type(_val) for _key, _val in data.items()})
             with begin_connection(self.engine, connection) as conn:
                 self.create_data_table(name, content_types, connection=conn)
                 table = self.get_data_table(name)

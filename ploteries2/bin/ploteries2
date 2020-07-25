@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import ipdb
 from time import sleep
 from itertools import islice
 #
@@ -23,7 +24,29 @@ from pglib.gunicorn import GunicornServer
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 #
 global DB_PATH, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, APP, SLIDER_GROUP
-#
+HEIGHT, WIDTH = None, None
+global GRAPH_KWARGS
+GRAPH_KWARGS = {}  # {'config': {'displayModeBar': True}}
+global FIGURE_LAYOUT
+
+
+def update_figure_layout():
+    global FIGURE_LAYOUT
+    FIGURE_LAYOUT = dict(
+        height=HEIGHT, width=WIDTH,
+        margin=go.layout.Margin(**dict(zip('lrbt', [0, 30, 0, 0]), pad=4)),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1),
+        modebar=dict(
+            orientation='v'))
+
+
+update_figure_layout()
+
 #
 APP = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
@@ -44,7 +67,7 @@ class SliderGroup(object):
 
     def create_callbacks(self):
 
-        @APP.callback(
+        @ APP.callback(
             Output("global-step-dropdown", "options"),
             [Input(slider_id, "marks") for slider_id in self.ids]
         )
@@ -58,7 +81,7 @@ class SliderGroup(object):
             # Return options
             return [{'label': str(_x), 'value': int(_x)} for _x in all_marks]
 
-        @APP.callback(
+        @ APP.callback(
             Output('global-step-dropdown', 'disabled'),
             [Input('auto-update-switch', 'value')]
         )
@@ -93,8 +116,10 @@ def LoadingGraph(figure=None, **kwargs):
     if figure is None:
         figure = {'data': [], 'layout': {
             'width': WIDTH, 'height': HEIGHT}, 'frames': []}
+        figure = go.Figure()
+        figure.update_layout(**FIGURE_LAYOUT)
     # return dcc.Loading(dcc.Graph(*args, **kwargs))
-    return dcc.Graph(figure=figure, **kwargs)
+    return dcc.Graph(figure=figure, **kwargs, **GRAPH_KWARGS)
 
 # Layout creation
 
@@ -189,16 +214,7 @@ def update_scalar(figure_name):
     reader = Reader(DB_PATH)
     figure_rec = reader.load_figure_recs(name=figure_name)[0]
     fig = reader.load_figure(figure_rec)
-    fig.update_layout(
-        height=HEIGHT, width=WIDTH,  # showlegend=False,
-        margin=go.layout.Margin(**dict(zip('lrbt', [0]*4), pad=4)),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1
-        ))
+    fig.update_layout(**FIGURE_LAYOUT)
 
     return fig
 
@@ -245,19 +261,9 @@ def retrieve_graph(global_step, figure_name):
     else:
         figure = reader.load_figure(records[0], manager_kwargs={
             'global_step': global_step})
-    # figure.layout.width=WIDTH
-    # figure.layout.height=HEIGHT
-    figure.update_layout(
-        height=HEIGHT, width=WIDTH, margin=go.layout.Margin(
-            **dict(zip('lrbt', [0]*4), pad=4)),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1
-        ))
     #
+    figure.update_layout(**FIGURE_LAYOUT)
+
     return figure
 
 
@@ -369,6 +375,7 @@ def launch(path, debug, host, interval, height, width, port, workers):
     WIDTH = width
     LARGE_HEIGHT = 2*HEIGHT
     LARGE_WIDTH = 2*WIDTH
+    update_figure_layout()
     reader = Reader(DB_PATH)
     #
     # APP.layout = create_layout(reader, update_interval=interval)

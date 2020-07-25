@@ -76,23 +76,53 @@ def global_steps(reader, *args, **kwargs):
 
 
 class FigureManager:
-    widgets = tuple()  # e.g., 'slider',
-
-    @classmethod
-    @abstractmethod
-    def derived_table_name(cls, tag, k):
-        return f'{tag}__{k}'
 
     @classmethod
     @abstractmethod
     def register_figure(cls, writer, tag, num_tables, connection=None, names=None):
         pass
 
-    # @classmethod
-    # def add_*(cls, writer, tag, values, global_step, *args, connection=None, **kwargs):
-    #    pass
+    @classmethod
+    def build_figure_template(
+            cls, num_scalars, names, colors=None, trace_kwargs=None, layout_kwargs=None, _trace_method=go.Scatter):
+        """
+        names=( None | [name1, name2, None, name4])
+        trace_kwargs = ( None | [{kws1}, {kws2}, None, {kws4}] | {kws} )
+        """
+
+        #
+        trace_kwargs = cls._default_trace_kwargs(
+            num_scalars, names, colors, trace_kwargs)
+        #
+        fig = go.Figure(
+            [_trace_method(**trace_kwargs[k]) for k in range(num_scalars)])
+        if layout_kwargs is not None:
+            fig.update_layout(**layout_kwargs)
+        #
+        return fig
 
     @classmethod
+    def _default_trace_kwargs(cls, num_traces, names=None, colors=None, trace_kwargs=None):
+        #
+        if colors is None:
+            colors = Colors()
+        #
+        dflt_kwargs = [
+            {'mode': 'lines',
+             'showlegend': (names is not None and names[k] is not None),
+             'line': dict(color=colors[k]),
+             'name': (names[k] if names is not None else None)}
+            for k in range(num_traces)]
+        #
+        if trace_kwargs is not None:
+            if isinstance(trace_kwargs, dict):
+                trace_kwargs = [trace_kwargs]*num_traces
+            [_dflt.update(_user) for _dflt, _user in
+             zip_longest(dflt_kwargs, trace_kwargs)]
+        #
+        return dflt_kwargs
+
+    @ classmethod
     def global_steps(cls, reader, figure_rec):
         """
         Get all global steps for which the figure is available.
@@ -194,31 +224,12 @@ class GenericScalarsManager(FigureManager):
         dflt_kwargs.update(kwargs)
         super().__init__(writer, **dflt_kwargs)
 
-    @ classmethod
-    def build_figure_template(cls, num_scalars, names, colors=Colors(), trace_kwargs=None):
-        """
-        names=( None | [name1, name2, None, name4])
-        trace_kwargs = ( None | [{kws1}, {kws2}, None, {kws4}] | {kws} )
-        """
-
-        #
-        mode = 'lines'
-        #
-        fig = go.Figure(
-            [go.Scatter(x=[], y=[], mode=mode, showlegend=(names is not None and names[k] is not None),
-                        line=dict(color=colors[k]), name=names[k] if names is not None else None,
-                        **({} if trace_kwargs is None else
-                           trace_kwargs if isinstance(trace_kwargs, dict) else
-                           trace_kwargs[k]))
-             for k in range(num_scalars)])
-        #
-        return fig
-
-    @ classmethod
-    def register_figure(cls, writer, tag, num_scalars, names=None, connection=None, trace_kwargs=None, **kwargs):
+    @classmethod
+    def register_figure(cls, writer, tag, num_scalars, names=None, connection=None,
+                        trace_kwargs=None, layout_kwargs=None):
         writer.flush()
         fig = cls.build_figure_template(
-            num_scalars, names=names, trace_kwargs=trace_kwargs, **kwargs)
+            num_scalars, names=names, trace_kwargs=trace_kwargs, layout_kwargs=layout_kwargs)
         #
         data_mappers = []
         for k in range(num_scalars):
@@ -234,9 +245,10 @@ class GenericScalarsManager(FigureManager):
             writer.register_figure(
                 tag, fig, cls, [(sqa.select([table.c.global_step, table.c.content]), data_mappers)], connection=conn)
 
-    @ classmethod
+    @classmethod
     def add_generic_scalars(
-            cls, writer, tag, values, global_step, names=None, connection=None, write_time=None, trace_kwargs=None):
+            cls, writer, tag, values, global_step, names=None, connection=None, write_time=None,
+            trace_kwargs=None, layout_kwargs=None):
 
         # Cast all non-scalars to numpy array, check dtype is a real number.
         values = np.require(values)
@@ -250,7 +262,8 @@ class GenericScalarsManager(FigureManager):
             # Register figure if not done yet
             if not writer.figure_exists(tag, {'manager': cls}):
                 cls.register_figure(writer, tag, len(
-                    values), names=names, connection=conn, trace_kwargs=trace_kwargs)
+                    values), names=names, connection=conn,
+                    trace_kwargs=trace_kwargs, layout_kwargs=layout_kwargs)
 
             # Add data.
             writer.add_data(tag, {'content': values}, global_step,
@@ -292,8 +305,8 @@ class SmoothenedScalarsManager(GenericScalarsManager):
         smoothed[:smoothing_n] /= (w.cumsum())[:len(smoothed)]
         return smoothed
 
-    @ classmethod
-    def build_figure_template(cls, num_scalars, names, trace_kwargs=None):
+    @classmethod
+    def build_figure_template(cls, num_scalars, names, trace_kwargs=None, layout_kwargs=None):
         #
         colors = Colors()
         light_colors = Colors(increase_lightness=0.7)
@@ -303,7 +316,7 @@ class SmoothenedScalarsManager(GenericScalarsManager):
         all_names = None if names is None else ([None]*num_scalars + names)
         #
         fig = super().build_figure_template(
-            2*num_scalars, all_names, all_colors, trace_kwargs=trace_kwargs)
+            2*num_scalars, all_names, all_colors, trace_kwargs=trace_kwargs, layout_kwargs=layout_kwargs)
         #
         return fig
 
@@ -431,26 +444,15 @@ class PlotsManager(FigureManager):
         super().__init__(
             writer, global_step=global_step, **default_kwargs)
 
-    @ classmethod
+    @classmethod
     def derived_table_name(cls, tag, k):
         return f'{tag}__{k}'
 
-    @ classmethod
-    def build_figure_template(cls, num_traces, names):
-        mode = 'lines'  # + ('+markers' if len(values) < 10 else '')
-        colors = Colors()
-        #
-        fig = go.Figure(
-            [go.Scatter(mode=mode, showlegend=(names is not None and names[k] is not None),
-                        line=dict(color=colors[k]), name=names[k] if names is not None else None)
-             for k in range(num_traces)])
-        #
-        return fig
-
     @classmethod
-    def register_figure(cls, writer, tag, content_types, connection=None, names=None, _test_exceptions=[]):
+    def register_figure(cls, writer, tag, content_types, connection=None, names=None, _test_exceptions=[], **kwargs):
 
         with begin_connection(writer.engine, connection) as conn:
+
             # Create data tables
             [writer.create_data_table(
                 cls.derived_table_name(tag, _k), _ct, connection=conn, indexed_global_step=True)
@@ -461,7 +463,8 @@ class PlotsManager(FigureManager):
                 raise Exception('post_create_tables')
 
             #
-            fig = cls.build_figure_template(len(content_types), names)
+            fig = cls.build_figure_template(
+                len(content_types), names, **kwargs)
 
             data_sources = []
             for _k, _ct in enumerate(content_types):
@@ -482,35 +485,43 @@ class PlotsManager(FigureManager):
             writer.register_figure(
                 tag, fig, cls, data_sources, connection=conn)
 
-    @ classmethod
-    def add_plots(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None):
+    @classmethod
+    def _values_to_content_types(cls, values):
+        #
+        valid_content_types = {
+            'x': np.ndarray, 'y': np.ndarray, 'text': JSONEncodedType}
+        #
+        unknown_columns = set(
+            chain(*(_trace.keys() for _trace in values))) - valid_content_types.keys()
+        if len(unknown_columns):
+            raise Exception(f'Invalid columns {unknown_columns}.')
+        #
+        return [{key: valid_content_types[key] for key in _trace}
+                for _trace in values]
+
+    @classmethod
+    def add_plots(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None,
+                  trace_kwargs=None, layout_kwargs=None):
         """
         values: List of dictionaries. Each entry will be converted to a trace with dictionary entries
             (e.g., 'x', 'y', 'text') assigned to the trace.
         write_time: passed to writer.add_data function
         """
-        #
-        valid_content_types = {
-            'x': np.ndarray, 'y': np.ndarray, 'text': JSONEncodedType}
 
         # Cast dictionary to list of dictionaries.
         if isinstance(values, dict):
             values = [values]
-        unknown_columns = set(
-            chain(*(_trace.keys() for _trace in values))) - valid_content_types.keys()
-        if len(unknown_columns):
-            raise Exception(f'Invalid columns {unknown_columns}.')
 
         # Get per-table content types
-        content_types = [
-            {key: valid_content_types[key] for key in _trace} for _trace in values]
+        content_types = cls._values_to_content_types(values)
 
         #
         with begin_connection(writer.engine, connection) as conn:
             # Register figure if it does not exist yet, create all related tables atomically.
             if not writer.figure_exists(tag, {'manager': cls}):
-                cls.register_figure(writer, tag,
-                                    content_types, connection=conn, names=names)
+                cls.register_figure(
+                    writer, tag, content_types, connection=conn, names=names,
+                    trace_kwargs=trace_kwargs, layout_kwargs=layout_kwargs)
 
         # Add data.
         # ##################
@@ -520,17 +531,41 @@ class PlotsManager(FigureManager):
 
 
 class HistogramsManager(PlotsManager):
-    @ classmethod
-    def build_figure_template(cls, num_traces, names):
+    @classmethod
+    def _default_trace_kwargs(cls, *args, **kwargs):
+        trace_kwargs = super()._default_trace_kwargs(*args, **kwargs)
+        [_tk.pop(_key) for _key in ['line', 'mode'] for _tk in trace_kwargs]
+        return trace_kwargs
+
+    @classmethod
+    def build_figure_template(cls, num_traces, names, layout_kwargs={}):
+        #
         colors = Colors()
         light_colors = Colors(increase_lightness=0.7)
+        _trace_kwargs = [
+            {'marker_color': light_colors[k],
+             'marker_line_color':colors[k],
+             'marker_line_width':1.5,
+             'opacity':0.7}
+            for k in range(num_traces)]
         #
-        fig = go.Figure(
-            [go.Bar(x=[], y=[], showlegend=(names is not None and names[k] is not None),
-                    marker_color=light_colors[k], marker_line_color=colors[k], marker_line_width=1.5, opacity=0.7,
-                    name=names[k] if names is not None else None)
-             for k in range(num_traces)])
-        fig.update_layout(bargap=0.1, bargroupgap=0.05, barmode='group')
+        _layout_kwargs = {
+            'bargap': 0.1, 'bargroupgap': 0.05, 'barmode': 'group'}
+        _layout_kwargs.update(layout_kwargs)
+
+        #
+        fig = super().build_figure_template(
+            num_traces, names,
+            trace_kwargs=trace_kwargs,
+            layout_kwargs=layout_kwargs,
+            _trace_method=go.Bar)
+        # #
+        # fig = go.Figure(
+        #     [go.Bar(x=[], y=[], showlegend=(names is not None and names[k] is not None),
+        #             marker_color=light_colors[k], marker_line_color=colors[k], marker_line_width=1.5, opacity=0.7,
+        #             name=names[k] if names is not None else None)
+        #      for k in range(num_traces)])
+        # fig.update_layout(bargap=0.1, bargroupgap=0.05, barmode='group')
         #
         return fig
 

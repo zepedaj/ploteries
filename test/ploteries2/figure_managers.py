@@ -108,7 +108,9 @@ class TestPlotsManager(TestCase):
                 writer.get_data_table('plots1__1')
 
     def test_atomic_creation_of_tables__figure_exists(self):
+
         with NamedTemporaryFile() as tmpfo:
+
             # Create scalar figure with name that crashes with derived table names.
             writer = Writer(tmpfo.name)
             writer.add_scalars('plots1', np.array([0, 1, 2]), 0)
@@ -116,14 +118,22 @@ class TestPlotsManager(TestCase):
                 raise Exception('Unexpected error.')
             writer.get_data_table('plots1')  # Ensure data table exists.
 
-            # Attemp to create plots figure
+            # Attempt to create plots figure
             try:
                 mdl.PlotsManager.add_plots(
                     writer, 'plots1',
                     _xy([np.arange(6).reshape(2, 3), np.arange(6, 12).reshape(2, 3)]), 0)
                 raise Exception('Expected exception!')
             except Exception as err:  # sqa.exc.InvalidRequestError
-                if err.args[0] != "Retrieved figure record (1, 'plots1', <class 'ploteries2.figure_managers.SmoothenedScalarsManager'>, Figure({\n    'data': [{'line': {'color': 'hsl(236, 94%, 91%)'},\n              'mode': 'lines',\n              'showlegend': False,\n              'type' ... (950 characters truncated) ...             'showlegend': False,\n              'type': 'scatter',\n              'x': [],\n              'y': []}],\n    'layout': {'template': '...'}\n})) does not match expected values {'manager': <class 'ploteries2.figure_managers.PlotsManager'>}.":
+                if not re.match(
+                        re.escape(
+                            "Retrieved figure record (1, 'plots1', <class 'ploteries2."
+                            "figure_managers.SmoothenedScalarsManager'>,") +
+                        '.+',  # does not match expected values .+',
+                        err.args[0]):
+                    # if err.args[0] != "Retrieved figure record (1, 'plots1', <class 'ploteries2.figure_managers.SmoothenedScalarsManager'>, Figure({\n    'data': [{'line': {'color': 'hsl(236, 94%, 91%)'},\n              'mode': 'lines',\n              'showlegend': False,\n              'type' ... (950 characters truncated) ...             'showlegend': False,\n              'type': 'scatter',\n              'x': [],\n              'y': []}],\n    'layout': {'template': '...'}\n})) does not match expected values {'manager': <class 'ploteries2.figure_managers.PlotsManager'>}.":
+                    import ipdb
+                    ipdb.set_trace()
                     raise
 
             # Check no records were created
