@@ -329,7 +329,7 @@ class SmoothenedScalarsManager(GenericScalarsManager):
     def add_scalars(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None):
         #
         super().add_generic_scalars(
-            writer, tag, values, global_step, names=None, connection=None, write_time=None)
+            writer, tag, values, global_step, names=names, connection=connection, write_time=write_time)
 
 
 # class ScalarsManager_old(FigureManager):
