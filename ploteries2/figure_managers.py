@@ -314,9 +314,15 @@ class SmoothenedScalarsManager(GenericScalarsManager):
         all_colors = ([light_colors[k] for k in range(num_scalars)] +
                       [colors[k] for k in range(num_scalars)])
         all_names = None if names is None else ([None]*num_scalars + names)
+        dflt_trace_kwargs = [
+            {'legendgroup': str(_k)} for _k in range(num_scalars)]*2
+        if isinstance(trace_kwargs, dict):
+            [_d.update(trace_kwargs) for _d in dflt_trace_kwargs]
+        elif not trace_kwargs is None:
+            raise NotImplementedError()
         #
         fig = super().build_figure_template(
-            2*num_scalars, all_names, all_colors, trace_kwargs=trace_kwargs, layout_kwargs=layout_kwargs)
+            2*num_scalars, all_names, all_colors, trace_kwargs=dflt_trace_kwargs, layout_kwargs=layout_kwargs)
         #
         return fig
 
@@ -501,7 +507,7 @@ class PlotsManager(FigureManager):
 
     @classmethod
     def add_plots(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None,
-                  trace_kwargs=None, layout_kwargs=None):
+                  trace_kwargs=None, layout_kwargs={}):
         """
         values: List of dictionaries. Each entry will be converted to a trace with dictionary entries
             (e.g., 'x', 'y', 'text') assigned to the trace.
@@ -538,7 +544,10 @@ class HistogramsManager(PlotsManager):
         return trace_kwargs
 
     @classmethod
-    def build_figure_template(cls, num_traces, names, layout_kwargs={}):
+    def build_figure_template(cls, num_traces, names, trace_kwargs=None, layout_kwargs={}):
+        #
+        if trace_kwargs is not None:
+            raise NotImplementedError()
         #
         colors = Colors()
         light_colors = Colors(increase_lightness=0.7)
@@ -570,22 +579,36 @@ class HistogramsManager(PlotsManager):
         return fig
 
     @ classmethod
-    def add_histograms(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None, **histo_kwargs):
+    def add_histograms(
+            cls, writer, tag, values, global_step, names=None, connection=None, write_time=None,
+            compute_histogram=True, trace_kwargs=None, layout_kwargs=None, **histo_kwargs):
         """
         values: list of entities convertible to np.ndarray of 1 dimension.
+        compute_histogram: Use 'True' to compute histogram from each entry in values. Use 'False' (requires 
+            bin_centers kwarg), to use the entries in values as the histogram.
         """
 
+        # if layout_kwargs is not None or trace_kwargs is not None:
+        #    raise NotImplementedError()
+
         # Compute histogram.
-        dat = np.concatenate(values)
-        if dat.ndim != 1:
-            raise Exception('Invalid input shapes.')
-        bin_centers, hist = cls._compute_histogram(dat, **histo_kwargs)
-        plot_values = [dict(zip('xy', cls._compute_histogram(_val, bin_centers=bin_centers)))
-                       for _val in values]
+        if compute_histogram:
+            dat = np.concatenate(values)
+            if dat.ndim != 1:
+                raise Exception('Invalid input shapes.')
+            bin_centers, hist = cls._compute_histogram(dat, **histo_kwargs)
+            plot_values = [dict(zip('xy', cls._compute_histogram(_val, bin_centers=bin_centers)))
+                           for _val in values]
+        elif 'bin_centers' in histo_kwargs:
+            bin_centers = histo_kwargs['bin_centers']
+            plot_values = [{'x': bin_centers, 'y': _val} for _val in values]
+        else:
+            raise Exception('Invalid set of input arguments.')
 
         # Add figure data
         cls.add_plots(
-            writer, tag, plot_values, global_step, names=names, connection=connection, write_time=write_time)
+            writer, tag, plot_values, global_step, names=names, connection=connection,
+            write_time=write_time, layout_kwargs=layout_kwargs, trace_kwargs=trace_kwargs)
 
     @ staticmethod
     def _compute_histogram(dat, bins=20, bin_centers=None, normalize=True):

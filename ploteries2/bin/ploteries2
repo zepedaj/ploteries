@@ -161,7 +161,7 @@ def create_layout(reader, update_interval):
     # reader.load_figure_recs(manager=GenericScalarsManager)
     scalars = get_graphs_of_type(GenericScalarsManager)
     figures = get_graphs_of_type(PlotsManager, slider=True)
-    histograms = get_graphs_of_type(HistogramsManager, slider=True)
+    histograms = []  # get_graphs_of_type(HistogramsManager, slider=True)
 
     # Layout
     layout = html.Div(
@@ -383,7 +383,7 @@ def launch(path, debug, host, interval, height, width, port, workers):
     APP.layout = lambda: create_layout(None, update_interval=interval)
     # TODO : Enable these
     create_graph_callbacks(reader, PlotsManager)
-    create_graph_callbacks(reader, HistogramsManager)
+    #create_graph_callbacks(reader, HistogramsManager)
     create_update_scalar_callbacks(reader)
     create_toolbar_callbacks()
     SLIDER_GROUP.create_callbacks()
@@ -395,6 +395,7 @@ def launch(path, debug, host, interval, height, width, port, workers):
         options = {
             'bind': '%s:%s' % (host, port),
             'workers': workers,
+            'timeout': 180,
         }
         GunicornServer(APP.server, options).run()
 

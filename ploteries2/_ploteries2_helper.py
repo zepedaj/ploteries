@@ -32,9 +32,10 @@ def get_train_args(reader):
                         }
                     ],
                     data=[{'Setting': setting, 'Value': str(value)}
-                          for setting, value in settings.content.items() if is_ref or value != ref_content[setting]],
+                          for setting, value in settings.content.items() if
+                          is_ref or not setting in ref_content or value != ref_content[setting]],
                 )
-            ])
+            ], open=True)
         )
         is_ref = False
 
