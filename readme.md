@@ -4,6 +4,7 @@ Benefits:
 - Uses plotly plots, full flexibility.
 
 Aims:
+- A clear separation between data and storage.
 - Separates data storage and display code - can define and re-style display post computations/storage.
 
 Transparent computations:

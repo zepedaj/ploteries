@@ -84,7 +84,7 @@ class FigureManager:
 
     @classmethod
     def build_figure_template(
-            cls, num_scalars, names, colors=None, trace_kwargs=None, layout_kwargs=None, _trace_method=go.Scatter):
+            cls, num_scalars, names, colors=None, trace_kwargs=None, layout_kwargs={}, _trace_method=go.Scatter):
         """
         names=( None | [name1, name2, None, name4])
         trace_kwargs = ( None | [{kws1}, {kws2}, None, {kws4}] | {kws} )
@@ -442,6 +442,7 @@ class SmoothenedScalarsManager(GenericScalarsManager):
 
 
 class PlotsManager(FigureManager):
+    _sep = '/'
 
     def __init__(self, writer, global_step=None, **kwargs):
         default_kwargs = {
@@ -478,7 +479,7 @@ class PlotsManager(FigureManager):
                 # sqa.select([getattr(table.c, _ct_key) for _ct_key in _ct.keys()])
                 sql = table.select()
                 data_mappers = [
-                    (['data', _k, _ct_key], [_ct_key, 0]) for _ct_key in _ct.keys()]
+                    (['data', _k]+_ct_key.split(cls._sep), [_ct_key, 0]) for _ct_key in _ct.keys()]
                 data_sources.append((sql, data_mappers))
 
             # # Build sql outer joins across all tables, keep all global_step values, even when not present in all tables.
@@ -493,17 +494,18 @@ class PlotsManager(FigureManager):
 
     @classmethod
     def _values_to_content_types(cls, values):
+        # #
+        # valid_content_types = {
+        #     'x': np.ndarray, 'y': np.ndarray, 'err_x': np.ndarray, 'err_y': np.ndarray, 'text': JSONEncodedType}
+        # #
+        # unknown_columns = set(
+        #     chain(*(_trace.keys() for _trace in values))) - valid_content_types.keys()
+        # if len(unknown_columns):
+        #     raise Exception(f'Invalid columns {unknown_columns}.')
         #
-        valid_content_types = {
-            'x': np.ndarray, 'y': np.ndarray, 'text': JSONEncodedType}
-        #
-        unknown_columns = set(
-            chain(*(_trace.keys() for _trace in values))) - valid_content_types.keys()
-        if len(unknown_columns):
-            raise Exception(f'Invalid columns {unknown_columns}.')
-        #
-        return [{key: valid_content_types[key] for key in _trace}
-                for _trace in values]
+        # return [{key: valid_content_types[key] for key in _trace}
+        #         for _trace in values]
+        return [{key: np.ndarray for key in _trace} for _trace in values]
 
     @classmethod
     def add_plots(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None,
@@ -581,7 +583,7 @@ class HistogramsManager(PlotsManager):
     @ classmethod
     def add_histograms(
             cls, writer, tag, values, global_step, names=None, connection=None, write_time=None,
-            compute_histogram=True, trace_kwargs=None, layout_kwargs=None, **histo_kwargs):
+            compute_histogram=True, trace_kwargs=None, layout_kwargs={}, **histo_kwargs):
         """
         values: list of entities convertible to np.ndarray of 1 dimension.
         compute_histogram: Use 'True' to compute histogram from each entry in values. Use 'False' (requires 

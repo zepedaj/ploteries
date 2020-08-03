@@ -76,6 +76,24 @@ class TestSmoothenedScalarsManager(TestCase):
 
 
 class TestPlotsManager(TestCase):
+    def test_data_subfield(self):
+        with NamedTemporaryFile() as tmpfo:
+            # Create data and figure
+            x, y, err_y = (np.random.randn(5) for _ in (1, 2, 3))
+            writer = Writer(tmpfo.name)
+            mdl.PlotsManager.add_plots(
+                writer, 'plots1',
+                [{
+                    'x': x,
+                    'y': y,
+                    'error_y/array': err_y,
+                }], 0)
+            writer.flush()
+            fig = mdl.load_figure(writer, tag='plots1')
+            npt.assert_equal(fig['data'][0]['x'], x)
+            npt.assert_equal(fig['data'][0]['y'], y)
+            npt.assert_equal(fig['data'][0]['error_y']['array'], err_y)
+
     def test_add_plots(self):
         with NamedTemporaryFile() as tmpfo:
             # Create data and figure
