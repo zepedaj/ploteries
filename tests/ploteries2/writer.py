@@ -49,12 +49,14 @@ class TestWriter(TestCase):
             #
             np_data1 = writer.get_data_table('np_data1')
 
+            def _get_row_count(_table):
+                return writer.execute(sqa.select(
+                    sqa.func.count().label('count')).select_from(_table))
+
             # Check 0
-            out = writer.execute(sqa.select(
-                [sqa.func.count(writer._figures).label('count')]))
+            out = _get_row_count(writer._figures)
             self.assertEqual(out[0]['count'], 0)
-            out = writer.execute(
-                sqa.select([sqa.func.count(writer._data_templates).label('count')]))
+            out = _get_row_count(writer._data_templates)
             self.assertEqual(out[0]['count'], 0)
 
             # Fail registration of new display, check  no inconsistent state
@@ -67,11 +69,9 @@ class TestWriter(TestCase):
                 if not isinstance(err.orig, ValueError) or err.orig.args != (
                         'too many values to unpack (expected 2)',):
                     raise
-            out = writer.execute(
-                sqa.select([sqa.func.count(writer._figures).label('count')]))
+            out = _get_row_count(writer._figures)
             self.assertEqual(out[0]['count'], 0)
-            out = writer.execute(
-                sqa.select([sqa.func.count(writer._data_templates).label('count')]))
+            out = _get_row_count(writer._data_templates)
             self.assertEqual(out[0]['count'], 0)
 
             # Successfully register new display.
@@ -81,11 +81,9 @@ class TestWriter(TestCase):
                 [(orig_sql, [(['data', 0, 'x'], ['content'])])])
 
             # Check insertions
-            out = writer.execute(
-                sqa.select([sqa.func.count(writer._figures).label('count')]))
+            out = _get_row_count(writer._figures)
             self.assertEqual(out[0]['count'], 1)
-            out = writer.execute(
-                sqa.select([sqa.func.count(writer._data_templates).label('count')]))
+            out = _get_row_count(writer._data_templates)
             self.assertEqual(out[0]['count'], 1)
 
             retrieved = writer.execute(

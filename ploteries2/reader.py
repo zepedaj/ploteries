@@ -11,7 +11,7 @@ from .figure_managers import load_figure as figure_manager_load_figure, global_s
 from pglib.sqlalchemy import PlotlyFigureType, ClassType, sql_query_type_builder
 from ._sql_data_types import DataMapperType
 import re
-from sqlalchemy.engine.result import RowProxy
+from sqlalchemy.engine.result import Row as RowProxy
 
 
 def sqlite3_concurrent_engine(path):
@@ -174,8 +174,8 @@ class Reader(object):
         if 'manager_super' in kwargs:
             if len(args) != 0 or len(kwargs) != 1:
                 raise Exception('Invalid input arsg.')
-            figure_recs = [
-                _rec for _rec in self.load_figure_recs() if issubclass(_rec.manager, kwargs['manager_super'])]
+            figure_recs = [_rec for _rec in self.load_figure_recs()
+                           if issubclass(_rec.manager, kwargs['manager_super'])]
 
         else:
             # Get id from name

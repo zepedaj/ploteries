@@ -43,7 +43,9 @@ class GenericScalarsManagerViz(_Viz):
 
 
 class HistogramsViz(_ScalarViz):
-    def __init__(self, name, fxn, min=-np.inf, max=np.inf, trace_kwargs=None, layout_kwargs=None, **hg_kwargs):
+    def __init__(
+            self, name, fxn, min=-np.inf, max=np.inf, trace_kwargs=None, layout_kwargs=None, **
+            hg_kwargs):
         """
         fxn extracts a list torch tensors. A histogram will be computed from each.
         """

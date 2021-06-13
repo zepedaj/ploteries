@@ -1,13 +1,14 @@
-from unittest import TestCase
-from ploteries2.writer import Writer
-from ploteries2 import reader as mdl
-from ploteries2.figure_managers import SmoothenedScalarsManager
-from tempfile import NamedTemporaryFile
-import sqlalchemy as sqa
-import numpy as np
-import numpy.testing as npt
-from pglib.py import SliceSequence
+import ploteries2
 from plotly import graph_objects as go
+from pglib.py import SliceSequence
+import numpy.testing as npt
+import numpy as np
+import sqlalchemy as sqa
+from tempfile import NamedTemporaryFile
+from ploteries2.figure_managers import SmoothenedScalarsManager
+from ploteries2 import reader as mdl
+from ploteries2.writer import Writer
+from unittest import TestCase
 
 
 class TestReader(TestCase):
@@ -140,7 +141,8 @@ class TestReader(TestCase):
                 (reader.get_data_table('table0'), 'content0'),
                 (reader.get_data_table('table1'), 'content1')
             ], isouter=True)
-            data = reader.execute(sql.order_by(sql.c.global_step))
+
+            data = reader.execute(sqa.select(sql_a := sqa.alias(sql)).order_by(sql_a.c.global_step))
             self.assertEqual([_d['global_step'] for _d in data], [0, 2])
             self.assertEqual(
                 [_d['content0'] is None for _d in data], [False, True])
@@ -151,7 +153,7 @@ class TestReader(TestCase):
                 (reader.get_data_table('table2'), 'content2'),
                 (reader.get_data_table('table0'), 'content0')
             ], isouter=False)
-            data = reader.execute(sql.order_by(sql.c.global_step))
+            data = reader.execute(sqa.select(sql_a := sqa.alias(sql)).order_by(sql_a.c.global_step))
             self.assertEqual([_d['global_step'] for _d in data], [0])
             self.assertEqual(
                 [_d['content0'] is None for _d in data], [False])

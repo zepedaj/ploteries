@@ -109,13 +109,15 @@ class TestPlotsManager(TestCase):
             writer = Writer(tmpfo.name)
             writer.add_data('plots1__0', {'content': np.ndarray([0, 1, 2])}, 0)
             try:
-                mdl.PlotsManager.add_plots(
-                    writer, 'plots1', _xy([np.arange(6).reshape(2, 3), np.arange(6, 12).reshape(2, 3)]), 0)
+                mdl.PlotsManager.add_plots(writer, 'plots1', _xy(
+                    [np.arange(6).reshape(2, 3), np.arange(6, 12).reshape(2, 3)]), 0)
                 raise Exception('Expected exception!')
             except sqa.exc.InvalidRequestError as err:
-                if not re.match(re.escape('Table ')+'.*'+re.escape(
-                        "is already defined for this MetaData instance.  Specify 'extend_existing=True' "
-                        "to redefine options and columns on an existing Table object."), err.args[0]):
+                if not re.match(
+                        re.escape('Table ') + '.*' + re.escape(
+                            "is already defined for this MetaData instance.  Specify 'extend_existing=True' "
+                            "to redefine options and columns on an existing Table object."),
+                        err.args[0]):
                     raise
             # Check no records were created
             self.assertEqual(len(writer.load_figure_recs(tag='plots1')), 0)

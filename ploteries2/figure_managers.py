@@ -3,7 +3,7 @@ from pglib.nnets import numtor
 from sqlalchemy import desc, asc
 from sqlalchemy.sql import func
 from sqlalchemy.sql.expression import alias
-from sqlalchemy.engine.result import RowProxy
+from sqlalchemy.engine.result import Row as RowProxy
 import numpy as np
 from pglib.py import SliceSequence
 from pglib.sqlalchemy import begin_connection, JSONEncodedType
@@ -84,7 +84,8 @@ class FigureManager:
 
     @classmethod
     def build_figure_template(
-            cls, num_scalars, names, colors=None, trace_kwargs=None, layout_kwargs={}, _trace_method=go.Scatter):
+            cls, num_scalars, names, colors=None, trace_kwargs=None, layout_kwargs={},
+            _trace_method=go.Scatter):
         """
         names=( None | [name1, name2, None, name4])
         trace_kwargs = ( None | [{kws1}, {kws2}, None, {kws4}] | {kws} )
@@ -166,7 +167,9 @@ class FigureManager:
             # qry = qry.where(qry.c.global_step == self.global_step)
         else:
             if self.sort is not None:
-                qry = qry.order_by(self.sort(qry.c.global_step))
+                qry = alias(qry)
+                qry = sqa.select(qry).order_by(self.sort(qry.c.global_step))
+                #qry = qry.order_by(self.sort(qry.c.global_step))
             if self.limit is not None:
                 qry = qry.limit(self.limit)
         return qry
@@ -243,7 +246,10 @@ class GenericScalarsManager(FigureManager):
             writer.create_data_table(tag, np.ndarray, connection=conn)
             table = writer.get_data_table(tag)
             writer.register_figure(
-                tag, fig, cls, [(sqa.select([table.c.global_step, table.c.content]), data_mappers)], connection=conn)
+                tag, fig, cls,
+                [(sqa.select([table.c.global_step, table.c.content]),
+                  data_mappers)],
+                connection=conn)
 
     @classmethod
     def add_generic_scalars(
@@ -321,8 +327,8 @@ class SmoothenedScalarsManager(GenericScalarsManager):
         elif not trace_kwargs is None:
             raise NotImplementedError()
         #
-        fig = super().build_figure_template(
-            2*num_scalars, all_names, all_colors, trace_kwargs=dflt_trace_kwargs, layout_kwargs=layout_kwargs)
+        fig = super().build_figure_template(2*num_scalars, all_names, all_colors,
+                                            trace_kwargs=dflt_trace_kwargs, layout_kwargs=layout_kwargs)
         #
         return fig
 
@@ -332,10 +338,11 @@ class SmoothenedScalarsManager(GenericScalarsManager):
         return cls.add_scalars(*args, **kwargs)
 
     @ classmethod
-    def add_scalars(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None):
+    def add_scalars(cls, writer, tag, values, global_step, names=None, connection=None,
+                    write_time=None):
         #
-        super().add_generic_scalars(
-            writer, tag, values, global_step, names=names, connection=connection, write_time=write_time)
+        super().add_generic_scalars(writer, tag, values, global_step,
+                                    names=names, connection=connection, write_time=write_time)
 
 
 # class ScalarsManager_old(FigureManager):
@@ -456,7 +463,9 @@ class PlotsManager(FigureManager):
         return f'{tag}__{k}'
 
     @classmethod
-    def register_figure(cls, writer, tag, content_types, connection=None, names=None, _test_exceptions=[], **kwargs):
+    def register_figure(
+            cls, writer, tag, content_types, connection=None, names=None, _test_exceptions=[],
+            **kwargs):
 
         with begin_connection(writer.engine, connection) as conn:
 
@@ -508,8 +517,8 @@ class PlotsManager(FigureManager):
         return [{key: np.ndarray for key in _trace} for _trace in values]
 
     @classmethod
-    def add_plots(cls, writer, tag, values, global_step, names=None, connection=None, write_time=None,
-                  trace_kwargs=None, layout_kwargs={}):
+    def add_plots(cls, writer, tag, values, global_step, names=None, connection=None,
+                  write_time=None, trace_kwargs=None, layout_kwargs={}):
         """
         values: List of dictionaries. Each entry will be converted to a trace with dictionary entries
             (e.g., 'x', 'y', 'text') assigned to the trace.
