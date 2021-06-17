@@ -18,7 +18,13 @@ Besides this, ploteries also provides the following functionality:
   * A data explorer that enables browsing through all ploteries databases in a root directory, opening/displaying visualizations from more than one database simultaneously.
   * Documentation on computation of histograms.
   * Optional storage of images and videos as independent media files outside the ploteries database. The root directory of these files can also be specified when the ploteries visualization server is launched, thus making it possible to e.g., avoid sending heavy image datasets to collaborators that already have those images in local storage. Image visualizations can optionally also store a transform definition that can be applied when the visualized image is served, and further support visualization of metadata (e.g., bounding boxes).
+* The ability to pause the update of visualizations, or to globally rewind all visualizations to a previous point in time.
 
 Under the hood mechanisms:
 
-* Separate queuing thread and writing thread. The queueing thread receives all data write requests and 
+* Separate queuing thread and writing thread. The queueing thread receives all data write requests and
+* Fast update of visualiztions:
+  * Hierarchical update that builds a visualization starting from a full, low-resolution plot.
+  *
+* Single-table stores all data to make it easy to obtain the full range of global steps, and to suppport resolution downsampling, or client-side updating.
+* Checksum-based verification of server/client data parity.

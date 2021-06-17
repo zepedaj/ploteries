@@ -67,7 +67,7 @@ class SliderGroup(object):
 
     def create_callbacks(self):
 
-        @ APP.callback(
+        @APP.callback(
             Output("global-step-dropdown", "options"),
             [Input(slider_id, "marks") for slider_id in self.ids]
         )
@@ -81,7 +81,7 @@ class SliderGroup(object):
             # Return options
             return [{'label': str(_x), 'value': int(_x)} for _x in all_marks]
 
-        @ APP.callback(
+        @APP.callback(
             Output('global-step-dropdown', 'disabled'),
             [Input('auto-update-switch', 'value')]
         )
@@ -311,7 +311,7 @@ def create_graph_callbacks(reader, figure_type):
         # Update slider callbacks
         slider_output_keys = ['marks', 'min', 'max', 'value', 'disabled']
 
-        @ APP.callback(
+        @APP.callback(
             [Output(slider_name, _x) for _x in slider_output_keys],
             [Input('interval-component', 'n_intervals'),
              Input('global-step-dropdown', 'value'),
@@ -345,25 +345,25 @@ def create_graph_callbacks(reader, figure_type):
 _wd = 550
 
 
-@ clx.group()
+@clx.group()
 def main():
     pass
 
 
-@ clx.parent()
-@ clx.argument('path', help='Ploteries database file path.')
+@clx.parent()
+@clx.argument('path', help='Ploteries database file path.')
 def path_arg():
     pass
 
 
-@ main.command(parents=[path_arg])
-@ clx.option('--interval', type=float, help='Seconds between automatic update of all plots.', default=300)
-@ clx.option('--debug', action='store_true', help='Enables javascript debug console', default=False)
-@ clx.option('--host', help='Host name.', default='0.0.0.0')
-@ clx.option('--port', help='Port number.', default='8000')
-@ clx.option('--workers', help='Number of workers (ignored in debug mode).', default=(cpu_count() * 2) + 1)
-@ clx.option('--height', help='Figure height,', type=int, default=_wd*(2/3))
-@ clx.option('--width', help='Figure width,', type=int, default=_wd)
+@main.command(parents=[path_arg])
+@clx.option('--interval', type=float, help='Seconds between automatic update of all plots.', default=300)
+@clx.option('--debug', action='store_true', help='Enables javascript debug console', default=False)
+@clx.option('--host', help='Host name.', default='0.0.0.0')
+@clx.option('--port', help='Port number.', default='8000')
+@clx.option('--workers', help='Number of workers (ignored in debug mode).', default=(cpu_count() * 2) + 1)
+@clx.option('--height', help='Figure height,', type=int, default=_wd*(2/3))
+@clx.option('--width', help='Figure width,', type=int, default=_wd)
 def launch(path, debug, host, interval, height, width, port, workers):
     """
     Launch a ploteries visualization server.
@@ -400,8 +400,8 @@ def launch(path, debug, host, interval, height, width, port, workers):
         GunicornServer(APP.server, options).run()
 
 
-@ main.command(parents=[path_arg])
-@ clx.option('--overwrite', action='store_true', help='overwrite database', default=False)
+@main.command(parents=[path_arg])
+@clx.option('--overwrite', action='store_true', help='overwrite database', default=False)
 def create_test_db(path, overwrite):
     """
     Create a test database.
@@ -451,10 +451,12 @@ def create_test_db(path, overwrite):
 
         # Add histograms
         if k % 100 == 0:
-            writer.add_histograms('histograms/histogram1', [list(islice(histo1, 1000)) for _ in range(N)], k,
-                                  names=[f'histo{_l}' for _l in range(N)])
-            writer.add_histograms('histograms/histogram2', [list(islice(histo2, 1000)) for _ in range(N)], k,
-                                  names=[f'histo{_l}' for _l in range(N)])
+            writer.add_histograms('histograms/histogram1',
+                                  [list(islice(histo1, 1000)) for _ in range(N)],
+                                  k, names=[f'histo{_l}' for _l in range(N)])
+            writer.add_histograms('histograms/histogram2',
+                                  [list(islice(histo2, 1000)) for _ in range(N)],
+                                  k, names=[f'histo{_l}' for _l in range(N)])
 
         # Sleep
         sleep(.5)
