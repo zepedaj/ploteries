@@ -28,6 +28,10 @@ GRAPH_KWARGS = {}  # {'config': {'displayModeBar': True}}
 global FIGURE_LAYOUT
 
 
+def _int(val):
+    return f'{val:,d}'
+
+
 def update_figure_layout():
     global FIGURE_LAYOUT
     FIGURE_LAYOUT = dict(
@@ -77,7 +81,7 @@ class SliderGroup(object):
                     all_marks = all_marks.union(_marks)
             all_marks = sorted(all_marks)
             # Return options
-            return [{'label': str(_x), 'value': int(_x)} for _x in all_marks]
+            return [{'label': _int(int(_x)), 'value': int(_x)} for _x in all_marks]
 
         @APP.callback(
             Output('global-step-dropdown', 'disabled'),
@@ -237,24 +241,6 @@ def retrieve_graph(global_step, figure_name):
     return figure
 
 
-# TODO
-def update_slider(figure_name, slider_value, slider_output_keys):
-    #
-    _marks = READER.global_steps(name=figure_name)
-    marks = dict(zip(_marks, ['']*len(_marks)))
-    if len(marks) > 0:
-        for _m in [_marks[0], _marks[-1]]:
-            marks[_m] = str(_m)
-    min_mark = min(_marks)
-    max_mark = max(_marks)
-    val = max_mark
-    #
-    slider_state = {'marks': marks, 'min': min_mark,
-                    'max': max_mark, 'value': val, 'disabled': len(marks) == 1}
-    return tuple([slider_state[key] for key in slider_output_keys])
-#
-
-
 def create_graph_callbacks(figure_type):
     _g = globals()
 
@@ -267,15 +253,6 @@ def create_graph_callbacks(figure_type):
             [Input(slider_name, 'value')])(
                 lambda _gs, fig_name=fig_rec.name:
                 retrieve_graph(_gs, figure_name=fig_name))
-
-        # # Update slider callbacks
-        # slider_output_keys=['marks', 'min', 'max', 'value', 'disabled']
-        # _g['update_slider_'+tbl_safe_name] = APP.callback(
-        #     [Output(slider_name, _x) for _x in slider_output_keys],
-        #     [Input('interval-component', 'n_intervals')],
-        #     [State(slider_name, 'value')])(
-        #         lambda _, slider_value,tbl_name=tbl_name,slider_output_keys=slider_output_keys:
-        #         update_slider(tbl_name, slider_value,slider_output_keys))
 
         # Update slider callbacks
         slider_output_keys = ['marks', 'min', 'max', 'value', 'disabled']
@@ -297,10 +274,11 @@ def create_graph_callbacks(figure_type):
 
             # Auto update
             _marks = READER.global_steps(name=figure_name)
+            # marks = dict(((_mark, _int(_mark)) for _mark in _marks))
             marks = dict(zip(_marks, ['']*len(_marks)))
             if len(marks) > 0:
                 for _m in [_marks[0], _marks[-1]]:
-                    marks[_m] = str(_m)
+                    marks[_m] = _int(int(_m))
             min_mark = min(_marks)
             max_mark = max(_marks)
             val = max_mark

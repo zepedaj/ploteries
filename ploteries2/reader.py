@@ -14,8 +14,6 @@ import re
 from sqlalchemy.engine.result import Row as RowProxy
 
 from threading import Lock
-# Stops SqlAlchemy RuntimeError: deque mutated during iteration error in server debug mode
-READER_LOCK = Lock()
 
 
 def sqlite3_concurrent_engine(path):
@@ -76,20 +74,18 @@ class Reader(object):
             with open(path, 'r'):
                 pass
         #
-        with READER_LOCK:
-            # Stops SqlAlchemy RuntimeError: deque mutated during iteration error in server debug mode
-            self.path = path
-            self.engine = create_engine('sqlite:///' + path)
-            self._metadata = MetaData(bind=self.engine)
-            self.SQLQueryType = sql_query_type_builder(
-                scoped_session(sessionmaker(bind=self.engine)), self._metadata)
-            #
-            self._init_headers()
-            event.listen(
-                Table, "column_reflect", lambda inspector, table, column_info,
-                _content_types_table=self._content_types:
-                _reflect_custom_types(inspector, table, column_info, _content_types_table))
-            self._metadata.reflect()
+        self.path = path
+        self.engine = create_engine('sqlite:///' + path)
+        self._metadata = MetaData(bind=self.engine)
+        self.SQLQueryType = sql_query_type_builder(
+            scoped_session(sessionmaker(bind=self.engine)), self._metadata)
+        #
+        self._init_headers()
+        event.listen(
+            Table, "column_reflect", lambda inspector, table, column_info,
+            _content_types_table=self._content_types:
+            _reflect_custom_types(inspector, table, column_info, _content_types_table))
+        self._metadata.reflect()
 
     def load_figure(self, *args, **kwargs):
         return figure_manager_load_figure(self, *args, **kwargs)
