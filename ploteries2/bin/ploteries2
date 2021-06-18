@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import ipdb
 from time import sleep
 from itertools import islice
 #
 import os.path as osp
-import re
 import numpy as np
 import climax as clx
 from ploteries2 import Reader, Writer, GenericScalarsManager, PlotsManager, HistogramsManager
@@ -23,7 +21,7 @@ from pglib.gunicorn import GunicornServer
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 #
-global DB_PATH, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, APP, SLIDER_GROUP
+global DB_PATH, READER, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, APP, SLIDER_GROUP
 HEIGHT, WIDTH = None, None
 global GRAPH_KWARGS
 GRAPH_KWARGS = {}  # {'config': {'displayModeBar': True}}
@@ -89,11 +87,6 @@ class SliderGroup(object):
             return bool(value)
 
 
-# def iter_safe_names(reader, content_type):
-#     return [(content_type+'-'+str(_t['id']) + '-'+re.sub('[^0-9a-zA-Z]+', '-', _t['name']), _t['name'])
-#             for _t in reader.tables_of_type(content_type)]
-
-
 def group_plots(tags_and_figures, depth=1):
     # Groups figures into html Summaries based on table name.
     # figures: [(table_name, dcc/html), ... ]
@@ -124,12 +117,8 @@ def LoadingGraph(figure=None, **kwargs):
 # Layout creation
 
 
-def create_layout(reader, update_interval):
+def create_layout(update_interval):
     global APP
-
-    # Init reader
-    if reader is None:
-        reader = Reader(DB_PATH)
 
     # Build HTML for all graphs
     def _skip(sel, val): return [val] if sel else []
@@ -152,13 +141,13 @@ def create_layout(reader, update_interval):
     def get_graphs_of_type(manager_type, **kwargs):
 
         graphs = [(_fig.tag, build_graph_html(_fig.tag, _fig.name, **kwargs))
-                  for _fig in reader.load_figure_recs(manager_super=manager_type)]
+                  for _fig in READER.load_figure_recs(manager_super=manager_type)]
         # graphs = [(_fig.tag, build_graph_html(_fig.tag, _fig.name, **kwargs))
-        #          for _fig in reader.load_figure_recs(manager=manager_type)]
+        #          for _fig in READER.load_figure_recs(manager=manager_type)]
         graphs = group_plots(graphs)
         return graphs
     #
-    # reader.load_figure_recs(manager=GenericScalarsManager)
+    # READER.load_figure_recs(manager=GenericScalarsManager)
     scalars = get_graphs_of_type(GenericScalarsManager)
     figures = get_graphs_of_type(PlotsManager, slider=True)
     histograms = []  # get_graphs_of_type(HistogramsManager, slider=True)
@@ -183,7 +172,7 @@ def create_layout(reader, update_interval):
                 dcc.Tab(label='Scalars', children=scalars),
                 dcc.Tab(label='Figures', children=figures),
                 dcc.Tab(label='Histograms', children=histograms),
-                dcc.Tab(label='Settings', children=get_train_args(reader))]),
+                dcc.Tab(label='Settings', children=get_train_args(READER))]),
             dcc.Interval(
                 id='interval-component',
                 interval=update_interval*1000,  # in milliseconds
@@ -192,28 +181,10 @@ def create_layout(reader, update_interval):
     )
     return layout
 
-# # Resize callbacks.
-# def expand_graph(large=False):
-#     print('****** large: ', large)
-#     if large: return (LARGE_WIDTH, LARGE_HEIGHT)
-#     else: return (WIDTH, HEIGHT)
-# def create_expand_callbacks(reader):
-#     _g=globals()
-#     for tbl_safe_name,tbl_name in \
-#         iter_safe_names(reader, 'Float') + \
-#         iter_safe_names(reader, 'FigureType') + \
-#         iter_safe_names(reader, 'HistogramType'):
-#         _g['expand_graph_'+tbl_safe_name] = APP.callback(
-#             [Output(tbl_safe_name, 'figure.layout.height'),
-#              Output(tbl_safe_name, 'figure.layout.width')],
-#             [Input('expand-'+tbl_safe_name, 'value')])(
-#                 lambda large: expand_graph(large))
-
 
 def update_scalar(figure_name):
-    reader = Reader(DB_PATH)
-    figure_rec = reader.load_figure_recs(name=figure_name)[0]
-    fig = reader.load_figure(figure_rec)
+    figure_rec = READER.load_figure_recs(name=figure_name)[0]
+    fig = READER.load_figure(figure_rec)
     fig.update_layout(**FIGURE_LAYOUT)
 
     return fig
@@ -232,9 +203,9 @@ def create_toolbar_callbacks():
     )(auto_update_switch)
 
 
-def create_update_scalar_callbacks(reader):
+def create_update_scalar_callbacks():
     _g = globals()
-    for _fig in reader.load_figure_recs(manager_super=GenericScalarsManager):
+    for _fig in READER.load_figure_recs(manager_super=GenericScalarsManager):
         # import ipdb
         # ipdb.set_trace()
         _g['update_scalar_'+_fig.name] = APP.callback(
@@ -251,15 +222,14 @@ def retrieve_graph(global_step, figure_name):
     if global_step is None:
         raise PreventUpdate
     #
-    reader = Reader(DB_PATH)
-    records = reader.load_figure_recs(name=figure_name)
+    records = READER.load_figure_recs(name=figure_name)
     #
     if len(records) > 1:
         raise Exception('Unexpected error!')
     elif len(records) == 0:
         figure = go.Figure()
     else:
-        figure = reader.load_figure(records[0], manager_kwargs={
+        figure = READER.load_figure(records[0], manager_kwargs={
             'global_step': global_step})
     #
     figure.update_layout(**FIGURE_LAYOUT)
@@ -269,9 +239,8 @@ def retrieve_graph(global_step, figure_name):
 
 # TODO
 def update_slider(figure_name, slider_value, slider_output_keys):
-    reader = Reader(DB_PATH)
     #
-    _marks = reader.global_steps(name=figure_name)
+    _marks = READER.global_steps(name=figure_name)
     marks = dict(zip(_marks, ['']*len(_marks)))
     if len(marks) > 0:
         for _m in [_marks[0], _marks[-1]]:
@@ -286,10 +255,10 @@ def update_slider(figure_name, slider_value, slider_output_keys):
 #
 
 
-def create_graph_callbacks(reader, figure_type):
+def create_graph_callbacks(figure_type):
     _g = globals()
 
-    for fig_rec in reader.load_figure_recs(manager_super=figure_type):
+    for fig_rec in READER.load_figure_recs(manager_super=figure_type):
         slider_name = 'slider-'+fig_rec.name
 
         # Retrieve graph callbacks
@@ -319,7 +288,6 @@ def create_graph_callbacks(reader, figure_type):
             [State(slider_name, _x) for _x in slider_output_keys])
         def update_slider(n_intervals, global_step, global_step_disabled, *slider_state,
                           figure_name=fig_rec.name, slider_output_keys=slider_output_keys):
-            reader = Reader(DB_PATH)
 
             # Global step specified
             if not global_step_disabled and global_step is not None:
@@ -328,7 +296,7 @@ def create_graph_callbacks(reader, figure_type):
                 return [slider_state[key] for key in slider_output_keys]
 
             # Auto update
-            _marks = reader.global_steps(name=figure_name)
+            _marks = READER.global_steps(name=figure_name)
             marks = dict(zip(_marks, ['']*len(_marks)))
             if len(marks) > 0:
                 for _m in [_marks[0], _marks[-1]]:
@@ -339,6 +307,7 @@ def create_graph_callbacks(reader, figure_type):
             #
             slider_state = {'marks': marks, 'min': min_mark,
                             'max': max_mark, 'value': val, 'disabled': len(marks) == 1}
+
             return tuple([slider_state[key] for key in slider_output_keys])
 
 
@@ -370,25 +339,24 @@ def launch(path, debug, host, interval, height, width, port, workers):
     Launch a ploteries visualization server.
     """
     #
-    global DB_PATH, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, SLIDER_GROUP
+    global DB_PATH, READER, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, SLIDER_GROUP
     DB_PATH = path
     HEIGHT = height
     WIDTH = width
     LARGE_HEIGHT = 2*HEIGHT
     LARGE_WIDTH = 2*WIDTH
     update_figure_layout()
-    reader = Reader(DB_PATH)
+    READER = Reader(DB_PATH)
     #
-    # APP.layout = create_layout(reader, update_interval=interval)
+    # APP.layout = create_layout(READER, update_interval=interval)
     SLIDER_GROUP = SliderGroup()
-    APP.layout = lambda: create_layout(None, update_interval=interval)
+    APP.layout = lambda: create_layout(update_interval=interval)
     # TODO : Enable these
-    create_graph_callbacks(reader, PlotsManager)
-    # create_graph_callbacks(reader, HistogramsManager)
-    create_update_scalar_callbacks(reader)
+    create_graph_callbacks(PlotsManager)
+    # create_graph_callbacks(HistogramsManager)
+    create_update_scalar_callbacks()
     create_toolbar_callbacks()
     SLIDER_GROUP.create_callbacks()
-    # create_expand_callbacks(reader)
 
     if debug:
         APP.run_server(debug=debug, host=host, port=port)
