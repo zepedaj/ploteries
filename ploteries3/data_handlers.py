@@ -1,4 +1,4 @@
-from threading import Lock
+from threading import RLock
 from numpy.lib.format import dtype_to_descr, descr_to_dtype
 import sqlite3
 from numba import njit, jit
@@ -25,10 +25,10 @@ from sqlalchemy.engine.result import Row
 
 
 class NDArraySpec(namedtuple('_NDArraySpec', ('dtype', 'row_shape'))):
-    def __new__(self, dtype, row_shape, repack=True):
-        self.dtype = recfns.repack_fields(np.empty(0, dtype=dtype)).dtype
-        self.row_shape = tuple(row_shape)
-        return self
+    def __new__(cls, dtype, row_shape):
+        dtype = recfns.repack_fields(np.empty(0, dtype=dtype)).dtype
+        row_shape = tuple(row_shape)
+        return super().__new__(cls, dtype, row_shape)
 
     @classmethod
     def produce(cls, val):
@@ -41,7 +41,7 @@ class NDArraySpec(namedtuple('_NDArraySpec', ('dtype', 'row_shape'))):
         elif isinstance(val, cls):
             return val
         else:
-            raise TypeError(f'{type(val)}.')
+            raise TypeError(f'Cannot produce NDArraySpec from {type(val)}.')
 
     def as_serializable(self):
         return {'dtype': dtype_to_descr(self.dtype),
@@ -53,28 +53,81 @@ class NDArraySpec(namedtuple('_NDArraySpec', ('dtype', 'row_shape'))):
                    row_shape=tuple(val['row_shape']))
 
 
-class NumpyDataHandler(abstract.AppendableDiskArray):
+class NumpyDataHandler:
     """
     Writes numpy arrays with the same row shape and dtype, and loads them as a large numpy array, with each data_records table row corresponding to an (possibly multi-dimensional) entry in the numpy array.
 
     Supports multi-dimensional arrays of arbitary dtype (except Object) including (possibly nested) structured arrays.
     """
+    _ndarray_spec = None
 
-    def __init__(self, data_store, name, ndarray_spec=Optional[NDArraySpec]):
+    def __init__(self, data_store, name, ndarray_spec: Optional[NDArraySpec] = None):
         """
         :param data_store: :class:`ploteries3.data_store.DataStore` object.
         :param name: Data name.
         :param ndarray_spec: An :class:`NDArraySpec` producible.
         """
+        self.lock = RLock()
         self.data_store = data_store
         self.name = name
-        self._ndarray_spec = NDArraySpec.produce(ndarray_spec)
-        self._load_params()
-        self.lock = Lock()
+        self.ndarray_spec = NDArraySpec.produce(ndarray_spec)
 
     @property
     def data_defs_table(self):
-        return self.data_store.metadata.tables['data_defs']
+        return self.data_store._metadata.tables['data_defs']
+
+    @property
+    def data_records_table(self):
+        return self.data_store._metadata.tables['data_records']
+
+    def _load_def(self, connection=None) -> Union[bool, Row]:
+        """
+        Loads and decodes the definition from the the data defs table, if it exists, returning
+        the decoded data def row if successful.
+
+        Returns False if no data def is found in the table, or the data def row if it is found.
+        """
+
+        with begin_connection(self.data_store.engine, connection) as conn:
+            # Build query
+            qry = self.data_defs_table.select().where(self.data_defs_table.c.name == self.name)
+
+            # Check that the store specs match the input.
+            data_def = conn.execute(qry).fetchall()
+
+        if len(data_def) == 0:
+            return False
+        elif len(data_def) == 1:
+            data_def = data_def[0]
+            data_def.params['ndarray_spec'] = NDArraySpec.from_serializable(
+                data_def.params['ndarray_spec'])
+            return data_def
+        else:
+            raise Exception('Unexpected case.')
+
+    def _write_def(self, connection=None):
+        """
+        Adds an entry to the data defs table and returns True if successful. If an entry already exists, returns False.
+        """
+
+        with begin_connection(self.data_store.engine, connection) as connection:
+            try:
+                connection.execute(
+                    insert(self.data_defs_table),
+                    [{'name': self.name,
+                      'handler': type(self),
+                      'params': {'ndarray_spec': self.ndarray_spec.as_serializable()}
+                      }])
+            except exc.IntegrityError as err:
+                if re.match(
+                        f'\\(sqlite3.IntegrityError\\) UNIQUE constraint failed\\: {self.data_defs_table.name}\\.name',
+                        str(err)):
+                    return False
+                else:
+                    raise
+
+            else:
+                return True
 
     @property
     def ndarray_spec(self):
@@ -85,17 +138,29 @@ class NumpyDataHandler(abstract.AppendableDiskArray):
 
     @ndarray_spec.setter
     def ndarray_spec(self, ndarray_spec):
+
+        ndarray_spec = NDArraySpec.produce(ndarray_spec)
+
         with self.lock:
             if self._ndarray_spec is not None:
+                # Spec previously set, check match.
                 if self._ndarray_spec != ndarray_spec:
-                    raise Exception(
-                        f'Attempted to modify existing ndarray_spec={self.ndarray_spec} to {ndarray_spec}.')
+                    raise ValueError(
+                        f'Non-matching ndarray_spec {self.ndarray_spec} and {ndarray_spec}.')
             else:
-                if ndarray_spec is None:
-                    # Prevents infinite loop with _write_params() call below.
-                    raise ValueError('None value for param ndarray_spec.')
-                self._ndarray_spec = ndarray_spec
-                self._write_params()
+                if loaded_def_row := self._load_def():
+                    # Loaded an existing def, set and check match.
+                    self._ndarray_spec = loaded_def_row.params['ndarray_spec']
+                    self._data_def = loaded_def_row
+                    if ndarray_spec is not None:
+                        self.ndarray_spec = ndarray_spec
+                elif ndarray_spec is not None:
+                    # Def does not exist, write, load and check match.
+                    self._ndarray_spec = ndarray_spec
+                    self._write_def()
+                    loaded_def_row = self._load_def()
+                    self._data_def = loaded_def_row
+                    self.ndarray_spec = loaded_def_row.params['ndarray_spec']
 
     @property
     def row_shape(self):
@@ -109,38 +174,73 @@ class NumpyDataHandler(abstract.AppendableDiskArray):
         """
         Number of bytes in one row.
         """
-        return int(np.prod(self.row_shape)*self.dtype.itemsize)
+        return int(np.prod(self.row_shape)*self.ndarray_spec.dtype.itemsize)
 
-    def __len__(self):
+    def __len__(self, connection=None):
         """
         Returns the number of records in the array (i.e., the first dimension of the array). The shape of the entire stored array is hence (len(self), *self.recdims).
 
         TODO: Net ready?
         """
-        with self.data_store.engine.begin() as connection:
-            return connection.execute(select(func.count(self.table.c.row_id))).scalar()
+        with self.lock:
+            if self._data_def is None:
+                return 0
+            else:
+                with begin_connection(self.data_store.engine, connection) as connection:
+                    return connection.execute(
+                        select(func.count(self.data_records_table.c.id)).where(
+                            self.data_records_table.c.data_def_id == self._data_def['id'])
+                    ).scalar()
 
-    def add_data(self, index, arr, connection=None):
+    def add(self, index, arr, connection=None):
         """
-        Append array to the end of a file.
+        Add new data row.
         """
 
-        # Prepare data.
+        # Check data.
         self.ndarray_spec = NDArraySpec(arr.dtype, arr.shape)
 
         # Convert data, build records
-        packed_arr = np.require(arr, dtype=self.dtype, requirements='C').view('u1')
+        packed_arr = np.require(arr, dtype=self.ndarray_spec.dtype, requirements='C').view('u1')
         packed_arr.shape = packed_arr.size
         packed_arr = packed_arr.data
-        rowsize = self.rowsize
-        records = [{'index': index, 'writer_id': self.data_store.writer_id,
-                    'data_header_id': self.data_header_id,
-                    'bytes': packed_arr[k * rowsize: (k + 1) * rowsize]} for k in range(len(arr))]
+        record = {'index': index,
+                  'writer_id': self.data_store.writer_id,
+                  'data_def_id': self._data_def.id,
+                  'bytes': packed_arr}
         # records = [{'row_bytes': np.ascontiguousarray(recfns.repack_fields(arr_row)).tobytes()} for arr_row in arr]
 
         # Write to database.
-        with begin_connection(self.qladas.engine, connection) as connection:
-            connection.execute(insert(self.table), records)
+        with begin_connection(self.data_store.engine, connection) as connection:
+            connection.execute(insert(self.data_records_table), record)
+
+    def load(self, connection=None):
+        if self._data_def is None:
+            return None
+        else:
+            with begin_connection(self.data_store.engine, connection) as connection:
+
+                # Pre alloc output
+                out_ndarray = np.empty(
+                    (expected_len := self.__len__(connection), *self.ndarray_spec.row_shape),
+                    dtype=self.ndarray_spec.dtype)
+                out_buffer = out_ndarray.view(dtype='u1')
+                out_buffer.shape = np.prod(out_buffer.shape)
+                row_itemsize = self.rowsize
+
+                # Copy records to pre-assigned.
+                for k, row in enumerate(
+                        connection.execute(select(self.data_records_table).where(
+                            self.data_records_table.c.data_def_id == self._data_def.id))):
+                    out_buffer[k*row_itemsize:(k+1)*row_itemsize] = bytearray(row.bytes)
+
+                # Sanity checks.
+                if k != expected_len-1:
+                    raise Exception('Could not load the expected number of rows!')
+                if (k+1)*row_itemsize != out_buffer.size:
+                    raise Exception('Did not load the expected number of bytes!')
+
+                return out_ndarray
 
     def delete(self):
         """
@@ -233,127 +333,3 @@ class NumpyDataHandler(abstract.AppendableDiskArray):
 
         else:
             raise Exception('Invalid input.')
-
-    def _load_params(self, connection=None) -> Union[bool, Row]:
-        """
-        Loads and sets the ndarray_specs from the data defs table, if it exists, returning the entire data defs row if successful.
-
-        Raises an error if the datadefs does not match the user-expected value (when supplied).
-
-        Returns False if no data def is found in the table, or the data def row if it is found.
-        """
-
-        with begin_connection(self.engine, connection) as conn:
-            # Build query
-            qry = self.data_defs_table.select().where(self.data_defs_table.c.name == self.name)
-
-            # Check that the store specs match the input.
-            data_def = conn.execute(qry).fetchall()
-
-        if len(data_def) == 0:
-            return False
-        elif len(data_def) == 1:
-            data_def = data_def[0]
-            if not isinstance(self, data_def.handler):
-                raise TypeError('{self} is not a sub-type of {data_def.handler}.')
-            self.ndarray_specs = NDArraySpec.from_serializable(data_def.params['ndarray_specs'])
-            return data_def
-        else:
-            raise Exception('Unexpected case.')
-
-    def _write_params(self, connection=None):
-        """
-        Adds an entry to the data defs table. If an entry already exists, it loads it and checks that it matches the value it attempted to write, raising an error otherwise.
-
-        Returns True if an entry is written, and the data_def row if it existed already.
-        """
-
-        with begin_connection(self.engine, connection) as connection:
-            try:
-                connection.execute(
-                    insert(self.data_defs_table),
-                    [{'name': self.name,
-                      'handler': type(self),
-                      'params': {'ndarray_spec': self.ndarray_specs.as_serializable()}
-                      }])
-            except exc.IntegrityError as err:
-                if re.match(
-                        f'\\(sqlite3.IntegrityError\\) UNIQUE constraint failed\\: {self.data_defs_table.name}\\.name',
-                        str(err)):
-                    # Loading params checks that they are valid.
-                    if not (data_def := self._load_params()):
-                        raise Exception(
-                            f'A data definition already exists for {self.name}, but it could not be loaded.')
-                    return data_def
-                else:
-                    raise
-
-            else:
-                return True
-
-
-class QLADAS(abstract.AppendableDiskArrayStore):
-    """
-    S**Q**Lite **A**ppendable **D**isk **A**rray **S**tore.
-    """
-    RESERVED_TABLE_NAMES = [
-        '__ndarray_specs__']
-    ADAcls = TableADA
-    #
-
-    def __init__(self, path, check_exists=True):
-        #
-        if check_exists:
-            with open(path, 'r'):
-                pass
-        #
-        self.path = path
-        self.engine = create_engine('sqlite+pysqlite:///' + path, **CREATE_ENGINE_KWARGS)
-        # self.engine = sqlite3_concurrent_engine('sqlite:///' + path)
-        self._metadata = MetaData(bind=self.engine)
-        #
-        self._table_creation_lock = threading.Lock()
-        #
-        self._init_headers()
-        self._metadata.reflect()
-        self.ndarray_specs = self._load_ndarray_specs()
-
-    def execute(self, *args, **kwargs):
-        with self.engine.begin() as conn:
-            result = conn.execute(*args, **kwargs).fetchall()
-        return result
-
-    def _init_headers(self):
-        self._table_ndarray_specs = Table('__ndarray_specs__', self._metadata,
-                                          Column('table_name', types.String,
-                                                 unique=True, primary_key=True),
-                                          # Contains a (shape,dtype) tuple specifying the array's dtype and row shape.
-                                          Column('dtype', NumpyDtypeType,
-                                                 unique=False, nullable=False),
-                                          Column('row_shape', JSONEncodedType,
-                                                 unique=False, nullable=False),
-                                          )
-        self._table_ndarray_specs.create(checkfirst=True)
-
-    def keys(self):
-        return self.ndarray_specs.keys()
-
-    def get_ada_obj(self, name):
-        if name in self.RESERVED_TABLE_NAMES:
-            raise Exception(f'Table name {name} is reserved.')
-        return TableADA(self, self._metadata.tables[name], self.ndarray_specs[name])
-
-    def append(self, arrays_args: dict = {}, **arrays_kwargs):
-        #
-        ndarrays = dict(arrays_args)
-        ndarrays.update(arrays_kwargs)
-        #
-        for name, arr in ndarrays.items():
-            if name not in self.ndarray_specs:
-                self._create_ndarray_table(name, arr.dtype, arr.shape[1:])
-            with begin_connection(self.engine) as connection:
-                ada = self.get_ada_obj(name)
-                ada.append(arr, connection)
-
-    def prepend(self, array):
-        pass
