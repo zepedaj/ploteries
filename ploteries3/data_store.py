@@ -1,5 +1,5 @@
 from sqlalchemy import (func, Table, Column, Integer, String, DateTime,
-                        ForeignKey, LargeBinary, create_engine, MetaData, insert)
+                        ForeignKey, LargeBinary, create_engine, MetaData)
 from pglib.sqlalchemy import ClassType, JSONEncodedType
 
 
@@ -51,7 +51,7 @@ class DataStore:
             Column('id', Integer, primary_key=True),
             Column('name', String, unique=True),
             Column('handler', ClassType, nullable=False),
-            Column('params', JSONEncodedType))
+            Column('params', JSONEncodedType, nullable=True))
 
         # Specifies figure creation from stored data.
         figure_defs = Table(
