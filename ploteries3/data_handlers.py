@@ -46,6 +46,13 @@ class NDArraySpec(namedtuple('_NDArraySpec', ('dtype', 'shape'))):
 
 class DataHandler(abc.ABC):
 
+    @classmethod
+    @abc.abstractmethod
+    def from_record(self, record):
+        """
+        Initializes a data handler object from a record from the data store's :attr:`data_defs` table.
+        """
+
     @property
     @abc.abstractmethod
     def data_store(self):
@@ -73,6 +80,18 @@ class DataHandler(abc.ABC):
         with begin_connection(self.data_store.engine, connection) as connection:
             yield connection
 
+    @classmethod
+    def decode_params(self, params):
+        """
+        In-place decoding of the the params field of the data_defs record.
+        """
+
+    def encode_params(self):
+        """
+        Produces the params field to place in the data_defs record.
+        """
+        return None
+
     def _load_def(self, connection=None, check=True) -> Union[bool, Row]:
         """
         Loads and decodes the definition from the the data defs table, if it exists, returning
@@ -97,19 +116,26 @@ class DataHandler(abc.ABC):
                     raise TypeError(
                         f'The data definition handler {data_def.handler} '
                         f'does not match the current handler {type(self)}.')
+            self.decode_params(data_def.params)
             return data_def
         else:
             raise Exception('Unexpected case.')
 
-    def _write_def(self, _record_dict, connection=None):
+    def _write_def(self, connection=None):
         """
         Adds an entry to the data defs table and returns True if successful. If an entry already exists, returns False.
         """
 
+        record_dict = {
+            'name': self.name,
+            'handler': type(self),
+            'params': self.encode_params()
+        }
+
         with self.begin_connection(connection) as connection:
             try:
                 connection.execute(
-                    insert(self.data_defs_table), _record_dict)
+                    insert(self.data_defs_table), record_dict)
             except exc.IntegrityError as err:
                 if re.match(
                         f'\\(sqlite3.IntegrityError\\) UNIQUE constraint failed\\: {self.data_defs_table.name}\\.name',
@@ -181,20 +207,18 @@ class UniformNDArrayDataHandler(DataHandler):
         self.name = name
         self.ndarray_spec = NDArraySpec.produce(ndarray_spec)
 
-    def _load_def(self, connection=None) -> Union[bool, Row]:
-        with self.begin_connection(connection) as conn:
-            if (data_def := super()._load_def(connection=conn)):
-                data_def.params['ndarray_spec'] = NDArraySpec.from_serializable(
-                    data_def.params['ndarray_spec'])
-            return data_def
+    @classmethod
+    def from_record(self):
+        pass
 
-    def _write_def(self, connection=None):
-        with self.begin_connection(connection) as connection:
-            return super()._write_def({
-                'name': self.name,
-                'handler': type(self),
-                'params': {'ndarray_spec': self.ndarray_spec.as_serializable()}
-            }, connection=connection)
+    @classmethod
+    def decode_params(self, params):
+        params['ndarray_spec'] = NDArraySpec.from_serializable(
+            params['ndarray_spec'])
+        return params
+
+    def encode_params(self):
+        return {'ndarray_spec': self.ndarray_spec.as_serializable()}
 
     @property
     def ndarray_spec(self):
@@ -320,11 +344,15 @@ class RaggedNDArrayDataHandler(DataHandler):
         self.name = name
         with self.begin_connection() as connection:
             if not (loaded_def := self._load_def(connection=connection)):
-                self._write_def({'name': self.name, 'handler': type(self)})
+                self._write_def(connection=connection)
                 loaded_def = self._load_def(connection=connection)
             if not loaded_def:
                 raise Exception('Unexpected error.')
         self._data_def = loaded_def
+
+    @classmethod
+    def from_record(self):
+        pass
 
     @staticmethod
     def encode(arr):
