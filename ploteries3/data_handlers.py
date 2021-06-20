@@ -121,6 +121,30 @@ class DataHandler(abc.ABC):
             else:
                 return True
 
+    def load(self, *criterion, connection=None):
+        """
+        By default, loads all the records owned by this handler.
+
+        :param criterion: Passed as extra args to a where clause to further restrict the number of records
+        """
+        with self.begin_connection(connection) as connection:
+            # Copy records to pre-assigned memory space.
+            records = list(connection.execute(select(self.data_records_table).where(
+                self.data_records_table.c.data_def_id == self._data_def.id, *criterion).order_by(
+                    self.data_records_table.c.index)))
+
+        return self._format_records(records)
+
+    def _format_records(self, records):
+        meta = np.empty(len(records), dtype=[('index', 'i'),
+                                             ('created', 'datetime64[us]'),
+                                             ('writer_id', 'i')])
+        meta['index'] = [_rec.index for _rec in records]
+        meta['created'] = [_rec.created for _rec in records]
+        meta['writer_id'] = [_rec.writer_id for _rec in records]
+
+        return {'meta': meta}
+
     def __len__(self, connection=None):
         """
         Returns the number of records in the array (i.e., the first dimension of the array). The shape of the entire stored array is hence (len(self), *self.recdims).
@@ -253,37 +277,30 @@ class UniformNDArrayDataHandler(DataHandler):
         with self.begin_connection(connection) as connection:
             connection.execute(insert(self.data_records_table), record)
 
-    def load(self, connection=None):
-        """
-        Loads all data corresponding to this data handler and returns it as a numpy array.
-        """
-        if self._data_def is None:
-            return None
-        else:
-            with self.begin_connection(connection) as connection:
+    def _format_records(self, records):
 
-                # Pre alloc output
-                out_ndarray = np.empty(
-                    (expected_len := self.__len__(connection), *self.ndarray_spec.shape),
-                    dtype=self.ndarray_spec.dtype)
-                out_buffer = out_ndarray.view(dtype='u1')
-                out_buffer.shape = np.prod(out_buffer.shape)
-                row_itemsize = self.rowsize
+        # Pre alloc output
+        out_ndarray = np.empty(
+            (len(records), *self.ndarray_spec.shape),
+            dtype=self.ndarray_spec.dtype)
+        out_buffer = out_ndarray.view(dtype='u1')
+        out_buffer.shape = np.prod(out_buffer.shape)
+        row_itemsize = self.rowsize
 
-                # Copy records to pre-assigned memory space.
-                for k, row in enumerate(
-                        connection.execute(select(self.data_records_table).where(
-                            self.data_records_table.c.data_def_id == self._data_def.id).order_by(
-                                self.data_records_table.c.index))):
-                    out_buffer[k*row_itemsize:(k+1)*row_itemsize] = bytearray(row.bytes)
+        for k, row in enumerate(records):
+            out_buffer[k*row_itemsize:(k+1)*row_itemsize] = bytearray(row.bytes)
 
-                # Sanity checks.
-                if k != expected_len-1:
-                    raise Exception('Could not load the expected number of rows!')
-                if (k+1)*row_itemsize != out_buffer.size:
-                    raise Exception('Did not load the expected number of bytes!')
+        # Sanity checks.
+        if k != len(records)-1:
+            raise Exception('Could not load the expected number of rows!')
+        if (k+1)*row_itemsize != out_buffer.size:
+            raise Exception('Did not load the expected number of bytes!')
 
-                return out_ndarray
+        # Add meta data
+        out_data = super()._format_records(records)
+        out_data['data'] = out_ndarray
+
+        return out_data
 
 
 class RaggedNDArrayDataHandler(DataHandler):
@@ -352,23 +369,12 @@ class RaggedNDArrayDataHandler(DataHandler):
         with self.begin_connection(connection) as connection:
             connection.execute(insert(self.data_records_table), record)
 
-    def load(self, connection=None):
-        """
-        Loads all data corresponding to this data handler and returns it as a numpy array.
-        """
-        if self._data_def is None:
-            return None
-        else:
-            with self.begin_connection(connection) as connection:
+    def _format_records(self, records):
 
-                # Pre alloc output
-                out_arrays = []
+        out_arrays = [self.decode(_row.bytes) for _row in records]
 
-                # Copy records to pre-assigned memory space.
-                for k, row in enumerate(
-                        connection.execute(select(self.data_records_table).where(
-                            self.data_records_table.c.data_def_id == self._data_def.id).order_by(
-                                self.data_records_table.c.index))):
-                    out_arrays.append(self.decode(row.bytes))
+        # Add meta data
+        out_data = super()._format_records(records)
+        out_data['data'] = out_arrays
 
-                return out_arrays
+        return out_data

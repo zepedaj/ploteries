@@ -59,7 +59,7 @@ class TestUniformNDArrayDataHandler(TestCase):
             [dh.add(0, _arr) for _arr in arrs]
 
             dat = dh.load()
-            npt.assert_array_equal(dat, np.array(arrs))
+            npt.assert_array_equal(dat['data'], np.array(arrs))
 
     def test_add_scalars(self):
         num_arrays = 10
@@ -71,7 +71,7 @@ class TestUniformNDArrayDataHandler(TestCase):
             [dh.add(0, _arr) for _arr in arrs]
 
             dat = dh.load()
-            npt.assert_array_equal(dat, np.array(arrs))
+            npt.assert_array_equal(dat['data'], np.array(arrs))
 
 
 class TestRaggedNDArrayDataHandler(TestCase):
@@ -95,5 +95,5 @@ class TestRaggedNDArrayDataHandler(TestCase):
 
             loaded_arrs = dh.load()
 
-            for _arr, _loaded_arr in zip(arrs, loaded_arrs):
+            for _arr, _loaded_arr in zip(arrs, loaded_arrs['data']):
                 npt.assert_array_equal(_arr, _loaded_arr)
