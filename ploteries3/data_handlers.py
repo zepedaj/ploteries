@@ -134,7 +134,7 @@ class DataHandler(abc.ABC):
                     ).scalar()
 
 
-class NDArrayDataHandler(DataHandler):
+class UniformNDArrayDataHandler(DataHandler):
     """
     Writes numpy arrays efficiently enforcing the same shape and dtype, and loads them as a large numpy array, with each data_records table row corresponding to an (possibly multi-dimensional) entry in the numpy array.
 

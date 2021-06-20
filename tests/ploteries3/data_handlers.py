@@ -13,7 +13,7 @@ def complex_dtype():
     return dtype
 
 
-class TestNDArrayDataHandler(TestCase):
+class TestUniformNDArrayDataHandler(TestCase):
     def test_create(self):
         with get_store() as store:
 
@@ -24,7 +24,7 @@ class TestNDArrayDataHandler(TestCase):
                 (complex_dtype(), (1, 3, 2)))
 
             # From None
-            ndh1 = mdl.NDArrayDataHandler(store, 'arr1')
+            ndh1 = mdl.UniformNDArrayDataHandler(store, 'arr1')
             ndh1.ndarray_spec = source_spec
             self.assertEqual(ndh1.ndarray_spec, ndarray_spec)
             self.assertNotEqual(ndh1.ndarray_spec, wrong_ndarray_spec)
@@ -37,7 +37,7 @@ class TestNDArrayDataHandler(TestCase):
             ndh1.ndarray_spec = ndarray_spec
 
             # Load existing
-            ndh2 = mdl.NDArrayDataHandler(store, 'arr1')
+            ndh2 = mdl.UniformNDArrayDataHandler(store, 'arr1')
             self.assertEqual(ndh2.ndarray_spec, ndh1.ndarray_spec)
             self.assertNotEqual(ndh2.ndarray_spec, wrong_ndarray_spec)
             ndh2.ndarray_spec = ndarray_spec
@@ -51,7 +51,7 @@ class TestNDArrayDataHandler(TestCase):
     def test_add(self):
         num_arrays = 10
         with get_store() as store:
-            dh = mdl.NDArrayDataHandler(store, 'arr1')
+            dh = mdl.UniformNDArrayDataHandler(store, 'arr1')
 
             arrs = [pgnp.random_array((10, 5, 7), dtype=complex_dtype())
                     for _ in range(num_arrays)]
