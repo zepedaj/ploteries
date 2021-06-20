@@ -42,7 +42,7 @@ class NDArraySpec(namedtuple('_NDArraySpec', ('dtype', 'shape'))):
 
 class UniformNDArrayDataHandler(DataHandler):
     """
-    Writes numpy arrays (and compataible, including scalars) efficiently enforcing the same shape and dtype, and loads them as a large numpy array, with each data_records table row corresponding to an (possibly multi-dimensional) entry in the numpy array.
+    Writes numpy arrays (and compataible, including scalars) efficiently enforcing the same shape and dtype, and loads them as a large numpy array, with each data_records table row corresponding to an (possibly multi-dimensional) entry in the numpy array. Supports lazy (upon first record add operation) definition of the ndarrary_spec (dtype and shape).
 
     Supports multi-dimensional arrays of arbitary dtype (except Object) including (possibly nested) structured arrays. Supports also scalar inputs that are number.Number sub-types (e.g., integers, floats) or can be converted to arrays using np.require (e.g., lists, tuples).
     """
@@ -116,18 +116,15 @@ class UniformNDArrayDataHandler(DataHandler):
         return None if self.ndarray_spec is None else self.ndarray_spec.shape
 
     @property
-    def rowsize(self):
+    def row_num_bytes(self):
         """
         Number of bytes in one row.
         """
         return int(np.prod(self.row_shape)*self.ndarray_spec.dtype.itemsize)
 
-    def add(self, index, arr: Union[Number, np_typing.ArrayLike], connection=None):
-        """
-        Add new data row.
-        """
+    def encode_record_bytes(self, arr):
 
-        # Required for support of scalars and lists. The data-type can be provided at object
+        # Required for support of scalars and lists. Note that the data-type can be provided at object
         # instantiation time, or it can be inferred.
         arr = np.require(
             arr,
@@ -144,41 +141,32 @@ class UniformNDArrayDataHandler(DataHandler):
         # Convert data, build records
         packed_arr = np.require(arr, dtype=self.ndarray_spec.dtype, requirements='C').view('u1')
         packed_arr.shape = packed_arr.size
-        packed_arr = packed_arr.data
-        record = {'index': index,
-                  'writer_id': self.data_store.writer_id,
-                  'data_def_id': self._data_def.id,
-                  'bytes': packed_arr}
-        # records = [{'row_bytes': np.ascontiguousarray(recfns.repack_fields(arr_row)).tobytes()} for arr_row in arr]
 
-        # Write to database.
-        with self.begin_connection(connection) as connection:
-            connection.execute(insert(self.data_records_table), record)
+        return packed_arr.data
 
-    def _format_records(self, records):
+    def decode_record_bytes(self, data_bytes):
+        return data_bytes
+
+    def merge_records_data(self, records_data):
 
         # Pre alloc output
         out_ndarray = np.empty(
-            (len(records), *self.ndarray_spec.shape),
+            (len(records_data), *self.ndarray_spec.shape),
             dtype=self.ndarray_spec.dtype)
         out_buffer = out_ndarray.view(dtype='u1')
         out_buffer.shape = np.prod(out_buffer.shape)
-        row_itemsize = self.rowsize
+        row_itemsize = self.row_num_bytes
 
-        for k, row in enumerate(records):
-            out_buffer[k*row_itemsize:(k+1)*row_itemsize] = bytearray(row.bytes)
+        for k, row_bytes in enumerate(records_data):
+            out_buffer[k*row_itemsize:(k+1)*row_itemsize] = bytearray(row_bytes)
 
         # Sanity checks.
-        if k != len(records)-1:
+        if k != len(records_data)-1:
             raise Exception('Could not load the expected number of rows!')
         if (k+1)*row_itemsize != out_buffer.size:
             raise Exception('Did not load the expected number of bytes!')
 
-        # Add meta data
-        out_data = super()._format_records(records)
-        out_data['data'] = out_ndarray
-
-        return out_data
+        return out_ndarray
 
 
 class RaggedNDArrayDataHandler(DataHandler):

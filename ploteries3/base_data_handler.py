@@ -128,11 +128,14 @@ class DataHandler(abc.ABC):
         Add new data row.
         """
 
+        # Encoding enables support for lazy initialization (e.g., upon calling method add in class UniformNDArrayDataHandler)
+        encoded_data = self.encode_record_bytes(record_data)
+
         # Convert data, build records
         record = {'index': index,
                   'writer_id': self.data_store.writer_id,
                   'data_def_id': self._data_def.id,
-                  'bytes': self.encode_record_bytes(record_data)}
+                  'bytes': encoded_data}
         # records = [{'row_bytes': np.ascontiguousarray(recfns.repack_fields(arr_row)).tobytes()} for arr_row in arr]
 
         # Write to database.

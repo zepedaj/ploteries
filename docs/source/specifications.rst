@@ -1,6 +1,6 @@
-Ploteries is a plotting library inspired from tensorboard that aims to be provide greater flexibility, extensibility, and separation of storage and visualization. It provides an extensive suite of visualizations.
+Ploteries is a plotting library inspired from tensorboard that aims to be provide greater flexibility, extensibility, and separation of storage and visualization. It provides an extensive suite of visualizations. Ploteries is written entirely in python (based on plotly/Dash), and hence supports easier extensibility by the python community.
 
-Similar to Tensorboard, Ploteries supports
+Similarly to Tensorboard, Ploteries supports
 
 * Live :ref:`smoothing` of line plots (as well as other plot types).
 * The ability to display plots while data is being generated (e.g., during a deep learning training run).
@@ -19,6 +19,7 @@ Besides this, ploteries also provides the following functionality:
   * Documentation on computation of histograms.
   * Optional storage of images and videos as independent media files outside the ploteries database. The root directory of these files can also be specified when the ploteries visualization server is launched, thus making it possible to e.g., avoid sending heavy image datasets to collaborators that already have those images in local storage. Image visualizations can optionally also store a transform definition that can be applied when the visualized image is served, and further support visualization of metadata (e.g., bounding boxes).
 * The ability to pause the update of visualizations, or to globally rewind all visualizations to a previous point in time.
+* Easier, python-only extensibility.
 
 Under the hood mechanisms:
 
