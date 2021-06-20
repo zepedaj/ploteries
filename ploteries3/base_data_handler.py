@@ -111,6 +111,34 @@ class DataHandler(abc.ABC):
             else:
                 return True
 
+    @abc.abstractmethod
+    def encode_record_bytes(self, record_data) -> bytes:
+        """
+        Encodes the record's data to bytes to be added to the ``'bytes'`` field of the :attr:`data_records` table.
+        """
+
+    @abc.abstractmethod
+    def decode_record_bytes(self, record_bytes: bytes):
+        """
+        Decodes the record's ``'bytes'`` field to produce the record's data.
+        """
+
+    def add(self, index, record_data, connection=None):
+        """
+        Add new data row.
+        """
+
+        # Convert data, build records
+        record = {'index': index,
+                  'writer_id': self.data_store.writer_id,
+                  'data_def_id': self._data_def.id,
+                  'bytes': self.encode_record_bytes(record_data)}
+        # records = [{'row_bytes': np.ascontiguousarray(recfns.repack_fields(arr_row)).tobytes()} for arr_row in arr]
+
+        # Write to database.
+        with self.begin_connection(connection) as connection:
+            connection.execute(insert(self.data_records_table), record)
+
     def load(self, *criterion, connection=None):
         """
         By default, loads all the records owned by this handler.
@@ -133,7 +161,15 @@ class DataHandler(abc.ABC):
         meta['created'] = [_rec.created for _rec in records]
         meta['writer_id'] = [_rec.writer_id for _rec in records]
 
-        return {'meta': meta}
+        return {'meta': meta,
+                'data': self.merge_records_data(
+                    [self.decode_record_bytes(_rec.bytes) for _rec in records])}
+
+    @abc.abstractmethod
+    def merge_records_data(self, records_data):
+        """
+        Merges the list of decoded record bytes to create the ``'data'`` field of the dictionary output by the load function.
+        """
 
     def __len__(self, connection=None):
         """

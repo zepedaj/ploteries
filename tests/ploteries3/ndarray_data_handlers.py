@@ -81,8 +81,8 @@ class TestRaggedNDArrayDataHandler(TestCase):
 
     def test_encode_decode(self):
         arr = pgnp.random_array((10, 5, 7), dtype=complex_dtype())
-        encoded_arr = mdl.RaggedNDArrayDataHandler.encode(arr)
-        decoded_arr = mdl.RaggedNDArrayDataHandler.decode(encoded_arr)
+        encoded_arr = mdl.RaggedNDArrayDataHandler.encode_record_bytes(None, arr)
+        decoded_arr = mdl.RaggedNDArrayDataHandler.decode_record_bytes(None, encoded_arr)
         npt.assert_array_equal(arr, decoded_arr)
 
     def test_add(self):

@@ -208,8 +208,7 @@ class RaggedNDArrayDataHandler(DataHandler):
     def from_record(self):
         pass
 
-    @staticmethod
-    def encode(arr):
+    def encode_record_bytes(self, arr):
 
         ndarray_spec = NDArraySpec(arr.dtype, arr.shape)
         packed_arr = np.require(arr, dtype=ndarray_spec.dtype, requirements='C').view('u1')
@@ -221,8 +220,7 @@ class RaggedNDArrayDataHandler(DataHandler):
         ndarray_specs_len_as_bytes = (len(ndarray_specs_as_bytes)).to_bytes(8, 'big')
         return ndarray_specs_len_as_bytes + ndarray_specs_as_bytes + packed_arr
 
-    @staticmethod
-    def decode(arr_bytes):
+    def decode_record_bytes(self, arr_bytes):
         ndarray_specs_len_as_bytes = int.from_bytes(arr_bytes[:8], 'big')
         ndarray_spec = NDArraySpec.from_serializable(json.loads(
             arr_bytes[8: (data_start := (8 + ndarray_specs_len_as_bytes))].decode('utf-8')))
@@ -235,28 +233,5 @@ class RaggedNDArrayDataHandler(DataHandler):
 
         return out_arr
 
-    def add(self, index, arr, connection=None):
-        """
-        Add new data row.
-        """
-
-        # Convert data, build records
-        record = {'index': index,
-                  'writer_id': self.data_store.writer_id,
-                  'data_def_id': self._data_def.id,
-                  'bytes': self.encode(arr)}
-        # records = [{'row_bytes': np.ascontiguousarray(recfns.repack_fields(arr_row)).tobytes()} for arr_row in arr]
-
-        # Write to database.
-        with self.begin_connection(connection) as connection:
-            connection.execute(insert(self.data_records_table), record)
-
-    def _format_records(self, records):
-
-        out_arrays = [self.decode(_row.bytes) for _row in records]
-
-        # Add meta data
-        out_data = super()._format_records(records)
-        out_data['data'] = out_arrays
-
-        return out_data
+    def merge_records_data(self, records_data):
+        return records_data
