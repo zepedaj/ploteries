@@ -1,4 +1,6 @@
 from threading import RLock
+from numbers import Number
+from numpy import typing as np_typing
 import json
 import abc
 from numpy.lib.format import dtype_to_descr, descr_to_dtype
@@ -99,7 +101,7 @@ class DataHandler(abc.ABC):
         else:
             raise Exception('Unexpected case.')
 
-    def _write_def(self, record_dict, connection=None):
+    def _write_def(self, _record_dict, connection=None):
         """
         Adds an entry to the data defs table and returns True if successful. If an entry already exists, returns False.
         """
@@ -107,7 +109,7 @@ class DataHandler(abc.ABC):
         with self.begin_connection(connection) as connection:
             try:
                 connection.execute(
-                    insert(self.data_defs_table), record_dict)
+                    insert(self.data_defs_table), _record_dict)
             except exc.IntegrityError as err:
                 if re.match(
                         f'\\(sqlite3.IntegrityError\\) UNIQUE constraint failed\\: {self.data_defs_table.name}\\.name',
@@ -136,9 +138,9 @@ class DataHandler(abc.ABC):
 
 class UniformNDArrayDataHandler(DataHandler):
     """
-    Writes numpy arrays efficiently enforcing the same shape and dtype, and loads them as a large numpy array, with each data_records table row corresponding to an (possibly multi-dimensional) entry in the numpy array.
+    Writes numpy arrays (and compataible, including scalars) efficiently enforcing the same shape and dtype, and loads them as a large numpy array, with each data_records table row corresponding to an (possibly multi-dimensional) entry in the numpy array.
 
-    Supports multi-dimensional arrays of arbitary dtype (except Object) including (possibly nested) structured arrays.
+    Supports multi-dimensional arrays of arbitary dtype (except Object) including (possibly nested) structured arrays. Supports also scalar inputs that are number.Number sub-types (e.g., integers, floats) or can be converted to arrays using np.require (e.g., lists, tuples).
     """
     _ndarray_spec = None
     data_store = None
@@ -170,14 +172,14 @@ class UniformNDArrayDataHandler(DataHandler):
                 'params': {'ndarray_spec': self.ndarray_spec.as_serializable()}
             }, connection=connection)
 
-    @ property
+    @property
     def ndarray_spec(self):
         """
         The dtype of scalars in the array.
         """
         return self._ndarray_spec
 
-    @ ndarray_spec.setter
+    @ndarray_spec.setter
     def ndarray_spec(self, ndarray_spec):
 
         ndarray_spec = NDArraySpec.produce(ndarray_spec)
@@ -204,27 +206,38 @@ class UniformNDArrayDataHandler(DataHandler):
                         self._data_def = loaded_def_row
                         self.ndarray_spec = loaded_def_row.params['ndarray_spec']
 
-    @ property
+    @property
     def row_shape(self):
         """
         The dimensions of each record in the array. Will be an empty tuple for scalar records.
         """
         return None if self.ndarray_spec is None else self.ndarray_spec.shape
 
-    @ property
+    @property
     def rowsize(self):
         """
         Number of bytes in one row.
         """
         return int(np.prod(self.row_shape)*self.ndarray_spec.dtype.itemsize)
 
-    def add(self, index, arr, connection=None):
+    def add(self, index, arr: Union[Number, np_typing.ArrayLike], connection=None):
         """
         Add new data row.
         """
 
-        # Check data.
-        self.ndarray_spec = NDArraySpec(arr.dtype, arr.shape)
+        # Required for support of scalars and lists. The data-type can be provided at object
+        # instantiation time, or it can be inferred.
+        arr = np.require(
+            arr,
+            dtype=(None if self.ndarray_spec is None else self.ndarray_spec.dtype))
+        if not arr.shape:
+            arr_shape = tuple()
+            arr.shape = (1,)
+        else:
+            arr_shape = arr.shape
+
+        # Check or set data.
+        self.ndarray_spec = NDArraySpec(arr.dtype, arr_shape)
 
         # Convert data, build records
         packed_arr = np.require(arr, dtype=self.ndarray_spec.dtype, requirements='C').view('u1')
@@ -298,6 +311,7 @@ class RaggedNDArrayDataHandler(DataHandler):
 
     @staticmethod
     def encode(arr):
+
         ndarray_spec = NDArraySpec(arr.dtype, arr.shape)
         packed_arr = np.require(arr, dtype=ndarray_spec.dtype, requirements='C').view('u1')
         packed_arr.shape = packed_arr.size
@@ -326,8 +340,6 @@ class RaggedNDArrayDataHandler(DataHandler):
         """
         Add new data row.
         """
-
-        # Check data.
 
         # Convert data, build records
         record = {'index': index,

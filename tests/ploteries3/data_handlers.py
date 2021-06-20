@@ -61,6 +61,18 @@ class TestUniformNDArrayDataHandler(TestCase):
             dat = dh.load()
             npt.assert_array_equal(dat, np.array(arrs))
 
+    def test_add_scalars(self):
+        num_arrays = 10
+        with get_store() as store:
+            dh = mdl.UniformNDArrayDataHandler(store, 'arr1')
+
+            arrs = [_v for _v in range(num_arrays)]
+
+            [dh.add(0, _arr) for _arr in arrs]
+
+            dat = dh.load()
+            npt.assert_array_equal(dat, np.array(arrs))
+
 
 class TestRaggedNDArrayDataHandler(TestCase):
     def test_create(self):
@@ -74,7 +86,8 @@ class TestRaggedNDArrayDataHandler(TestCase):
         npt.assert_array_equal(arr, decoded_arr)
 
     def test_add(self):
-        arrs = [pgnp.random_array((k+5, k*2, k+3), dtype=complex_dtype()) for k in range(1, 10)]
+        arrs = [pgnp.random_array((k+5, k*2, k+3), dtype=complex_dtype())
+                for k in range(1, 10)]
         with get_store() as store:
             dh = mdl.RaggedNDArrayDataHandler(store, 'arr1')
             for k, _arr in enumerate(arrs):
