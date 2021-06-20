@@ -13,7 +13,7 @@ def complex_dtype():
     return dtype
 
 
-class TestNumpyDataHandler(TestCase):
+class TestNDArrayDataHandler(TestCase):
     def test_create(self):
         with get_store() as store:
 
@@ -24,7 +24,7 @@ class TestNumpyDataHandler(TestCase):
                 (complex_dtype(), (1, 3, 2)))
 
             # From None
-            ndh1 = mdl.NumpyDataHandler(store, 'arr1')
+            ndh1 = mdl.NDArrayDataHandler(store, 'arr1')
             ndh1.ndarray_spec = source_spec
             self.assertEqual(ndh1.ndarray_spec, ndarray_spec)
             self.assertNotEqual(ndh1.ndarray_spec, wrong_ndarray_spec)
@@ -37,7 +37,7 @@ class TestNumpyDataHandler(TestCase):
             ndh1.ndarray_spec = ndarray_spec
 
             # Load existing
-            ndh2 = mdl.NumpyDataHandler(store, 'arr1')
+            ndh2 = mdl.NDArrayDataHandler(store, 'arr1')
             self.assertEqual(ndh2.ndarray_spec, ndh1.ndarray_spec)
             self.assertNotEqual(ndh2.ndarray_spec, wrong_ndarray_spec)
             ndh2.ndarray_spec = ndarray_spec
@@ -51,7 +51,7 @@ class TestNumpyDataHandler(TestCase):
     def test_add(self):
         num_arrays = 10
         with get_store() as store:
-            dh = mdl.NumpyDataHandler(store, 'arr1')
+            dh = mdl.NDArrayDataHandler(store, 'arr1')
 
             arrs = [pgnp.random_array((10, 5, 7), dtype=complex_dtype())
                     for _ in range(num_arrays)]
@@ -62,21 +62,21 @@ class TestNumpyDataHandler(TestCase):
             npt.assert_array_equal(dat, np.array(arrs))
 
 
-class TestRaggedNumpyDataHandler(TestCase):
+class TestRaggedNDArrayDataHandler(TestCase):
     def test_create(self):
         with get_store() as store:
-            dh = mdl.RaggedNumpyDataHandler(store, 'arr1')
+            dh = mdl.RaggedNDArrayDataHandler(store, 'arr1')
 
     def test_encode_decode(self):
         arr = pgnp.random_array((10, 5, 7), dtype=complex_dtype())
-        encoded_arr = mdl.RaggedNumpyDataHandler.encode(arr)
-        decoded_arr = mdl.RaggedNumpyDataHandler.decode(encoded_arr)
+        encoded_arr = mdl.RaggedNDArrayDataHandler.encode(arr)
+        decoded_arr = mdl.RaggedNDArrayDataHandler.decode(encoded_arr)
         npt.assert_array_equal(arr, decoded_arr)
 
     def test_add(self):
         arrs = [pgnp.random_array((k+5, k*2, k+3), dtype=complex_dtype()) for k in range(1, 10)]
         with get_store() as store:
-            dh = mdl.RaggedNumpyDataHandler(store, 'arr1')
+            dh = mdl.RaggedNDArrayDataHandler(store, 'arr1')
             for k, _arr in enumerate(arrs):
                 dh.add(k, _arr)
 

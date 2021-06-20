@@ -3,28 +3,14 @@ import json
 import abc
 from numpy.lib.format import dtype_to_descr, descr_to_dtype
 from contextlib import contextmanager
-import sqlite3
-from numba import njit, jit
-from typing import Sequence, Union, Optional
-import threading
 import numpy as np
-from jzf_io import abstract
 from collections import namedtuple
 from numpy.lib import recfunctions as recfns
-import warnings
-from collections import deque
-import sqlalchemy as sqa
-from sqlalchemy.sql.expression import alias
-from sqlalchemy.orm import scoped_session, sessionmaker
-from sqlalchemy import create_engine, MetaData, event, Table, Column, Integer, String, \
-    ForeignKey, types, insert, UniqueConstraint, func, exc, column, text, select
-from sqlalchemy.engine import Engine
-# from .figure_managers import load_figure as figure_manager_load_figure, global_steps as figure_manager_global_steps
-# from pglib.sqlalchemy import PlotlyFigureType, ClassType, sql_query_type_builder, JSONEncodedType
-from pglib.sqlalchemy import JSONEncodedType, NumpyDtypeType, begin_connection
-# from ._sql_data_types import DataMapperType
+from pglib.sqlalchemy import begin_connection
 import re
 from sqlalchemy.engine.result import Row
+from typing import Union, Optional
+from sqlalchemy import insert, func, select, exc
 
 
 class NDArraySpec(namedtuple('_NDArraySpec', ('dtype', 'shape'))):
@@ -148,7 +134,7 @@ class DataHandler(abc.ABC):
                     ).scalar()
 
 
-class NumpyDataHandler(DataHandler):
+class NDArrayDataHandler(DataHandler):
     """
     Writes numpy arrays efficiently enforcing the same shape and dtype, and loads them as a large numpy array, with each data_records table row corresponding to an (possibly multi-dimensional) entry in the numpy array.
 
@@ -287,7 +273,7 @@ class NumpyDataHandler(DataHandler):
                 return out_ndarray
 
 
-class RaggedNumpyDataHandler(DataHandler):
+class RaggedNDArrayDataHandler(DataHandler):
     """
     Writes rows in data_records table that each contain one numpy array with arbitrary shape and dtype. Supports multi-dimensional arrays of arbitary dtype (except Object) including (possibly nested) structured arrays.
     """
