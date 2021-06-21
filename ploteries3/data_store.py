@@ -4,6 +4,7 @@ from pglib.sqlalchemy import ClassType, JSONEncodedType
 from contextlib import contextmanager
 from pglib.sqlalchemy import begin_connection
 from sqlalchemy.sql.elements import BinaryExpression
+from sqlalchemy.sql import column as _c
 
 
 class DataStore:
@@ -38,13 +39,13 @@ class DataStore:
         Gets the data handlers satisfying the specified equality constraints. E.g., 
 
         ```
-        from sqlalchemy.sql import column as c
+        from ploteries3.data_store import _c
         ```
 
         * ``get_data_handlers()`` returns all handlers,
-        * ``get_data_handlers(c('name')=='arr1')`` returns the data handler of name 'arr1',
+        * ``get_data_handlers(_c('name')=='arr1')`` returns the data handler of name 'arr1',
         * ``get_data_handlers(data_store.data_defs_table.c.name=='arr1')`` returns the data handler of name 'arr1',
-        * ``get_data_handlers(c('type')==UniformNDArrayDataHandler)`` returns all data handlers of that type. (NOT WORKING!)
+        * ``get_data_handlers(_c('type')==UniformNDArrayDataHandler)`` returns all data handlers of that type. (NOT WORKING!)
 
         """
         with self.begin_connection(connection) as connection:
