@@ -6,7 +6,7 @@ from pglib.sqlalchemy import begin_connection
 from sqlalchemy.sql.elements import BinaryExpression
 from sqlalchemy.sql import column
 
-_c = column
+col = column
 """
 Convenience alias to sqlalchemy.sql.column. See :method:`DataStore.column` for example usage.
 """
@@ -39,25 +39,40 @@ class DataStore:
         with begin_connection(self.engine, connection) as connection:
             yield connection
 
-    def get_data_handlers(self, *column_constraints: BinaryExpression, connection=None):
+    def _get_handlers(self, defs_table, *column_constraints: BinaryExpression, connection=None):
         """
-        Gets the data handlers satisfying the specified equality constraints. E.g., 
-
-        ```
-        from ploteries3.data_store import _c
-        ```
-
-        * ``get_data_handlers()`` returns all handlers,
-        * ``get_data_handlers(_c('name')=='arr1')`` returns the data handler of name 'arr1',
-        * ``get_data_handlers(data_store.data_defs_table.c.name=='arr1')`` returns the data handler of name 'arr1',
-        * ``get_data_handlers(_c('type')==UniformNDArrayDataHandler)`` returns all data handlers of that type. (NOT WORKING!)
-
+        Helper for :meth:`get_data_handlers` and :meth:`get_figure_handlers`
         """
         with self.begin_connection(connection) as connection:
             handlers = list((
                 _rec.handler.from_def_record(self, _rec) for _rec in
-                connection.execute(select(self.data_defs_table).where(*column_constraints))))
+                connection.execute(select(defs_table).where(*column_constraints))))
         return handlers
+
+    def get_data_handlers(self, *column_constraints: BinaryExpression, connection=None):
+        """
+        Gets the data handlers satisfying the specified binary constraints. E.g., 
+
+        ```
+        from ploteries3.data_store import col
+        ```
+
+        * ``get_data_handlers()`` returns all handlers,
+        * ``get_data_handlers(col('name')=='arr1')`` returns the data handler of name 'arr1',
+        * ``get_data_handlers(data_store.data_defs_table.c.name=='arr1')`` returns the data handler of name 'arr1',
+        * ``get_data_handlers(col('type')==UniformNDArrayDataHandler)`` returns all data handlers of that type. (NOT WORKING!)
+
+        """
+        return self._get_handlers(
+            self.data_defs_table, *column_constraints, connection=connection)
+
+    def get_figure_handlers(self, *column_constraints: BinaryExpression, connection=None):
+        """
+        Gets the figure handlers satisfying the specified binary constraints. See :method:`get_data_handlers` for an example.
+        """
+
+        return self._get_handlers(
+            self.figure_defs_table, *column_constraints, connection=connection)
 
     def _create_tables(self):
         """

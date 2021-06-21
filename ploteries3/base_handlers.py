@@ -4,6 +4,7 @@ from sqlalchemy.engine.result import Row
 from sqlalchemy import insert, func, select, exc
 from typing import Union
 import numpy as np
+from .data_store import col
 
 
 class Handler(abc.ABC):
@@ -15,8 +16,18 @@ class Handler(abc.ABC):
     @abc.abstractmethod
     def from_def_record(cls, data_store, data_def_record):
         """
-        Initializes a data handler object from a record from the data store's :attr:`data_defs` table.
+        Initializes a data handler object from a raw (encoded) record from the data store's :attr:`data_defs` table.
         """
+
+    @classmethod
+    def from_name(cls, data_store, name, connection=None):
+        """
+        Loads the handler starting with the handler name.
+        """
+        with data_store.begin_connection(connection) as connection:
+            def_record = connection.execute(
+                select(cls.get_defs_table(data_store)).where(col(name) == name)).one()
+        return cls.from_def_record(def_record)
 
     @property
     @abc.abstractmethod
