@@ -4,7 +4,12 @@ from pglib.sqlalchemy import ClassType, JSONEncodedType
 from contextlib import contextmanager
 from pglib.sqlalchemy import begin_connection
 from sqlalchemy.sql.elements import BinaryExpression
-from sqlalchemy.sql import column as _c
+from sqlalchemy.sql import column
+
+_c = column
+"""
+Convenience alias to sqlalchemy.sql.column. See :method:`DataStore.column` for example usage.
+"""
 
 
 class DataStore:
