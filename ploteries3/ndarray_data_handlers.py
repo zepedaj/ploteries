@@ -1,14 +1,11 @@
 from threading import RLock
-from numbers import Number
-from numpy import typing as np_typing
 import json
 from numpy.lib.format import dtype_to_descr, descr_to_dtype
 import numpy as np
 from collections import namedtuple
 from numpy.lib import recfunctions as recfns
-from typing import Union, Optional
-from .base_data_handler import DataHandler
-from sqlalchemy import insert
+from typing import Optional
+from .base_handlers import DataHandler
 
 
 class NDArraySpec(namedtuple('_NDArraySpec', ('dtype', 'shape'))):
@@ -48,7 +45,7 @@ class UniformNDArrayDataHandler(DataHandler):
     """
     _ndarray_spec = None
     data_store = None
-    _data_def = None
+    decoded_data_def = None
 
     def __init__(self, data_store, name, ndarray_spec: Optional[NDArraySpec] = None):
         """
@@ -56,20 +53,29 @@ class UniformNDArrayDataHandler(DataHandler):
         :param name: Data name.
         :param ndarray_spec: An :class:`NDArraySpec` producible.
         """
+        self._init_helper(data_store, name, ndarray_spec)
+
+    def _init_helper(self, data_store, name, ndarray_spec):
         self.lock = RLock()
         self.data_store = data_store
         self.name = name
         self.ndarray_spec = NDArraySpec.produce(ndarray_spec)
 
     @classmethod
-    def from_record(self):
-        pass
+    def from_def_record(cls, data_store, data_def_record):
+        obj = object.__new__(cls)
+        cls.decode_params(data_def_record.params)
+        obj._init_helper(
+            data_store,
+            data_def_record.name,
+            data_def_record.params['ndarray_spec'])
+
+        return obj
 
     @classmethod
-    def decode_params(self, params):
+    def decode_params(cls, params):
         params['ndarray_spec'] = NDArraySpec.from_serializable(
             params['ndarray_spec'])
-        return params
 
     def encode_params(self):
         return {'ndarray_spec': self.ndarray_spec.as_serializable()}
@@ -93,19 +99,21 @@ class UniformNDArrayDataHandler(DataHandler):
                     raise ValueError(
                         f'Non-matching ndarray_spec {self.ndarray_spec} and {ndarray_spec}.')
             else:
-                with self.begin_connection() as connection:
-                    if loaded_def_row := self._load_def(connection=connection):
+                with self.data_store.begin_connection() as connection:
+                    if loaded_def_row := self._load_decode_def(
+                            self.data_store, self.name, connection=connection):
                         # Loaded an existing def, set and check match.
                         self._ndarray_spec = loaded_def_row.params['ndarray_spec']
-                        self._data_def = loaded_def_row
+                        self.decoded_data_def = loaded_def_row
                         if ndarray_spec is not None:
                             self.ndarray_spec = ndarray_spec
                     elif ndarray_spec is not None:
                         # Def does not exist, write, load and check match.
                         self._ndarray_spec = ndarray_spec
                         self._write_def(connection=connection)
-                        loaded_def_row = self._load_def(connection=connection)
-                        self._data_def = loaded_def_row
+                        loaded_def_row = self._load_decode_def(
+                            self.data_store, self.name, connection=connection)
+                        self.decoded_data_def = loaded_def_row
                         self.ndarray_spec = loaded_def_row.params['ndarray_spec']
 
     @property
@@ -175,7 +183,7 @@ class RaggedNDArrayDataHandler(DataHandler):
     """
 
     data_store = None
-    _data_def = None
+    decoded_data_def = None
 
     def __init__(self, data_store, name):
         """
@@ -184,17 +192,24 @@ class RaggedNDArrayDataHandler(DataHandler):
         """
         self.data_store = data_store
         self.name = name
-        with self.begin_connection() as connection:
-            if not (loaded_def := self._load_def(connection=connection)):
+        with self.data_store.begin_connection() as connection:
+            if not (loaded_def := self._load_decode_def(
+                    self.data_store, self.name, connection=connection)):
                 self._write_def(connection=connection)
-                loaded_def = self._load_def(connection=connection)
+                loaded_def = self._load_decode_def(
+                    self.data_store, self.name, connection=connection)
             if not loaded_def:
                 raise Exception('Unexpected error.')
-        self._data_def = loaded_def
+        self.decoded_data_def = loaded_def
 
     @classmethod
-    def from_record(self):
-        pass
+    def from_def_record(cls, data_store, data_def_record):
+        obj = object.__new__(cls)
+        obj.data_store = data_store
+        obj.name = data_def_record.name
+        obj.decoded_data_def = data_def_record
+
+        return obj
 
     def encode_record_bytes(self, arr):
 

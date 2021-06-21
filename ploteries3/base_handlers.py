@@ -1,6 +1,4 @@
 import abc
-from contextlib import contextmanager
-from pglib.sqlalchemy import begin_connection
 import re
 from sqlalchemy.engine.result import Row
 from sqlalchemy import insert, func, select, exc
@@ -8,11 +6,14 @@ from typing import Union
 import numpy as np
 
 
-class DataHandler(abc.ABC):
+class Handler(abc.ABC):
+    """
+    Base class for :class:`~ploteries3.figure_handler.FigureHandler`s and :class:`DataHandler`s
+    """
 
     @classmethod
     @abc.abstractmethod
-    def from_record(self, record):
+    def from_def_record(cls, data_store, data_def_record):
         """
         Initializes a data handler object from a record from the data store's :attr:`data_defs` table.
         """
@@ -26,26 +27,20 @@ class DataHandler(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def _data_def(self):
+    def decoded_data_def(self):
         """
-        Contains the Row retrieved from the data_defs table
+        Contains the Row retrieved from the data_defs table, with decoded parameters.
         """
-
-    @property
-    def data_defs_table(self):
-        return self.data_store._metadata.tables['data_defs']
-
-    @property
-    def data_records_table(self):
-        return self.data_store._metadata.tables['data_records']
-
-    @contextmanager
-    def begin_connection(self, connection=None):
-        with begin_connection(self.data_store.engine, connection) as connection:
-            yield connection
 
     @classmethod
-    def decode_params(self, params):
+    @abc.abstractmethod
+    def get_defs_table(cls, data_store):
+        """
+        Returns the defs table (e..g., data_defs or figure_defs)
+        """
+
+    @classmethod
+    def decode_params(cls, params):
         """
         In-place decoding of the the params field of the data_defs record.
         """
@@ -56,7 +51,8 @@ class DataHandler(abc.ABC):
         """
         return None
 
-    def _load_def(self, connection=None, check=True) -> Union[bool, Row]:
+    @classmethod
+    def _load_decode_def(cls, data_store, name, connection=None, check=True) -> Union[bool, Row]:
         """
         Loads and decodes the definition from the the data defs table, if it exists, returning
         the decoded data def row if successful.
@@ -64,26 +60,19 @@ class DataHandler(abc.ABC):
         Returns False if no data def is found in the table, or the data def row if it is found.
         """
 
-        with self.begin_connection(connection) as conn:
+        with data_store.begin_connection(connection) as conn:
             # Build query
-            qry = self.data_defs_table.select().where(self.data_defs_table.c.name == self.name)
+            qry = (defs_table := cls.get_defs_table(data_store)).select().where(
+                defs_table.c.name == name)
 
             # Check that the store specs match the input.
-            data_def = conn.execute(qry).fetchall()
-
-        if len(data_def) == 0:
-            return False
-        elif len(data_def) == 1:
-            data_def = data_def[0]
-            if check:
-                if not isinstance(self, data_def.handler):
-                    raise TypeError(
-                        f'The data definition handler {data_def.handler} '
-                        f'does not match the current handler {type(self)}.')
-            self.decode_params(data_def.params)
-            return data_def
-        else:
-            raise Exception('Unexpected case.')
+            try:
+                data_def = conn.execute(qry).one()
+            except exc.NoResultFound:
+                return False
+            else:
+                cls.decode_params(data_def['params'])
+                return data_def
 
     def _write_def(self, connection=None):
         """
@@ -96,13 +85,13 @@ class DataHandler(abc.ABC):
             'params': self.encode_params()
         }
 
-        with self.begin_connection(connection) as connection:
+        with self.data_store.begin_connection(connection) as connection:
             try:
                 connection.execute(
-                    insert(self.data_defs_table), record_dict)
+                    insert((defs_table := self.get_defs_table(self.data_store))), record_dict)
             except exc.IntegrityError as err:
                 if re.match(
-                        f'\\(sqlite3.IntegrityError\\) UNIQUE constraint failed\\: {self.data_defs_table.name}\\.name',
+                        f'\\(sqlite3.IntegrityError\\) UNIQUE constraint failed\\: {defs_table.name}\\.name',
                         str(err)):
                     return False
                 else:
@@ -110,6 +99,13 @@ class DataHandler(abc.ABC):
 
             else:
                 return True
+
+
+class DataHandler(Handler):
+
+    @classmethod
+    def get_defs_table(cls, data_store):
+        return data_store.data_defs_table
 
     @abc.abstractmethod
     def encode_record_bytes(self, record_data) -> bytes:
@@ -123,7 +119,7 @@ class DataHandler(abc.ABC):
         Decodes the record's ``'bytes'`` field to produce the record's data.
         """
 
-    def add(self, index, record_data, connection=None):
+    def add_data(self, index, record_data, connection=None):
         """
         Add new data row.
         """
@@ -134,25 +130,33 @@ class DataHandler(abc.ABC):
         # Convert data, build records
         record = {'index': index,
                   'writer_id': self.data_store.writer_id,
-                  'data_def_id': self._data_def.id,
+                  'data_def_id': self.decoded_data_def.id,
                   'bytes': encoded_data}
         # records = [{'row_bytes': np.ascontiguousarray(recfns.repack_fields(arr_row)).tobytes()} for arr_row in arr]
 
         # Write to database.
-        with self.begin_connection(connection) as connection:
-            connection.execute(insert(self.data_records_table), record)
+        with self.data_store.begin_connection(connection) as connection:
+            connection.execute(insert(self.data_store.data_records_table), record)
 
-    def load(self, *criterion, connection=None):
+    def load_data(self, *criterion, single_record=False, connection=None):
         """
         By default, loads all the records owned by this handler.
 
         :param criterion: Passed as extra args to a where clause to further restrict the number of records
         """
-        with self.begin_connection(connection) as connection:
-            # Copy records to pre-assigned memory space.
-            records = list(connection.execute(select(self.data_records_table).where(
-                self.data_records_table.c.data_def_id == self._data_def.id, *criterion).order_by(
-                    self.data_records_table.c.index)))
+        with self.data_store.begin_connection(connection) as connection:
+            qry = select(self.data_store.data_records_table).where(
+                self.data_store.data_records_table.c.data_def_id == self.decoded_data_def.id,
+                *criterion
+            )
+            if single_record:
+                qry = qry.order_by(
+                    self.data_store.data_records_table.c.index.desc()).first()
+            else:
+                qry = qry.order_by(
+                    self.data_store.data_records_table.c.index.asc())
+
+            records = list(connection.execute(qry))
 
         return self._format_records(records)
 
@@ -179,11 +183,11 @@ class DataHandler(abc.ABC):
         Returns the number of records in the array (i.e., the first dimension of the array). The shape of the entire stored array is hence (len(self), *self.recdims).
         """
         with self.lock:
-            if self._data_def is None:
+            if self.decoded_data_def is None:
                 return 0
             else:
-                with self.begin_connection(connection) as connection:
+                with self.data_store.begin_connection(connection) as connection:
                     return connection.execute(
-                        select(func.count(self.data_records_table.c.id)).where(
-                            self.data_records_table.c.data_def_id == self._data_def['id'])
-                    ).scalar()
+                        select(func.count(self.data_store.data_records_table.c.id)).where(
+                            self.data_store.data_records_table.c.data_def_id == self.decoded_data_def
+                            ['id'])).scalar()

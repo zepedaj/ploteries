@@ -1,4 +1,5 @@
 from unittest import TestCase
+from sqlalchemy.sql import column as c
 import numpy.testing as npt
 import pglib.numpy as pgnp
 import numpy as np
@@ -29,7 +30,7 @@ class TestUniformNDArrayDataHandler(TestCase):
             self.assertEqual(ndh1.ndarray_spec, ndarray_spec)
             self.assertNotEqual(ndh1.ndarray_spec, wrong_ndarray_spec)
             with begin_connection(store.engine) as conn:
-                results = list(conn.execute(ndh1.data_defs_table.select()).fetchall())
+                results = list(conn.execute(ndh1.data_store.data_defs_table.select()).fetchall())
                 self.assertEqual(len(results), 1)
 
             with self.assertRaises(ValueError):
@@ -56,10 +57,14 @@ class TestUniformNDArrayDataHandler(TestCase):
             arrs = [pgnp.random_array((10, 5, 7), dtype=complex_dtype())
                     for _ in range(num_arrays)]
 
-            [dh.add(0, _arr) for _arr in arrs]
+            [dh.add_data(0, _arr) for _arr in arrs]
 
-            dat = dh.load()
+            dat = dh.load_data()
             npt.assert_array_equal(dat['data'], np.array(arrs))
+
+            npt.assert_array_equal(
+                store.get_data_handlers(c('name') == 'arr1')[0].load_data()['data'],
+                np.array(arrs))
 
     def test_add_scalars(self):
         num_arrays = 10
@@ -68,10 +73,14 @@ class TestUniformNDArrayDataHandler(TestCase):
 
             arrs = [_v for _v in range(num_arrays)]
 
-            [dh.add(0, _arr) for _arr in arrs]
+            [dh.add_data(0, _arr) for _arr in arrs]
 
-            dat = dh.load()
+            dat = dh.load_data()
             npt.assert_array_equal(dat['data'], np.array(arrs))
+
+            npt.assert_array_equal(
+                store.get_data_handlers(c('name') == 'arr1')[0].load_data()['data'],
+                np.array(arrs))
 
 
 class TestRaggedNDArrayDataHandler(TestCase):
@@ -91,9 +100,14 @@ class TestRaggedNDArrayDataHandler(TestCase):
         with get_store() as store:
             dh = mdl.RaggedNDArrayDataHandler(store, 'arr1')
             for k, _arr in enumerate(arrs):
-                dh.add(k, _arr)
+                dh.add_data(k, _arr)
 
-            loaded_arrs = dh.load()
+            loaded_arrs = dh.load_data()
 
             for _arr, _loaded_arr in zip(arrs, loaded_arrs['data']):
+                npt.assert_array_equal(_arr, _loaded_arr)
+
+            for _arr, _loaded_arr in zip(
+                    arrs,
+                    store.get_data_handlers(c('name') == 'arr1')[0].load_data()['data']):
                 npt.assert_array_equal(_arr, _loaded_arr)

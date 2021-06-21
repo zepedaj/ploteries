@@ -1,6 +1,9 @@
-from sqlalchemy import (func, Table, Column, Integer, String, DateTime,
+from sqlalchemy import (func, Table, Column, Integer, String, DateTime, select,
                         ForeignKey, LargeBinary, create_engine, MetaData)
 from pglib.sqlalchemy import ClassType, JSONEncodedType
+from contextlib import contextmanager
+from pglib.sqlalchemy import begin_connection
+from sqlalchemy.sql.elements import BinaryExpression
 
 
 class DataStore:
@@ -25,28 +28,53 @@ class DataStore:
                 self.writer_id = conn.execute(
                     self._metadata.tables['writers'].insert()).inserted_primary_key.id
 
+    @contextmanager
+    def begin_connection(self, connection=None):
+        with begin_connection(self.engine, connection) as connection:
+            yield connection
+
+    def get_data_handlers(self, *column_constraints: BinaryExpression, connection=None):
+        """
+        Gets the data handlers satisfying the specified equality constraints. E.g., 
+
+        ```
+        from sqlalchemy.sql import column as c
+        ```
+
+        * ``get_data_handlers()`` returns all handlers,
+        * ``get_data_handlers(c('name')=='arr1')`` returns the data handler of name 'arr1',
+        * ``get_data_handlers(data_store.data_defs_table.c.name=='arr1')`` returns the data handler of name 'arr1',
+        * ``get_data_handlers(c('type')==UniformNDArrayDataHandler)`` returns all data handlers of that type. (NOT WORKING!)
+
+        """
+        with self.begin_connection(connection) as connection:
+            handlers = list((
+                _rec.handler.from_def_record(self, _rec) for _rec in
+                connection.execute(select(self.data_defs_table).where(*column_constraints))))
+        return handlers
+
     def _create_tables(self):
         """
         Creates new tables or sets their column type.
         """
 
-        data_records = Table(
+        self.data_records_table = Table(
             'data_records', self._metadata,
             Column('id', Integer, primary_key=True),
             Column('index', Integer, nullable=False),
-            Column('created', DateTime, server_default=func.now(), nullable=False),  # AUTO? UTC?
+            Column('created', DateTime, server_default=func.now(), nullable=False),
             Column('writer_id', ForeignKey('writers.id'), nullable=False),
             Column('data_def_id', ForeignKey('data_defs.id'), nullable=False),
             Column('bytes', LargeBinary))
 
         # Distinguishes between writing form different DataStore instances.
-        writers = Table(
+        self.writers_table = Table(
             'writers', self._metadata,
             Column('id', Integer, primary_key=True),
-            Column('created', DateTime, server_default=func.now(), nullable=False))   # AUTO? UTC?
+            Column('created', DateTime, server_default=func.now(), nullable=False))
 
         # Specifies how to retrieve and decode data bytes from the data_records table
-        data_defs = Table(
+        self.data_defs_table = Table(
             'data_defs', self._metadata,
             Column('id', Integer, primary_key=True),
             Column('name', String, unique=True),
@@ -54,7 +82,7 @@ class DataStore:
             Column('params', JSONEncodedType, nullable=True))
 
         # Specifies figure creation from stored data.
-        figure_defs = Table(
+        self.figure_defs_table = Table(
             'figure_defs', self._metadata,
             Column('id', Integer, primary_key=True),
             Column('name', String, unique=True),
