@@ -1,6 +1,8 @@
 import plotly.graph_objects as go
+from pglib.profiling import time_and_print
 from .base_handlers import Handler
 from sqlalchemy.sql import column, select
+from pglib.sqlalchemy import ClassType as _ClassType
 from dash import Dash
 from typing import Dict, Union, Optional
 from pglib.py import SSQ
@@ -42,6 +44,14 @@ class SourceSpec:
     @classmethod
     def from_serializable(cls, val):
         return cls(**val)
+
+
+def encoded_class_name(in_class):
+    """
+    Dash hangs if an identifier dictionary in a pattern matching callback contains a value string with '.' in it.
+    """
+    in_class = in_class if isinstance(in_class, type) else type(in_class)
+    return _ClassType.class_name(in_class).replace('.', '|')
 
 
 class FigureHandler(Handler):
@@ -98,14 +108,14 @@ class FigureHandler(Handler):
         cls.decode_params(data_def_record['params'])
         return cls(data_store, data_def_record.name, **data_def_record.params)
 
-    @ classmethod
+    @classmethod
     def get_defs_table(cls, data_store):
         """
         Returns the defs table (e..g., data_defs or figure_defs)
         """
         return data_store.figure_defs_table
 
-    @ classmethod
+    @classmethod
     def decode_params(cls, params):
         """
         In-place decoding of the the params field of the data_defs record.
@@ -191,7 +201,7 @@ class FigureHandler(Handler):
         graph = dcc.Graph(
             figure=figure,
             id={
-                'type': str(type(self)),
+                'type': encoded_class_name(self),
                 'element': 'graph',
                 'has_slider': self.has_slider(),
                 'name': self.name
@@ -201,7 +211,7 @@ class FigureHandler(Handler):
         if self.has_slider():
             slider = dcc.Slider(
                 id={
-                    'type': str(type(self)),
+                    'type': encoded_class_name(self),
                     'element': 'slider',
                     'name': self.name
                 },
@@ -214,7 +224,7 @@ class FigureHandler(Handler):
 
         return out
 
-    @ classmethod
+    @classmethod
     def create_dash_callbacks(
             cls, app: Dash,
             data_store,
@@ -244,20 +254,35 @@ The first one updates each single_record figure whenever a slider changes or whe
             registry.add(cls)
 
         # Figure update on interval tick
-        @ app.callback(
-            Output({'type': str(cls), 'element': 'graph', 'has_slider': False, 'name': MATCH},
-                   'figure'),
+
+        @app.callback(
+            Output(
+                fig_id := {
+                    'type': encoded_class_name(cls),
+                    'element': 'graph',
+                    'has_slider': False,
+                    'name': MATCH},
+                'figure'),
             n_interval_input,
-            State({'type': str(cls), 'element': 'slider', 'name': MATCH}, 'id'))
+            State(fig_id, 'id'))
         def update_figure_with_no_slider(n_interval, elem_id):
             fig_handler = cls.from_name(data_store, elem_id['name'])
-            return fig_handler.build_figure()
+            figure = fig_handler.build_figure()
+            print(figure)
+            return figure
 
         # Figure update on slider change
-        @ app.callback(
-            Output({'type': str(cls), 'element': 'graph', 'has_slider': True, 'name': MATCH},
-                   'figure'),
-            Input(slider_id := {'type': str(cls), 'element': 'slider', 'name': MATCH}, 'value'),
+
+        @app.callback(
+            Output(
+                {'type': encoded_class_name(cls),
+                 'element': 'graph', 'has_slider': True, 'name': MATCH},
+                'figure'),
+            Input(
+                slider_id :=
+                {'type': encoded_class_name(cls),
+                 'element': 'slider', 'name': MATCH},
+                'value'),
             State(slider_id, 'id'))
         def update_figure_with_slider(index, slider_value, slider_id):
             if slider_value is None:
@@ -268,11 +293,15 @@ The first one updates each single_record figure whenever a slider changes or whe
         # Update all sliders and global index dropdown options on interval tick
         slider_output_keys = ('marks', 'min', 'max', 'value', 'disabled')
 
-        @ app.callback(
-            [Output({'type': str(cls), 'element': 'slider', 'name': ALL}, _x)
+        @app.callback(
+            [Output({'type': encoded_class_name(cls),
+                     'element': 'slider',
+                     'name': ALL}, _x)
              for _x in slider_output_keys] + [global_index_dropdown_options],
             [n_interval_input, global_index_input_value],
-            [State({'type': str(cls), 'element': 'slider', 'name': ALL}, 'id')])
+            [State({'type': encoded_class_name(cls),
+                    'element': 'slider',
+                    'name': ALL}, 'id')])
         def update_all_sliders_and_global_index_dropdown_options(
                 n_intervals, global_index, slider_ids):
             """
@@ -282,8 +311,8 @@ The first one updates each single_record figure whenever a slider changes or whe
 
             # Retrieve all the current indices
             with data_store.begin_connection() as connection:
-                indices = connection.execute(
-                    select(cls.data_records_table.c.index.asc()).distinct()).fetchall()
+                indices = [_x[0] for _x in connection.execute(
+                    select(data_store.data_records_table.c.index.asc()).distinct()).fetchall()]
 
             # Set the slider value.
             value = global_index if global_index is not None else indices[-1]

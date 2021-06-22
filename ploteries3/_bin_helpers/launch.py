@@ -1,4 +1,5 @@
 from .main import main, path_arg
+from pglib.profiling import time_and_print
 
 from collections import namedtuple, OrderedDict
 #
@@ -26,8 +27,8 @@ GRAPH_KWARGS = {}  # {'config': {'displayModeBar': True}}
 global FIGURE_LAYOUT
 
 
-#####
-_wd = 550
+DEFAULT_WIDTH = 550
+DEFAULT_HEIGHT_TO_WIDTH = 2/3
 
 
 def update_figure_layout():
@@ -45,10 +46,10 @@ def update_figure_layout():
             orientation='v'))
 
 
-update_figure_layout()
-
 #
-APP = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+# suppress_callback_exceptions=True)
+APP = dash.Dash(__name__, external_stylesheets=external_stylesheets,
+                suppress_callback_exceptions=True)
 
 # Helper functions.
 
@@ -78,12 +79,12 @@ def get_fig_handler_posn(handler, default='Others'):
     return PosnTuple(tab, group, abs_name=fig_name, rel_name=rel_name)
 
 
+@time_and_print()
 def create_layout(update_interval):
     global APP, DATA_STORE
 
     # Get figure handlers, posns, tabs, groups.
     fig_handlers = DATA_STORE.get_figure_handlers()
-    print(fig_handlers)
     fig_posns = [get_fig_handler_posn(_fh) for _fh in fig_handlers]
     tabs = list(OrderedDict.fromkeys([_fig_posn.tab for _fig_posn in fig_posns]))
     groups = list(OrderedDict.fromkeys([_fig_posn.group for _fig_posn in fig_posns]))
@@ -111,7 +112,7 @@ def create_layout(update_interval):
                         html.Div(
                             [_fig_handler.build_html(empty=True)
                              for _fig_handler, _fig_posn in zip(fig_handlers, fig_posns)
-                             if _fig_posn.group == group and _fig_posn.tab == tab])])
+                             if _fig_posn.group == group and _fig_posn.tab == tab])], open=True)
                         for group in groups])
                 for tab in tabs]),
             dcc.Interval(
@@ -142,14 +143,18 @@ def create_toolbar_callbacks():
 @clx.option('--host', help='Host name.', default='0.0.0.0')
 @clx.option('--port', help='Port number.', default='8000')
 @clx.option('--workers', help='Number of workers (ignored in debug mode).', default=(cpu_count() * 2) + 1)
-@clx.option('--height', help='Figure height,', type=int, default=_wd*(2/3))
-@clx.option('--width', help='Figure width,', type=int, default=_wd)
+@clx.option(
+    '--height', help=f'Figure height (default={DEFAULT_WIDTH*DEFAULT_HEIGHT_TO_WIDTH})', type=int,
+    default=DEFAULT_WIDTH * DEFAULT_HEIGHT_TO_WIDTH)
+@clx.option(
+    '--width', help=f'Figure width (default={DEFAULT_WIDTH}),', type=int,
+    default=DEFAULT_WIDTH)
 def launch(path, debug, host, interval, height, width, port, workers):
     """
     Launch a ploteries visualization server.
     """
     #
-    global DB_PATH, DATA_STORE, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, SLIDER_GROUP
+    global DB_PATH, DATA_STORE, REGISTRY, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, SLIDER_GROUP
     DB_PATH = path
     HEIGHT = height
     WIDTH = width
@@ -158,7 +163,8 @@ def launch(path, debug, host, interval, height, width, port, workers):
     update_figure_layout()
     DATA_STORE = DataStore(DB_PATH, read_only=True)
     #
-    lambda: FigureHandler.create_dash_callbacks(
+    FigureHandler.default_figure_layout_kwargs = FIGURE_LAYOUT
+    FigureHandler.create_dash_callbacks(
         APP, DATA_STORE,
         Input('interval-component', 'n_intervals'),
         Input('global-index-dropdown', 'value'),
