@@ -58,7 +58,7 @@ class Writer:
                 for k in range(len(values)):
                     data_mappings.update({
                         ('data', k, 'x'): (tag, 'meta', 'index'),
-                        ('data', k, 'y'): (tag, 'data', slice(None, k))
+                        ('data', k, 'y'): (tag, 'data', (slice(None), k))
                     })
 
                 # Save figure.
