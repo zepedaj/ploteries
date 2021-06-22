@@ -33,7 +33,7 @@ class TestFigureHandler(TestCase):
             #
             fh = mdl.FigureHandler(
                 store,
-                'fig1',
+                (name := 'fig1'),
                 {'source1': 'arr1',
                  'source2': 'arr2'},
                 {('data', 0, 'x'): ('source1', 'data', 0, 'f0'),
@@ -60,3 +60,18 @@ class TestFigureHandler(TestCase):
             npt.assert_array_equal(
                 SSQ()['data', 1, 'y'](built_fig),
                 arr2_dh.load_data()['data'][0]['f1'])
+
+            # Write the definition to the store
+            fh._write_def()
+            fh_loaded = mdl.FigureHandler.from_name(store, name)
+
+            # Compare figures.
+            built_fig_loaded = fh_loaded.build_figure()
+            self.assertEqual(
+                built_fig.to_json(),
+                built_fig_loaded.to_json())
+
+            # Compare html
+            self.assertEqual(
+                str(fh.build_html()),
+                str(fh_loaded.build_html()))

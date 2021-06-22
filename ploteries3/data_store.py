@@ -86,13 +86,15 @@ class DataStore:
             Column('created', DateTime, server_default=func.now(), nullable=False),
             Column('writer_id', ForeignKey('writers.id'), nullable=False),
             Column('data_def_id', ForeignKey('data_defs.id'), nullable=False),
-            Column('bytes', LargeBinary))
+            Column('bytes', LargeBinary),
+            extend_existing=True)
 
         # Distinguishes between writing form different DataStore instances.
         self.writers_table = Table(
             'writers', self._metadata,
             Column('id', Integer, primary_key=True),
-            Column('created', DateTime, server_default=func.now(), nullable=False))
+            Column('created', DateTime, server_default=func.now(), nullable=False),
+            extend_existing=True)
 
         # Specifies how to retrieve and decode data bytes from the data_records table
         self.data_defs_table = Table(
@@ -100,7 +102,8 @@ class DataStore:
             Column('id', Integer, primary_key=True),
             Column('name', String, unique=True),
             Column('handler', ClassType, nullable=False),
-            Column('params', JSONEncodedType, nullable=True))
+            Column('params', JSONEncodedType, nullable=True),
+            extend_existing=True)
 
         # Specifies figure creation from stored data.
         self.figure_defs_table = Table(
@@ -108,6 +111,7 @@ class DataStore:
             Column('id', Integer, primary_key=True),
             Column('name', String, unique=True),
             Column('handler', ClassType, nullable=False),
-            Column('params', JSONEncodedType))
+            Column('params', JSONEncodedType),
+            extend_existing=True)
 
         self._metadata.create_all()

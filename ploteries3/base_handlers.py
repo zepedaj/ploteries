@@ -26,8 +26,8 @@ class Handler(abc.ABC):
         """
         with data_store.begin_connection(connection) as connection:
             def_record = connection.execute(
-                select(cls.get_defs_table(data_store)).where(col(name) == name)).one()
-        return cls.from_def_record(def_record)
+                select(cls.get_defs_table(data_store)).where(col('name') == name)).one()
+        return cls.from_def_record(data_store, def_record)
 
     @property
     @abc.abstractmethod
