@@ -9,7 +9,9 @@ from ploteries3 import writer_api
 
 @main.command(parents=[path_arg])
 @clx.option('--overwrite', action='store_true', help='overwrite database', default=False)
-def create_test_store(path, overwrite):
+@clx.option('--interval', type=float,
+            help='Number of seconds to wait before starting the next write operation.')
+def create_test_store(path, overwrite, interval):
     """
     Create a test database.
     """
@@ -68,4 +70,4 @@ def create_test_store(path, overwrite):
         #                           k, names=[f'histo{_l}' for _l in range(N)])
 
         # Sleep
-        sleep(.5)
+        sleep(interval)

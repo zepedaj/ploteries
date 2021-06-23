@@ -1,10 +1,14 @@
 import abc
+from time import sleep
 import re
 from sqlalchemy.engine.result import Row
 from sqlalchemy import insert, func, select, exc
 from typing import Union
 import numpy as np
 from .data_store import col
+from logging import getLogger
+
+LOGGER = getLogger(__name__)
 
 
 class Handler(abc.ABC):

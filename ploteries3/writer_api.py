@@ -9,6 +9,7 @@ from .ndarray_data_handlers import UniformNDArrayDataHandler
 from .figure_handlers import FigureHandler
 import plotly.graph_objects as go
 from numpy.typing import ArrayLike
+from pglib.py import SSQ
 
 
 class Writer:
@@ -57,8 +58,10 @@ class Writer:
                 data_mappings = {}
                 for k in range(len(values)):
                     data_mappings.update({
-                        ('data', k, 'x'): (tag, 'meta', 'index'),
-                        ('data', k, 'y'): (tag, 'data', (slice(None), k))
+                        # ('data', k, 'x'): (tag, 'meta', 'index'),
+                        SSQ()['data'][k]['x']: SSQ()[tag]['meta']['index'],
+                        # ('data', k, 'y'): (tag, 'data', (slice(None), k))
+                        SSQ()['data'][k]['y']: SSQ()[tag]['data'][:, k]
                     })
 
                 # Save figure.
