@@ -3,6 +3,7 @@ from pglib.profiling import time_and_print
 from .base_handlers import Handler
 from sqlalchemy.sql import column, select
 from pglib.sqlalchemy import ClassType as _ClassType
+from typing import List
 from dash import Dash
 from typing import Dict, Union, Optional
 from pglib.py import SSQ
@@ -18,7 +19,7 @@ from dash.exceptions import PreventUpdate
 
 @dataclass
 class SourceSpec:
-    """ Defines a data source specification. """
+    """ Defines a data source configuration. """
 
     data_name: str
     """ Name of data in data store. """
@@ -44,6 +45,42 @@ class SourceSpec:
     @classmethod
     def from_serializable(cls, val):
         return cls(**val)
+
+
+class Mapping:
+    """
+    Defines how a figure entry is filled from a data source entry. Entries are defined by sequences of keys encoded internally as :class:`SliceSequence` objects.
+    """
+    figure_keys: SSQ
+    """ The slice sequence-producible that is used to index the figure dictionary."""
+    source_keys: SSQ
+    """ The slice sequence-producible that is used to index the source."""
+
+    def __init__(self, figure_keys, source_keys):
+        self.figure_keys = SSQ.produce(figure_keys)
+        self.source_keys = SSQ.produce(source_keys)
+
+    def __eq__(self, val):
+        return self.figure_keys == val.figure_keys and self.source_keys == val.source_keys
+
+    @classmethod
+    def produce(cls, val):
+        if isinstance(val, (tuple, list)) and len(val) == 2:
+            return cls(*val)
+        elif isinstance(val, dict):
+            return cls(**val)
+        elif isinstance(val, cls):
+            return val
+        else:
+            raise TypeError(f'Invalid type {type(val)}.')
+
+    def as_serializable(self):
+        return {'figure_keys': self.figure_keys.as_serializable(),
+                'source_keys': self.source_keys.as_serializable()}
+
+    @classmethod
+    def from_serializable(cls, serializable):
+        return cls.produce(serializable)
 
 
 def encoded_class_name(in_class):
@@ -76,23 +113,35 @@ class FigureHandler(Handler):
                  data_store,
                  name: str,
                  sources: Dict[str, Union[str, dict]],
-                 data_mappings: Dict[SSQ, SSQ],
+                 mappings: List[Mapping],
                  figure: Union[go.Figure, dict]):
         """
-        :param sources:  A ``source_name`` to ``data_name`` dictionary. The data name can contain the name of a data_records table record, or optionally be a dictionary with configuration parameters (supported fields: `name:str`, `single_record:bool`). The source name will be used in the ``data_mappings`` parameter. Example:
+
+        Instantiates a new figure handler. Note that this does not read or write a figure handler from the data store. To read or write a figure handler's definition form the data store, use :meth:`from_name` or :meth:`write_def`.
+
+        :param sources:  A ``source_name`` to ``data_name`` dictionary. The data name can contain the name of a data_records table record, or optionally be a dictionary with configuration parameters (supported fields: `name:str`, `single_record:bool`). The source name will be used in the ``mappings`` parameter. Example:
         ```
-        {'source_name1': 'data_name1',
-         'source_name2': {'name':'data_name2', single_record:True}}
+        {'source_name0': 'data_name0',
+         'source_name1': {'name':'data_name1', single_record:True}}
         ```
         Valid configuration parameters to be used as dictionary values are (see :class:`SourceSpec`):
 
         *`'data_name' (str)`: The name of the data_store data member.
         *`'single_record' (False|True)`: Whether to load a single record or all records.
 
-        :param data_mappings: Dictionary with :class:`pglib.py.SSQ`-producible keys indicating the figure fields to fill, and :class:`pglib.py.SSQ`-producible values indicating the data source slice to use.  Example:
+        :param mappings: A list of :class:`Mapping`-producibles that describe how to fill (nested) figure fields from (nested) source slices. Example:
         ```
-        {('data', 0, 'x'): ['source_name1', 'data', 'field1'],
-         ('data', 0, 'y'): ['source_name2', 'data', 'field2']}
+        [{'figure_keys':SSQ()['data'][0]['x'], 'source_keys':SSQ()['source_name0']['meta']['index']},
+         {'figure_keys':SSQ()['data'][0]['y'], 'source_keys':SSQ()['source_name1']['data']['field1']},
+         {'figure_keys':SSQ()['data'][0]['z'], 'source_keys':SSQ()['source_name1']['data']['field2']}]
+        ```
+        :class:`SSQ`s represent slice sequences and provide a more natural way to access nested fields. For example, ``SSQ()['layer0'][1]['f0']({'layer0': [None, {'layer1':np.array([(10,20), (10,20)], dtype=[('f0','i'), ('f1', 'i')])}]})`` would extract  a reference to field ``'f0'`` of the numpy array  ``np.array([(20,20)], dtype='f')``.
+
+        Other, more concise forms that can be combined are 2-tuples or dictionaries of :class:`SSQ`-producibles:
+        ```
+        [(('data', 0, 'x'), ['source_name0', 'meta', 'index']),
+         (SSQ()['data'][0]['y'], SSQ()['source_name1']['data']['field1']),
+         {'figure_keys':('data', 0, 'z'), 'source_keys':('source_name1', 'data', 'field2')}]
         ```
 
         .. todo:: Add support for joining data sources.
@@ -100,8 +149,14 @@ class FigureHandler(Handler):
         self.data_store = data_store
         self.name = name
         self.sources = {key: SourceSpec.produce(val) for key, val in sources.items()}
-        self.data_mappings = {SSQ(key): SSQ(val) for key, val in data_mappings.items()}
+        self.mappings = tuple([Mapping.produce(val) for val in mappings])
         self.figure = figure.to_dict() if isinstance(figure, go.Figure) else figure
+
+    def write_def(self):
+        """
+        Adds a record to the data store's :attr:`figure_defs` table.
+        """
+        self._write_def()
 
     @classmethod
     def from_def_record(cls, data_store, data_def_record):
@@ -120,9 +175,8 @@ class FigureHandler(Handler):
         """
         In-place decoding of the the params field of the data_defs record.
         """
-        params['data_mappings'] = {
-            SSQ.from_serializable(key): SSQ.from_serializable(val)
-            for key, val in params['data_mappings']}
+        params['mappings'] = tuple(
+            [Mapping.from_serializable(val) for val in params['mappings']])
         params['sources'] = {
             key: SourceSpec.from_serializable(val)
             for key, val in params['sources'].items()}
@@ -135,9 +189,8 @@ class FigureHandler(Handler):
             'sources': {
                 key: val.as_serializable()
                 for key, val in self.sources.items()},
-            'data_mappings': [
-                [key.as_serializable(), val.as_serializable()]
-                for key, val in self.data_mappings.items()],
+            'mappings': [
+                val.as_serializable() for val in self.mappings],
             'figure': self.figure}
         return params
 
@@ -173,8 +226,8 @@ class FigureHandler(Handler):
         # Load data.
         data = self._load_figure_data(index)
         figure_dict = deepcopy(self.figure)
-        for fig_key, data_key in self.data_mappings.items():
-            fig_key.assign(figure_dict, data_key(data))
+        for _mapping in self.mappings:
+            _mapping.figure_keys.assign(figure_dict, _mapping.source_keys(data))
 
         # Build figure.
         figure = go.Figure(figure_dict)
