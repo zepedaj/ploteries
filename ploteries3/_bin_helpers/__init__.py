@@ -1,6 +1,6 @@
 from .main import main
 
-# Extend main
-from . import create_test_store, launch
+# These imports extend the capabilities of main
+from . import mock_generator, launch  # noqa
 
 __all__ = [main]

@@ -79,7 +79,6 @@ def get_fig_handler_posn(handler, default='Others'):
     return PosnTuple(tab, group, abs_name=fig_name, rel_name=rel_name)
 
 
-@time_and_print()
 def create_layout(update_interval):
     global APP, DATA_STORE
 

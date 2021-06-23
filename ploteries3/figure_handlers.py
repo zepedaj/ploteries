@@ -268,7 +268,6 @@ The first one updates each single_record figure whenever a slider changes or whe
         def update_figure_with_no_slider(n_interval, elem_id):
             fig_handler = cls.from_name(data_store, elem_id['name'])
             figure = fig_handler.build_figure()
-            print(figure)
             return figure
 
         # Figure update on slider change
