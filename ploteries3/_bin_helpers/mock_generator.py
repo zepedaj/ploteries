@@ -5,7 +5,7 @@ from time import sleep
 from itertools import islice
 import os.path as osp
 import numpy as np
-from ploteries3 import writer_api
+from ploteries3.writer import Writer
 from contextlib import nullcontext
 from tempfile import TemporaryDirectory
 
@@ -51,7 +51,7 @@ def launch_mock_generator(out, interval, length):
             while True:
                 yield [next(_w) for _w in walkers]
 
-        writer = writer_api.Writer(out)
+        writer = Writer(out)
         k = -1
         N = 3
         scalars1 = iter(random_walks(N=N))

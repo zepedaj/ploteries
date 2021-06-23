@@ -80,7 +80,10 @@ class Mapping:
 
     @classmethod
     def from_serializable(cls, serializable):
-        return cls.produce(serializable)
+        kwargs = {
+            'figure_keys': SSQ.from_serializable(serializable['figure_keys']),
+            'source_keys': SSQ.from_serializable(serializable['source_keys'])}
+        return cls.produce(kwargs)
 
 
 def encoded_class_name(in_class):
@@ -132,7 +135,8 @@ class FigureHandler(Handler):
         :param mappings: A list of :class:`Mapping`-producibles that describe how to fill (nested) figure fields from (nested) source slices. Example:
         ```
         [{'figure_keys':SSQ()['data'][0]['x'], 'source_keys':SSQ()['source_name0']['meta']['index']},
-         {'figure_keys':SSQ()['data'][0]['y'], 'source_keys':SSQ()['source_name1']['data']['field1']},
+         {'figure_keys':SSQ()['data'][0]['y'], 'source_keys':SSQ()
+                            ['source_name1']['data']['field1']},
          {'figure_keys':SSQ()['data'][0]['z'], 'source_keys':SSQ()['source_name1']['data']['field2']}]
         ```
         :class:`SSQ`s represent slice sequences and provide a more natural way to access nested fields. For example, ``SSQ()['layer0'][1]['f0']({'layer0': [None, {'layer1':np.array([(10,20), (10,20)], dtype=[('f0','i'), ('f1', 'i')])}]})`` would extract  a reference to field ``'f0'`` of the numpy array  ``np.array([(20,20)], dtype='f')``.
@@ -158,19 +162,19 @@ class FigureHandler(Handler):
         """
         self._write_def()
 
-    @classmethod
+    @ classmethod
     def from_def_record(cls, data_store, data_def_record):
         cls.decode_params(data_def_record['params'])
         return cls(data_store, data_def_record.name, **data_def_record.params)
 
-    @classmethod
+    @ classmethod
     def get_defs_table(cls, data_store):
         """
         Returns the defs table (e..g., data_defs or figure_defs)
         """
         return data_store.figure_defs_table
 
-    @classmethod
+    @ classmethod
     def decode_params(cls, params):
         """
         In-place decoding of the the params field of the data_defs record.
@@ -277,7 +281,7 @@ class FigureHandler(Handler):
 
         return out
 
-    @classmethod
+    @ classmethod
     def create_dash_callbacks(
             cls, app: Dash,
             data_store,
@@ -308,7 +312,7 @@ The first one updates each single_record figure whenever a slider changes or whe
 
         # Figure update on interval tick
 
-        @app.callback(
+        @ app.callback(
             Output(
                 fig_id := {
                     'type': encoded_class_name(cls),
@@ -325,7 +329,7 @@ The first one updates each single_record figure whenever a slider changes or whe
 
         # Figure update on slider change
 
-        @app.callback(
+        @ app.callback(
             Output(
                 {'type': encoded_class_name(cls),
                  'element': 'graph', 'has_slider': True, 'name': MATCH},
@@ -345,7 +349,7 @@ The first one updates each single_record figure whenever a slider changes or whe
         # Update all sliders and global index dropdown options on interval tick
         slider_output_keys = ('marks', 'min', 'max', 'value', 'disabled')
 
-        @app.callback(
+        @ app.callback(
             [Output({'type': encoded_class_name(cls),
                      'element': 'slider',
                      'name': ALL}, _x)

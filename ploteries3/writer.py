@@ -35,7 +35,8 @@ class Writer:
                 raise ValueError('Expected a 1-dim array-like object.')
 
             # Add data.
-            data_handler = UniformNDArrayDataHandler(self.data_store, name=tag)
+            data_name = f'_add_scalars.{tag}'
+            data_handler = UniformNDArrayDataHandler(self.data_store, name=data_name)
             data_handler.add_data(global_step, values)
 
             # Check if the figure exists.
@@ -55,20 +56,22 @@ class Writer:
                         x=[], y=[], name=(None if not names else names[k])))
 
                 # Build data mappings
-                data_mappings = {}
+                mappings = []
                 for k in range(len(values)):
-                    data_mappings.update({
+                    mappings.extend([
                         # ('data', k, 'x'): (tag, 'meta', 'index'),
-                        SSQ()['data'][k]['x']: SSQ()[tag]['meta']['index'],
+                        {'figure_keys': SSQ()['data'][k]['x'],
+                         'source_keys': SSQ()[data_name]['meta']['index']},
                         # ('data', k, 'y'): (tag, 'data', (slice(None), k))
-                        SSQ()['data'][k]['y']: SSQ()[tag]['data'][:, k]
-                    })
+                        {'figure_keys': SSQ()['data'][k]['y'],
+                         'source_keys':SSQ()[data_name]['data'][:, k]}
+                    ])
 
                 # Save figure.
                 fig_handler = FigureHandler(
                     self.data_store,
                     name=tag,
-                    sources={tag: tag},
-                    data_mappings=data_mappings,
+                    sources={data_name: data_name},
+                    mappings=mappings,
                     figure=figure)
                 fig_handler._write_def()
