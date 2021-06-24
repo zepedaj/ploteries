@@ -33,61 +33,65 @@ def launch_mock_generator(out, interval, length):
        $ ploteries launch --interval 2 /tmp/tmp_55f_7jh/data_store.pltr
     """
 
-    with (nullcontext() if out else TemporaryDirectory()) as root_dir:
-        out = out or osp.join(root_dir, 'data_store.pltr')
-        #
-        print(
-            f'Launch a ploteries server with the following command:\n\tploteries launch --interval 2 {out}')
+    try:
+        with (nullcontext() if out else TemporaryDirectory()) as root_dir:
+            out = out or osp.join(root_dir, 'data_store.pltr')
+            #
+            print(
+                f'Launch a ploteries server with the following command (ctrl+c to exit):\n\tploteries launch --interval 2 {out}')
 
-        # Data generation
-        def random_walk(start=0, var=1.0):
-            val, std = start, var**0.5
-            while True:
-                yield val + np.random.randn()*(std/10)
-                val += np.random.randn()*std
+            # Data generation
+            def random_walk(start=0, var=1.0):
+                val, std = start, var**0.5
+                while True:
+                    yield val + np.random.randn()*(std/10)
+                    val += np.random.randn()*std
 
-        def random_walks(N=3, start=0, var=1.0):
-            walkers = [iter(random_walk(start=start, var=var)) for _ in range(N)]
-            while True:
-                yield [next(_w) for _w in walkers]
+            def random_walks(N=3, start=0, var=1.0):
+                walkers = [iter(random_walk(start=start, var=var)) for _ in range(N)]
+                while True:
+                    yield [next(_w) for _w in walkers]
 
-        writer = Writer(out)
-        k = -1
-        N = 3
-        scalars1 = iter(random_walks(N=N))
-        scalars2 = iter(random_walks(N=N))
-        plot1 = iter(random_walk())
-        plot2 = iter(random_walk())
-        histo1 = iter(random_walk())
-        histo2 = iter(random_walk())
+            writer = Writer(out)
+            k = -1
+            N = 3
+            scalars1 = iter(random_walks(N=N))
+            scalars2 = iter(random_walks(N=N))
+            plot1 = iter(random_walk())
+            plot2 = iter(random_walk())
+            histo1 = iter(random_walk())
+            histo2 = iter(random_walk())
 
-        with tqdm(total=length) as pbar:
-            while True:
-                k += 1
-                # Add scalars
-                writer.add_scalars('scalars/scalars1', next(scalars1), k,
-                                   names=[f'plot {_l}' for _l in range(N)])
-                writer.add_scalars('scalars/scalars2', next(scalars2), k)
+            with tqdm() as pbar:
+                while True:
+                    k += 1
+                    # Add scalars
+                    writer.add_scalars('scalars/scalars1', next(scalars1), k,
+                                       names=[f'plot {_l}' for _l in range(N)])
+                    writer.add_scalars('scalars/scalars2', next(scalars2), k)
 
-                # # Add plots
-                # X = list(range(50))
-                # if k % 100 == 0:
-                #     writer.add_plots(
-                #         'plots/plot1', [{'x': X, 'y': list(islice(plot1, 50))} for _ in range(N)],
-                #         k, names=[f'plot{_l}' for _l in range(N)])
-                #     writer.add_plots(
-                #         'plots/plot2', [{'x': X, 'y': list(islice(plot2, 50))} for _ in range(N)],
-                #         k, names=[f'plot{_l}' for _l in range(N)])
+                    # # Add plots
+                    # X = list(range(50))
+                    # if k % 100 == 0:
+                    #     writer.add_plots(
+                    #         'plots/plot1', [{'x': X, 'y': list(islice(plot1, 50))} for _ in range(N)],
+                    #         k, names=[f'plot{_l}' for _l in range(N)])
+                    #     writer.add_plots(
+                    #         'plots/plot2', [{'x': X, 'y': list(islice(plot2, 50))} for _ in range(N)],
+                    #         k, names=[f'plot{_l}' for _l in range(N)])
 
-                # # Add histograms
-                # if k % 100 == 0:
-                #     writer.add_histograms('histograms/histogram1',
-                #                           [list(islice(histo1, 1000)) for _ in range(N)],
-                #                           k, names=[f'histo{_l}' for _l in range(N)])
-                #     writer.add_histograms('histograms/histogram2',
-                #                           [list(islice(histo2, 1000)) for _ in range(N)],
-                #                           k, names=[f'histo{_l}' for _l in range(N)])
+                    # # Add histograms
+                    # if k % 100 == 0:
+                    #     writer.add_histograms('histograms/histogram1',
+                    #                           [list(islice(histo1, 1000)) for _ in range(N)],
+                    #                           k, names=[f'histo{_l}' for _l in range(N)])
+                    #     writer.add_histograms('histograms/histogram2',
+                    #                           [list(islice(histo2, 1000)) for _ in range(N)],
+                    #                           k, names=[f'histo{_l}' for _l in range(N)])
 
-                # Sleep
-                sleep(interval)
-                pbar.update(1)
+                    # Sleep
+                    sleep(interval)
+                    pbar.update(1)
+
+    except KeyboardInterrupt:
+        pass

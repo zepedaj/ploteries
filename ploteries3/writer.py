@@ -52,8 +52,8 @@ class Writer:
                 # Create figure template
                 figure = go.Figure()
                 for k in range(len(values)):
-                    figure.add_trace(go.Line(
-                        x=[], y=[], name=(None if not names else names[k])))
+                    figure.add_trace(go.Scatter(
+                        x=[], y=[], name=(None if not names else names[k]), mode='lines'))
 
                 # Build data mappings
                 mappings = []

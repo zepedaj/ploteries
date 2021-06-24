@@ -156,25 +156,32 @@ class FigureHandler(Handler):
         self.mappings = tuple([Mapping.produce(val) for val in mappings])
         self.figure = figure.to_dict() if isinstance(figure, go.Figure) else figure
 
+    @classmethod
+    def encoded_class_name(cls):
+        """
+        Dash hangs if an identifier dictionary in a pattern matching callback contains a value string with '.' in it.
+        """
+        return _ClassType.class_name(cls).replace('.', '|')
+
     def write_def(self):
         """
         Adds a record to the data store's :attr:`figure_defs` table.
         """
         self._write_def()
 
-    @ classmethod
+    @classmethod
     def from_def_record(cls, data_store, data_def_record):
         cls.decode_params(data_def_record['params'])
         return cls(data_store, data_def_record.name, **data_def_record.params)
 
-    @ classmethod
+    @classmethod
     def get_defs_table(cls, data_store):
         """
         Returns the defs table (e..g., data_defs or figure_defs)
         """
         return data_store.figure_defs_table
 
-    @ classmethod
+    @classmethod
     def decode_params(cls, params):
         """
         In-place decoding of the the params field of the data_defs record.
@@ -258,7 +265,7 @@ class FigureHandler(Handler):
         graph = dcc.Graph(
             figure=figure,
             id={
-                'type': encoded_class_name(self),
+                'type': self.encoded_class_name(),
                 'element': 'graph',
                 'has_slider': self.has_slider(),
                 'name': self.name
@@ -268,7 +275,7 @@ class FigureHandler(Handler):
         if self.has_slider():
             slider = dcc.Slider(
                 id={
-                    'type': encoded_class_name(self),
+                    'type': self.encoded_class_name(),
                     'element': 'slider',
                     'name': self.name
                 },
@@ -281,20 +288,21 @@ class FigureHandler(Handler):
 
         return out
 
-    @ classmethod
+    # CALLBACKS
+    _slider_output_keys = ('marks', 'min', 'max', 'value', 'disabled')
+
+    @classmethod
     def create_dash_callbacks(
             cls, app: Dash,
             data_store,
             n_interval_input,
             global_index_input_value,
             global_index_dropdown_options,
-            registry: Optional[set] = set):
+            registry: Optional[set] = set()):
         """
         Produces three callbacks (corresponding to arrows below):
-        * interval -> slider-less figures
-        * intreval -> slider -> with-slider figures
-
-The first one updates each single_record figure whenever a slider changes or when . The second one f
+        * n_interval_input -> slider-less figures
+        * n_interval_input -> slider -> with-slider figures
 
         :param app: The Dash object where callbacks are added.
         :param data_store: The data store.
@@ -312,10 +320,10 @@ The first one updates each single_record figure whenever a slider changes or whe
 
         # Figure update on interval tick
 
-        @ app.callback(
+        @app.callback(
             Output(
                 fig_id := {
-                    'type': encoded_class_name(cls),
+                    'type': cls.encoded_class_name(),
                     'element': 'graph',
                     'has_slider': False,
                     'name': MATCH},
@@ -324,72 +332,80 @@ The first one updates each single_record figure whenever a slider changes or whe
             State(fig_id, 'id'))
         def update_figure_with_no_slider(n_interval, elem_id):
             fig_handler = cls.from_name(data_store, elem_id['name'])
-            figure = fig_handler.build_figure()
-            return figure
+            return fig_handler.build_figure()
 
         # Figure update on slider change
 
-        @ app.callback(
-            Output(
-                {'type': encoded_class_name(cls),
-                 'element': 'graph', 'has_slider': True, 'name': MATCH},
+        @app.callback(
+            Output(graph_id := {
+                'type': cls.encoded_class_name(),
+                'element': 'graph',
+                'has_slider': True,
+                'name': MATCH},
                 'figure'),
-            Input(
-                slider_id :=
-                {'type': encoded_class_name(cls),
-                 'element': 'slider', 'name': MATCH},
-                'value'),
+            Input(slider_id := {**graph_id, 'element': 'slider'},
+                  'value'),
             State(slider_id, 'id'))
         def update_figure_with_slider(index, slider_value, slider_id):
             if slider_value is None:
                 raise PreventUpdate
             fig_handler = cls.from_name(data_store, slider_id['name'])
-            return fig_handler.build_figure(index=index)
+            return fig_handler.build_figure(index=slider_value)
 
         # Update all sliders and global index dropdown options on interval tick
-        slider_output_keys = ('marks', 'min', 'max', 'value', 'disabled')
 
-        @ app.callback(
-            [Output({'type': encoded_class_name(cls),
-                     'element': 'slider',
-                     'name': ALL}, _x)
-             for _x in slider_output_keys] + [global_index_dropdown_options],
+        slider_ids = {'type': cls.encoded_class_name(),
+                      'element': 'slider',
+                      'name': ALL}
+
+        @app.callback(
+            ([Output(slider_ids, _x) for _x in cls._slider_output_keys] +
+             [global_index_dropdown_options]),
             [n_interval_input, global_index_input_value],
-            [State({'type': encoded_class_name(cls),
-                    'element': 'slider',
-                    'name': ALL}, 'id')])
+            [State(slider_ids, 'id')])
         def update_all_sliders_and_global_index_dropdown_options(
                 n_intervals, global_index, slider_ids):
-            """
-            Always updates marks for all sliders with the latest indices from the data store.
-            Always triggers upates of all figures with the specified global_index (the latest if None).
-            """
+            return cls._update_all_sliders_and_global_index_dropdown_options(
+                data_store, n_intervals, global_index, slider_ids)
 
-            # Retrieve all the current indices
-            with data_store.begin_connection() as connection:
-                indices = [_x[0] for _x in connection.execute(
-                    select(data_store.data_records_table.c.index.asc()).distinct()).fetchall()]
+    @classmethod
+    def _update_all_sliders_and_global_index_dropdown_options(
+            cls, data_store, n_intervals, global_index, slider_ids):
+        """
+        Callback helper function that does the following:
 
-            # Set the slider value.
-            value = global_index if global_index is not None else indices[-1]
+        * Always updates marks for all sliders with the latest indices from the data store.
+        * Always triggers upates of all figures with the specified global_index (the latest if None).
 
-            # Build marks.
-            marks = dict(zip(indices, ['']*len(indices)))
-            if len(marks) > 0:
-                for _m in [indices[0], indices[-1]]:
-                    marks[_m] = cls._int(int(_m))
-            min_mark = min(indices)
-            max_mark = max(indices)
+        :param data_store, cls._slider_output_keys: Bound parameters.
+        :param n_intervals, global_index, slider_ids: Same as for :meth:`create_dash_callbacks`.
+        """
 
-            # Build slider parameters
-            shared_slider_state = {'marks': marks, 'min': min_mark,
-                                   'max': max_mark, 'value': value, 'disabled': len(marks) == 1}
+        # Retrieve all the current indices
+        with data_store.begin_connection() as connection:
+            indices = [_x[0] for _x in connection.execute(
+                select(data_store.data_records_table.c.index.asc()).distinct()).fetchall()]
 
-            global_index_dropdown_options = [
-                {'label': cls._int(int(_x)),
-                 'value': int(_x)} for _x in marks]
+        # Set the slider value.
+        value = global_index if global_index is not None else indices[-1]
 
-            return [
-                [shared_slider_state[key]]*len(slider_ids)
-                for key in slider_output_keys
-            ] + [global_index_dropdown_options]
+        # Build marks.
+        marks = dict(zip(indices, ['']*len(indices)))
+        if len(marks) > 0:
+            for _m in [indices[0], indices[-1]]:
+                marks[_m] = cls._int(int(_m))
+        min_mark = min(indices)
+        max_mark = max(indices)
+
+        # Build slider parameters
+        shared_slider_state = {'marks': marks, 'min': min_mark,
+                               'max': max_mark, 'value': value, 'disabled': len(marks) == 1}
+
+        global_index_dropdown_options = [
+            {'label': cls._int(int(_x)),
+             'value': int(_x)} for _x in marks]
+
+        return [
+            [shared_slider_state[key]]*len(slider_ids)
+            for key in cls._slider_output_keys
+        ] + [global_index_dropdown_options]
