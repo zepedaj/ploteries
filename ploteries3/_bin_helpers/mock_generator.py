@@ -67,7 +67,7 @@ def launch_mock_generator(out, interval, length):
                     k += 1
                     # Add scalars
                     writer.add_scalars('scalars/scalars1', next(scalars1), k,
-                                       names=[f'plot {_l}' for _l in range(N)])
+                                       [{'name': f'plot {_l}'} for _l in range(N)])
                     writer.add_scalars('scalars/scalars2', next(scalars2), k)
 
                     # # Add plots
