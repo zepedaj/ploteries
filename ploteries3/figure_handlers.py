@@ -163,12 +163,6 @@ class FigureHandler(Handler):
         """
         return _ClassType.class_name(cls).replace('.', '|')
 
-    def write_def(self):
-        """
-        Adds a record to the data store's :attr:`figure_defs` table.
-        """
-        self._write_def()
-
     @classmethod
     def from_def_record(cls, data_store, data_def_record):
         cls.decode_params(data_def_record['params'])

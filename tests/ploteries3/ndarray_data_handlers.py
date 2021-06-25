@@ -21,33 +21,24 @@ class TestUniformNDArrayDataHandler(TestCase):
             ndarray_spec = mdl.NDArraySpec.produce(
                 source_spec :=
                 (complex_dtype(), (1, 3, 5)))
-            wrong_ndarray_spec = mdl.NDArraySpec.produce(
-                (complex_dtype(), (1, 3, 2)))
 
-            # From None
-            ndh1 = mdl.UniformNDArrayDataHandler(store, 'arr1')
-            ndh1.ndarray_spec = source_spec
+            # From explicit
+            ndh1 = mdl.UniformNDArrayDataHandler(store, 'arr1', ndarray_spec=source_spec)
             self.assertEqual(ndh1.ndarray_spec, ndarray_spec)
-            self.assertNotEqual(ndh1.ndarray_spec, wrong_ndarray_spec)
+            ndh1.write_def()
             with begin_connection(store.engine) as conn:
                 results = list(conn.execute(ndh1.data_store.data_defs_table.select()).fetchall())
                 self.assertEqual(len(results), 1)
 
-            with self.assertRaises(ValueError):
-                ndh1.ndarray_spec = wrong_ndarray_spec
-            ndh1.ndarray_spec = ndarray_spec
+            # Implicit
+            ndh2 = mdl.UniformNDArrayDataHandler(store, 'arr2')
+            ndh2.add_data(0, data2 := pgnp.random_array(ndarray_spec.shape, ndarray_spec.dtype))
+            self.assertEqual(ndh2.ndarray_spec, ndarray_spec)
+            npt.assert_array_equal(data2[None, ...], ndh2.load_data()['data'])
 
             # Load existing
-            ndh2 = mdl.UniformNDArrayDataHandler(store, 'arr1')
-            self.assertEqual(ndh2.ndarray_spec, ndh1.ndarray_spec)
-            self.assertNotEqual(ndh2.ndarray_spec, wrong_ndarray_spec)
-            ndh2.ndarray_spec = ndarray_spec
-            self.assertEqual(ndh2.ndarray_spec, ndh1.ndarray_spec)
-            self.assertNotEqual(ndh2.ndarray_spec, wrong_ndarray_spec)
-
-            with self.assertRaises(ValueError):
-                ndh2.ndarray_spec = wrong_ndarray_spec
-            ndh2.ndarray_spec = ndarray_spec
+            ndh3 = mdl.UniformNDArrayDataHandler.from_name(store, 'arr1')
+            self.assertEqual(ndh3.ndarray_spec, ndh1.ndarray_spec)
 
     def test_add(self):
         num_arrays = 10

@@ -60,14 +60,14 @@ class Handler(abc.ABC):
         In-place decoding of the the params field of the data_defs record.
         """
 
-    def encode_params(self):
+    def encode_params(self, **extra_params):
         """
         Produces the params field to place in the data_defs record.
         """
         return None
 
     @classmethod
-    def _load_decode_def(cls, data_store, name, connection=None, check=True) -> Union[bool, Row]:
+    def load_decode_def(cls, data_store, name, connection=None, check=True) -> Union[bool, Row]:
         """
         Loads and decodes the definition from the the data defs table, if it exists, returning
         the decoded data def row if successful.
@@ -89,7 +89,7 @@ class Handler(abc.ABC):
                 cls.decode_params(data_def['params'])
                 return data_def
 
-    def _write_def(self, connection=None):
+    def write_def(self, connection=None, **extra_params):
         """
         Adds an entry to the data defs table and returns True if successful. If an entry already exists, returns False.
         """
@@ -97,7 +97,7 @@ class Handler(abc.ABC):
         record_dict = {
             'name': self.name,
             'handler': type(self),
-            'params': self.encode_params()
+            'params': self.encode_params(**extra_params)
         }
 
         with self.data_store.begin_connection(connection) as connection:
