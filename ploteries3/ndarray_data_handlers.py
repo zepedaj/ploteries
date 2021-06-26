@@ -139,7 +139,8 @@ class UniformNDArrayDataHandler(DataHandler):
         if not isinstance(arr, np.ndarray):
             arr = np.require(
                 arr, dtype=None if not explicit_ndarray_spec else explicit_ndarray_spec.dtype)
-            if not arr.shape:
+            arr_shape = arr.shape
+            if not arr_shape:
                 arr = arr.view()
                 arr_shape = tuple()
                 arr.shape = (1,)
