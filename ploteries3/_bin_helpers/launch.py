@@ -20,7 +20,7 @@ from pglib.gunicorn import GunicornServer
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 #
 
-global DATA_INTERFACE, DB_PATH, READER, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, APP
+global DATA_INTERFACE, READER, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, APP
 HEIGHT, WIDTH = None, None
 global GRAPH_KWARGS
 GRAPH_KWARGS = {}  # {'config': {'displayModeBar': True}}
@@ -29,32 +29,12 @@ global FIGURE_LAYOUT
 
 DEFAULT_WIDTH = 550
 DEFAULT_HEIGHT_TO_WIDTH = 2/3
-
-
-def update_figure_layout():
-    global FIGURE_LAYOUT
-    FIGURE_LAYOUT = dict(
-        height=HEIGHT, width=WIDTH,
-        margin=go.layout.Margin(**dict(zip('lrbt', [0, 30, 0, 0]), pad=4)),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1),
-        modebar=dict(
-            orientation='v'))
-
+CONTROL_WIDGET_STYLE = {'float': 'left', 'margin': '0em 1em 0em 1em'}
 
 #
 # suppress_callback_exceptions=True)
 APP = dash.Dash(__name__, external_stylesheets=external_stylesheets,
                 suppress_callback_exceptions=True)
-
-# Helper functions.
-
-CONTROL_WIDGET_STYLE = {'float': 'left', 'margin': '0em 1em 0em 1em'}
-
 
 # Layout creation
 
@@ -134,15 +114,28 @@ def launch(path, debug, host, interval, height, width, port, workers):
     Launch a ploteries visualization server.
     """
     #
-    global DATA_INTERFACE, DB_PATH, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH
-    DB_PATH = path
+    global DATA_INTERFACE, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH
     HEIGHT = height
     WIDTH = width
     LARGE_HEIGHT = 2*HEIGHT
     LARGE_WIDTH = 2*WIDTH
-    update_figure_layout()
-    data_store = DataStore(DB_PATH, read_only=True)
-    DATA_INTERFACE = PloteriesLaunchInterface(data_store, figure_layout_kwargs=FIGURE_LAYOUT)
+
+    data_store = DataStore(path, read_only=True)
+    DATA_INTERFACE = PloteriesLaunchInterface(
+        data_store,
+        figure_layout_kwargs={
+            'height': HEIGHT,
+            'width': WIDTH,
+            'margin': go.layout.Margin(**dict(zip('lrbt', [0, 30, 0, 0]), pad=4)),
+            'legend': {
+                'orientation': "h",
+                'yanchor': "bottom",
+                'y': 1.02,
+                'xanchor': "right",
+                'x': 1},
+            'modebar': {
+                'orientation': 'v'}})
+
     #
     DATA_INTERFACE.create_callbacks(
         APP,
