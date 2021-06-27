@@ -48,7 +48,7 @@ class TestUniformNDArrayDataHandler(TestCase):
             arrs = [pgnp.random_array((10, 5, 7), dtype=complex_dtype())
                     for _ in range(num_arrays)]
 
-            [dh.add_data(0, _arr) for _arr in arrs]
+            [dh.add_data(k, _arr) for (k, _arr) in enumerate(arrs)]
 
             dat = dh.load_data()
             npt.assert_array_equal(dat['data'], np.array(arrs))
@@ -64,7 +64,7 @@ class TestUniformNDArrayDataHandler(TestCase):
 
             arrs = [_v for _v in range(num_arrays)]
 
-            [dh.add_data(0, _arr) for _arr in arrs]
+            [dh.add_data(k, _arr) for (k, _arr) in enumerate(arrs)]
 
             dat = dh.load_data()
             npt.assert_array_equal(dat['data'], np.array(arrs))

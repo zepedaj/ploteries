@@ -142,7 +142,9 @@ class DataStore:
         """
 
         # Add default values to idx.
+        no_series_field = False
         if isinstance(idx, str):
+            no_series_field = True
             idx = {'data': [idx]}
         elif isinstance(idx, (list, tuple)):
             idx = {'data': idx}
@@ -219,4 +221,11 @@ class DataStore:
             #
             series[name] = _content
 
-        return {'meta': meta, 'series': series}
+        if no_series_field:
+            # {'meta': meta, 'data': <series data>}
+            out = {'meta': meta, 'data': series[idx['data'][0]]['data']}
+        else:
+            # {'meta': meta, 'series': {<series name>: <series data>, ...}
+            out = {'meta': meta, 'series': series}
+
+        return out

@@ -53,13 +53,14 @@ class TestDataStore(TestCase):
 
     def test_get_data_handlers(self):
         num_arrays = 10
+        time_index = -1
         with get_store() as store:
             dh = UniformNDArrayDataHandler(store, 'arr1')
 
             arrs = [pgnp.random_array((10, 5, 7), dtype=[('f0', 'datetime64'), ('f1', 'int')])
                     for _ in range(num_arrays)]
 
-            [dh.add_data(0, _arr) for _arr in arrs]
+            [dh.add_data(time_index := time_index+1, _arr) for _arr in arrs]
 
             dat = dh.load_data()
             npt.assert_array_equal(dat['data'], np.array(arrs))
@@ -81,7 +82,7 @@ class TestDataStore(TestCase):
             for type_name, num, orig_data in [
                     ('uniform', num_uniform, uniform),
                     ('ragged', num_ragged, ragged)]:
-                for array_index in range(len(num_uniform)):
+                for array_index in range(len(num)):
 
                     series_name = f'{type_name}_{array_index}'
                     #
@@ -90,9 +91,14 @@ class TestDataStore(TestCase):
                         stacked_arrays,
                         store.get_data_handlers(
                             mdl.col('name') == series_name)[0].load_data()['data'])
+                    # Single array as string.
                     npt.assert_array_equal(
                         stacked_arrays,
-                        retrieved := store[series_name]['series'][series_name]['data'])
+                        retrieved := store[series_name]['data'])
+                    # Single array as tuple.
+                    npt.assert_array_equal(
+                        stacked_arrays,
+                        retrieved := store[(series_name,)]['series'][series_name]['data'])
 
     def test_getitem__join(self):
         with get_store_with_data(num_uniform := [4, 3, 5, 2], num_ragged := [3, 8, 5]) \
@@ -132,3 +138,12 @@ class TestDataStore(TestCase):
                 #     npt.assert_array_equal(
                 #         stacked_arrays,
                 #         retrieved)
+
+    def test_getitem__join_single_record(self):
+        pass
+
+    def test_getitem__from_string(self):
+        pass
+
+    def test_index_writer_order_by(self):
+        pass

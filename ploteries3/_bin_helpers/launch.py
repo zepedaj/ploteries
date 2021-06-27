@@ -4,7 +4,7 @@ from pglib.profiling import time_and_print
 from collections import namedtuple, OrderedDict
 #
 import climax as clx
-from ploteries3.figure_handlers import FigureHandler
+from ploteries3._cli_interface import PloteriesLaunchInterface
 from ploteries3.data_store import DataStore
 from ploteries2._ploteries2_helper import get_train_args
 import dash
@@ -19,9 +19,9 @@ from pglib.gunicorn import GunicornServer
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 #
-global DB_PATH, READER, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, APP, SLIDER_GROUP, REGISTRY
+
+global DATA_INTERFACE, DB_PATH, READER, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, APP
 HEIGHT, WIDTH = None, None
-REGISTRY = set()
 global GRAPH_KWARGS
 GRAPH_KWARGS = {}  # {'config': {'displayModeBar': True}}
 global FIGURE_LAYOUT
@@ -57,36 +57,17 @@ CONTROL_WIDGET_STYLE = {'float': 'left', 'margin': '0em 1em 0em 1em'}
 
 
 # Layout creation
-PosnTuple = namedtuple('PosnTuple', ['tab', 'group', 'abs_name', 'rel_name'])
-
-
-def get_fig_handler_posn(handler, default='Others'):
-    """
-    Specifies where figures will be positions in the layout.
-    """
-
-    fig_name = handler.name
-
-    hierarchy = fig_name.split('/')
-    if len(hierarchy) == 1:
-        tab, group, rel_name = (default, default, fig_name)
-    elif len(hierarchy) == 2:
-        tab, group, rel_name = (hierarchy[0], default, hierarchy[1])
-    elif len(hierarchy) > 2:
-        tab, group, rel_name = hierarchy[0], hierarchy[1],  '/'.join(hierarchy[2:])
-    else:
-        raise Exception('Unexpected case!')
-    return PosnTuple(tab, group, abs_name=fig_name, rel_name=rel_name)
 
 
 def create_layout(update_interval):
-    global APP, DATA_STORE
+    global DATA_INTERFACE
 
     # Get figure handlers, posns, tabs, groups.
-    fig_handlers = DATA_STORE.get_figure_handlers()
-    fig_posns = [get_fig_handler_posn(_fh) for _fh in fig_handlers]
-    tabs = list(OrderedDict.fromkeys([_fig_posn.tab for _fig_posn in fig_posns]))
-    groups = list(OrderedDict.fromkeys([_fig_posn.group for _fig_posn in fig_posns]))
+    empty_figs = DATA_INTERFACE.render_empty_figures()
+    # Ordered, unique tabs
+    tabs = list(OrderedDict.fromkeys([_fig.posn.tab for _fig in empty_figs]))
+    # Ordered, unique groups
+    groups = list(OrderedDict.fromkeys([_fig.posn.group for _fig in empty_figs]))
 
     # Layout
     layout = html.Div(
@@ -109,9 +90,9 @@ def create_layout(update_interval):
                     children=[html.Details([
                         html.Summary(group),
                         html.Div(
-                            [_fig_handler.build_html(empty=True)
-                             for _fig_handler, _fig_posn in zip(fig_handlers, fig_posns)
-                             if _fig_posn.group == group and _fig_posn.tab == tab])], open=True)
+                            [_fig.html
+                             for _fig in empty_figs
+                             if _fig.posn.group == group and _fig.posn.tab == tab])], open=True)
                         for group in groups])
                 for tab in tabs]),
             dcc.Interval(
@@ -153,22 +134,21 @@ def launch(path, debug, host, interval, height, width, port, workers):
     Launch a ploteries visualization server.
     """
     #
-    global DB_PATH, DATA_STORE, REGISTRY, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, SLIDER_GROUP
+    global DATA_INTERFACE, DB_PATH, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH
     DB_PATH = path
     HEIGHT = height
     WIDTH = width
     LARGE_HEIGHT = 2*HEIGHT
     LARGE_WIDTH = 2*WIDTH
     update_figure_layout()
-    DATA_STORE = DataStore(DB_PATH, read_only=True)
+    data_store = DataStore(DB_PATH, read_only=True)
+    DATA_INTERFACE = PloteriesLaunchInterface(data_store, figure_layout_kwargs=FIGURE_LAYOUT)
     #
-    FigureHandler.default_figure_layout_kwargs = FIGURE_LAYOUT
-    FigureHandler.create_dash_callbacks(
-        APP, DATA_STORE,
+    DATA_INTERFACE.create_callbacks(
+        APP,
         Input('interval-component', 'n_intervals'),
         Input('global-index-dropdown', 'value'),
         Output("global-index-dropdown", "options"),
-        REGISTRY
     )
 
     APP.layout = lambda: create_layout(update_interval=interval)

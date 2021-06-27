@@ -6,7 +6,7 @@ from numbers import Number
 from sqlalchemy import exc
 from .data_store import DataStore
 from .ndarray_data_handlers import UniformNDArrayDataHandler
-from .figure_handlers import FigureHandler
+from .figure_handler import FigureHandler
 import plotly.graph_objects as go
 from numpy.typing import ArrayLike
 from typing import Optional, List, Dict
@@ -14,7 +14,6 @@ from pglib.py import SSQ
 
 
 class Writer:
-    _figures = {}
 
     def __init__(self, path):
         self.data_store = path if isinstance(path, DataStore) else DataStore(path)
@@ -102,3 +101,56 @@ class Writer:
             data_name = f'_add_scalars.{tag}'
             data_handler = UniformNDArrayDataHandler(self.data_store, name=data_name)
             data_handler.add_data(global_step, values, connection=connection)
+
+    def add_plots(self, tag: str, values: ArrayLike, global_step: int, names=None,
+                  overwrite=False):
+
+        values = [
+            {'trace': {'type': 'scatter', 'name': 'plot 1', 'x': SSQ()[0, ::2], 'y': SSQ()[1, ::2]},
+             'data': np.array([[10, 20, 30, 40], [20, 40, 60, 80]])},
+            {'trace': {'type': 'bar', 'name': 'plot 2', 'x': SSQ()['f0'], 'y': SSQ()['f1']},
+             'data': np.array([(0, 0.0), (1, 1.1)], dtype=[('f0', 'i'), ('f1', 'f')])}],
+        data = np.array([(0, 0.0), (1, 1.1)], dtype=[('f0', 'i'), ('f1', 'f')])
+
+    def add_figure(
+            self, name: str, sources, traces: List[Dict],
+            layout: Optional[Dict] = {},
+            overwrite=False, trace_defaults={}):
+        """
+        Creates a figure with the given name and containing the specified traces.
+
+        :param sources: Data source specification. Same syntax as :class:`~ploteries.figure_handler.FigureHandler`
+        :param traces: Trace specification as dictionary. Fields in this dictionary that are :class:`SSQ` instances will be linked to the data source.
+
+        Example:
+        ```
+        add_data('uniform', 'msft_stock', 0, np.array([0.0, 1.1, 2.2]))
+        add_figure(
+            traces = [
+                {'type': 'scatter', 'name': 'plot 1',
+                 'x': SSQ()['msft_stock']['data'][::2], 'y': SSQ()[1, ::2]},
+                {'type': 'bar', 'name': 'plot 2', 'x': SSQ()['f0'], 'y': SSQ()['f1']}])
+        ```
+        """
+
+        trace_defaults = {'type': 'scatter', **trace_defaults}
+
+        # Build data mappings, remove SSQ objects from traces.
+        mappings = []
+
+        for k, _trace in enumerate(traces):
+            mappings.extend([
+                {'figure_keys': ('data', k, key), 'data_keys': ssq}
+                for key, ssq in _trace.items() if isinstance(ssq, SSQ)])
+            traces[k] = {**trace_defaults, **{
+                key: val for key, val in _trace.items() if not isinstance(val, SSQ)}}
+
+        # Build figure and traces, ensure type checking.
+        figure = go.Figure()
+        figure.update_layout(**layout)
+        for trace in traces:
+            figure.add_trace(getattr(go, trace.pop('type').capitalize())(**trace))
+
+        # Add the figure definition to the data store.
+        fh = FigureHandler(self.data_store, name, sources, mappings, figure)
+        fh.write_def()
