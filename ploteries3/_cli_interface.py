@@ -1,4 +1,5 @@
 import abc
+from pglib.profiling import time_and_print
 from pglib.py import class_name
 from pglib.validation import checked_get_single
 from ploteries3.data_store import Col_

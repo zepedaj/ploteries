@@ -12,16 +12,16 @@ class TestWriter(TestCase):
             # Write data
             writer = mdl.Writer(tmp_fo.name)
             num_traces = 3
-            fig_name = 'fig1'
-            writer.add_scalars(fig_name, rec0_arr := np.array([0]*num_traces), 0)
-            writer.add_scalars(fig_name, rec1_arr := np.array([1]*num_traces), 1)
+            figure_name = 'fig1'
+            writer.add_scalars(figure_name, rec0_arr := np.array([0]*num_traces), 0)
+            writer.add_scalars(figure_name, rec1_arr := np.array([1]*num_traces), 1)
 
-            data_name = mdl.Writer._get_table_name('add_scalars', fig_name=fig_name)
+            data_name = mdl.Writer._get_table_name('add_scalars', figure_name=figure_name)
 
             # Verify contents.
             store = DataStore(tmp_fo.name)
             self.assertEqual([_x.name for _x in store.get_figure_handlers()],
-                             [fig_name])
+                             [figure_name])
             self.assertEqual([_x.name for _x in store.get_data_handlers()],
                              [data_name])
 

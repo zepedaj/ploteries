@@ -20,7 +20,7 @@ from pglib.gunicorn import GunicornServer
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 #
 
-global DATA_INTERFACE, READER, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, APP
+global DATA_INTERFACE, DATA_STORE, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, APP
 HEIGHT, WIDTH = None, None
 global GRAPH_KWARGS
 GRAPH_KWARGS = {}  # {'config': {'displayModeBar': True}}
@@ -114,15 +114,15 @@ def launch(path, debug, host, interval, height, width, port, workers):
     Launch a ploteries visualization server.
     """
     #
-    global DATA_INTERFACE, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH
+    global DATA_INTERFACE, DATA_STORE, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH
     HEIGHT = height
     WIDTH = width
     LARGE_HEIGHT = 2*HEIGHT
     LARGE_WIDTH = 2*WIDTH
 
-    data_store = DataStore(path, read_only=True)
+    DATA_STORE = DataStore(path, read_only=True)
     DATA_INTERFACE = PloteriesLaunchInterface(
-        data_store,
+        DATA_STORE,
         figure_layout_kwargs={
             'height': HEIGHT,
             'width': WIDTH,

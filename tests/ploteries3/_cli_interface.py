@@ -4,7 +4,7 @@ from dash.dependencies import Input, Output, ALL
 import dash
 from .figure_handler import get_store_with_fig
 from ploteries3 import _cli_interface as mdl
-from ploteries3.data_store import col
+from ploteries3.data_store import Col_
 
 
 class TestPloteriesLaunchInterface(TestCase):
@@ -26,7 +26,7 @@ class TestPloteriesLaunchInterface(TestCase):
 
             # Compare traces from pli to traces from figure handler.
             fig_from_handle_traces = store.get_figure_handlers(
-                col('name') == 'fig1')[0].build_figure().to_dict()['data']
+                Col_('name') == 'fig1')[0].build_figure().to_dict()['data']
             fig_from_pli_traces = pli._build_formatted_figure_from_name('fig1').to_dict()['data']
             self.assertEqual(len(fig_from_handle_traces), len(fig_from_pli_traces))
             for trace1, trace2 in zip(fig_from_handle_traces, fig_from_pli_traces):

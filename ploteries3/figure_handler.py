@@ -1,4 +1,5 @@
 import plotly.graph_objects as go
+from sqlalchemy import exc
 from pglib.profiling import time_and_print
 from .base_handlers import Handler
 from typing import List, Optional
@@ -89,3 +90,30 @@ class FigureHandler(Handler):
         return any((
             _data_key.query_params['index'] == 'latest'
             for _data_key in self.data_keys))
+
+    # Constructors
+
+    @classmethod
+    def from_traces(
+            cls, data_store, name: str, traces: List[Dict],
+            default_trace_args={},
+            connection=None):
+        """
+        :param traces: List of traces as dictionaries, potentially containing :class:`~ploteries.data_store.Ref_` references.
+        """
+
+        # Build default trace args.
+        traces = [
+            {**default_trace_args, **_trace} for _trace in traces]
+
+        # Create figure and append traces
+        fig_dict = go.Figure(layout_template=None).to_dict()
+        fig_dict['data'].extend(traces)
+
+        # Save figure.
+        fig_handler = FigureHandler(
+            data_store,
+            name=name,
+            figure_dict=fig_dict)
+
+        return fig_handler

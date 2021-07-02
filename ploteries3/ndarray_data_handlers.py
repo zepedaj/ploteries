@@ -157,7 +157,8 @@ class UniformNDArrayDataHandler(DataHandler):
 
             # Write data def if it does not exist.
             if self.decoded_data_def is None:
-                self.write_def(connection=connection, ndarray_spec=input_ndarray_spec)
+                self.write_def(connection=connection, extra_params={
+                               'ndarray_spec': input_ndarray_spec})
                 self.decoded_data_def = self.load_decode_def(
                     self.data_store, self.name, connection=connection)
 

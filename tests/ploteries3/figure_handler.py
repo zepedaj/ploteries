@@ -84,3 +84,14 @@ class TestFigureHandler(TestCase):
                 'figure_dict': dict(fig_h.figure_dict)}
             mdl.FigureHandler.decode_params(decoded_params := fig_h.encode_params())
             self.assertDictEqual(orig_params, decoded_params)
+
+    def test_from_traces(self):
+        with get_store_with_fig() as (store, arr1_h, arr2_h, fig_h):
+            built_fig = fig_h.build_figure()
+            fig_h_ft = mdl.FigureHandler.from_traces(
+                store, 'from_traces', fig_h.figure_dict['data'])
+            built_fig_ft = fig_h_ft.build_figure()
+
+            self.assertEqual(
+                built_fig.to_json(),
+                built_fig_ft.to_json())

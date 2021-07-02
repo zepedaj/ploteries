@@ -16,7 +16,7 @@ from pglib.slice_sequence import SSQ_
 class Writer:
 
     _table_names = {
-        'add_scalars': '__add_scalars__.{fig_name}'}
+        'add_scalars': '__add_scalars__.{figure_name}'}
 
     def __init__(self, path):
         self.data_store = path if isinstance(path, DataStore) else DataStore(path)
@@ -25,13 +25,13 @@ class Writer:
     def _get_table_name(cls, func, **kwargs):
         return cls._table_names[func].format(**kwargs)
 
-    def add_scalars(self, fig_name: str, values: ArrayLike, global_step: int,
+    def add_scalars(self, figure_name: str, values: ArrayLike, global_step: int,
                     trace_args: Optional[List[Dict]] = None, data_name=None):
         """
-        :param fig_name: The figure name. If specified in format '<tab>/<group>/...' , the tab and group entries will determine the position of the figure in the page.
+        :param figure_name: The figure name. If specified in format '<tab>/<group>/...' , the tab and group entries will determine the position of the figure in the page.
         :param values: The values for each scalar trace as an array-like.
         :param names: The legend name to use for each trace.
-        :param traces: List of length equal to that of values containing keyword arguments for the trace. The default value for unspecified valuew (None) is ``{'type':'scatter', 'mode':'lines'}``.
+        :param traces: None or list of dictionaries of length equal to that of values containing keyword arguments for the trace. The default value for each trace is ``{'type':'scatter', 'mode':'lines'}`` and will be updated with the specified values.
 
         Example:
 
@@ -44,58 +44,47 @@ class Writer:
              {'type': 'bar', 'name': 'trace 2'}])
         ```
         """
+        default_trace_args = {'type': 'scatter', 'mode': 'lines'}
+
+        # Get data name.
+        data_name = data_name or self._get_table_name(
+            'add_scalars', figure_name=figure_name)
+
+        # Check values input
+        values = np.require(values)
+        if values.ndim != 1 or not isinstance(values[0], Number):
+            raise ValueError('Expected a 1-dim array-like object.')
+
+        # Check trace_args input
+        if trace_args and len(trace_args) != len(values):
+            raise ValueError(
+                f'Param trace_args has {len(trace_args)} values, '
+                f'but expected 0 or {len(values)}.')
+
+        # Build default trace args.
+        traces = [
+            {'x': Ref_(data_name)['meta']['index'],
+             'y': Ref_(data_name)['data'][:, k],
+             **{**default_trace_args, **(_trace_args or {})}
+             }
+            for k, _trace_args in enumerate(
+                (trace_args or [None]*len(values)))]
+
+        # Create figure handler.
+        fig_handler = FigureHandler.from_traces(
+            self.data_store,
+            name=figure_name,
+            traces=traces)
 
         with self.data_store.begin_connection() as connection:
+            # Write figure (if it does not exist)
+            fig_handler.write_def(connection=connection)
 
-            #
-            data_name = data_name or self._get_table_name(
-                'add_scalars', fig_name=fig_name)
-
-            # Check values input
-            values = np.require(values)
-            if values.ndim != 1 or not isinstance(values[0], Number):
-                raise ValueError('Expected a 1-dim array-like object.')
-
-            # Check if the figure exists.
-            try:
-                fig_handler = FigureHandler.from_name(self.data_store, fig_name)
-                figure_exists = True
-            except exc.NoResultFound:
-                figure_exists = False
-
-            # Write the figure
-            if not figure_exists:
-
-                # Check trace_args input
-                if trace_args and len(trace_args) != len(values):
-                    raise ValueError(
-                        f'Param trace_args has {len(trace_args)} values, '
-                        f'but expected 0 or {len(values)}.')
-
-                # Build default trace args.
-                traces = [
-                    {'x': Ref_(data_name)['meta']['index'],
-                     'y': Ref_(data_name)['data'][:, k],
-                     **(_trace_args or {'type': 'scatter', 'mode': 'lines'})}
-                    for k, _trace_args in enumerate(
-                        (trace_args or [None]*len(values)))]
-
-                # Create figure and append traces
-                figure = go.Figure(layout_template=None).to_dict()
-                figure['data'].extend(traces)
-
-                # Save figure.
-                fig_handler = FigureHandler(
-                    self.data_store,
-                    name=fig_name,
-                    figure_dict=figure)
-                fig_handler.write_def(connection=connection)
-
-            # Write the data data.
+            # Write data
             data_handler = UniformNDArrayDataHandler(self.data_store, name=data_name)
             data_handler.add_data(global_step, values, connection=connection)
 
-    def add_plots(self, fig_name: str, values: ArrayLike, global_step: int, names=None,
+    def add_plots(self, figure_name: str, values: ArrayLike, global_step: int, names=None,
                   overwrite=False):
 
         values = [

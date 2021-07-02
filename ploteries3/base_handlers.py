@@ -89,7 +89,7 @@ class Handler(abc.ABC):
                 cls.decode_params(data_def['params'])
                 return data_def
 
-    def write_def(self, connection=None, **extra_params):
+    def write_def(self, connection=None, mode='insert', extra_params={}):
         """
         Adds an entry to the data defs table and returns True if successful. If an entry already exists, returns False.
         """
