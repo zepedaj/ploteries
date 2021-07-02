@@ -12,22 +12,27 @@ class TestWriter(TestCase):
             # Write data
             writer = mdl.Writer(tmp_fo.name)
             num_traces = 3
-            writer.add_scalars('fig1', rec0_arr := np.array([0]*num_traces), 0)
-            writer.add_scalars('fig1', rec1_arr := np.array([1]*num_traces), 1)
+            fig_name = 'fig1'
+            writer.add_scalars(fig_name, rec0_arr := np.array([0]*num_traces), 0)
+            writer.add_scalars(fig_name, rec1_arr := np.array([1]*num_traces), 1)
+
+            data_name = mdl.Writer._get_table_name('add_scalars', tag=fig_name)
 
             # Verify contents.
             store = DataStore(tmp_fo.name)
             self.assertEqual([_x.name for _x in store.get_figure_handlers()],
-                             ['fig1'])
+                             [fig_name])
             self.assertEqual([_x.name for _x in store.get_data_handlers()],
-                             ['_add_scalars.fig1'])
+                             [data_name])
 
             # Check loaded data.
             fig_h = store.get_figure_handlers()[0]
-            npt.assert_array_equal(
-                np.stack((rec0_arr, rec1_arr)),
-                fig_h._load_figure_data()['_add_scalars.fig1']['data'])
 
             # Check built figure.
             fig = fig_h.build_figure()
             self.assertEqual(len(fig['data']), num_traces)
+
+            for _k in range(num_traces):
+                npt.assert_array_equal(
+                    np.stack((rec0_arr, rec1_arr))[:, _k],
+                    fig['data'][_k]['y'])
