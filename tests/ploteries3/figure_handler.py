@@ -1,6 +1,7 @@
 from ploteries3 import figure_handler as mdl
+from ploteries3.data_store import Ref_
 import numpy.testing as npt
-from pglib.py import SSQ
+from pglib.slice_sequence import SSQ_
 import plotly.graph_objects as go
 from ploteries3.ndarray_data_handlers import UniformNDArrayDataHandler
 from unittest import TestCase
@@ -33,23 +34,14 @@ def get_store_with_fig():
         fig = go.Figure()
         for k in range(2):
             fig.add_trace(go.Scatter(x=[], y=[], mode='lines', name=f'plot_{k}'))
+        fig_dict = fig.to_dict()
+        fig_dict['data'][0]['x'] = Ref_('arr1')['data'][0]['f0']
+        fig_dict['data'][0]['y'] = Ref_('arr1')['data'][0]['f1']
+        fig_dict['data'][1]['x'] = Ref_('arr2')['data'][0]['f0']
+        fig_dict['data'][1]['y'] = Ref_('arr2')['data'][0]['f1']
 
         #
-        fig_h = mdl.FigureHandler(
-            store,
-            'fig1',
-            {'source1': 'arr1',
-             'source2': 'arr2'},
-            [{'figure_keys': ('data', 0, 'x'),
-              'source_keys': ('source1', 'data', 0, 'f0')},
-             {'figure_keys': SSQ()['data'][0]['y'],
-              'source_keys': SSQ()['source1']['data'][0]['f1']},
-             #
-             (('data', 1, 'x'),
-              ('source2', 'data', 0, 'f0')),
-             (('data', 1, 'y'),
-              ('source2', 'data', 0, 'f1'))],
-            figure=fig)
+        fig_h = mdl.FigureHandler(store, 'fig1', fig_dict)
 
         yield store, arr1_h, arr2_h, fig_h
 
@@ -61,19 +53,19 @@ class TestFigureHandler(TestCase):
             built_fig = fig_h.build_figure()
 
             npt.assert_array_equal(
-                SSQ()['data', 0, 'x'](built_fig),
+                built_fig['data'][0]['x'],
                 arr1_h.load_data()['data'][0]['f0'])
 
             npt.assert_array_equal(
-                SSQ()['data', 0, 'y'](built_fig),
+                built_fig['data'][0]['y'],
                 arr1_h.load_data()['data'][0]['f1'])
 
             npt.assert_array_equal(
-                SSQ()['data', 1, 'x'](built_fig),
+                built_fig['data'][1]['x'],
                 arr2_h.load_data()['data'][0]['f0'])
 
             npt.assert_array_equal(
-                SSQ()['data', 1, 'y'](built_fig),
+                built_fig['data'][1]['y'],
                 arr2_h.load_data()['data'][0]['f1'])
 
             # Write the definition to the store
@@ -89,8 +81,6 @@ class TestFigureHandler(TestCase):
     def test_encode_decode_params(self):
         with get_store_with_fig() as (store, arr1_h, arr2_h, fig_h):
             orig_params = {
-                'sources': dict(fig_h.sources),
-                'mappings': tuple(fig_h.mappings),
-                'figure': dict(fig_h.figure)}
+                'figure_dict': dict(fig_h.figure_dict)}
             mdl.FigureHandler.decode_params(decoded_params := fig_h.encode_params())
             self.assertDictEqual(orig_params, decoded_params)

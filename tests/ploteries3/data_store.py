@@ -45,6 +45,25 @@ def get_store_with_data(num_uniform=[3, 5, 2], num_ragged=[11, 6, 4, 9]):
         yield store, uniform, ragged
 
 
+class TestRef_(TestCase):
+
+    def test_serialization(self):
+        ref_ = mdl.Ref_('series1')['abc'][1]['def'][3]
+        serialized = ref_.serialize()
+        des_ref_ = mdl.Ref_.deserialize(serialized)
+        self.assertEqual(ref_, des_ref_)
+
+    def test_copy(self):
+        ssq = mdl.Ref_('series1')['abc'][{'abc': 0, 'def': 1}][0][::2][3:100][{'xyz': 2}]
+        self.assertEqual(ssq, ssq2 := ssq.copy())
+        ssq2.slice_sequence[2]['abc'] = 1
+        self.assertNotEqual(ssq, ssq2)
+
+    def test_hash(self):
+        ssq = mdl.Ref_('series1')['abc'][{'abc': 0, 'def': 1}][0][::2][3:100][{'xyz': 2}]
+        self.assertEqual({ssq: 0, ssq: 1}, {ssq: 1})
+
+
 class TestDataStore(TestCase):
     def test_create(self):
         with get_store() as obj:
@@ -66,8 +85,8 @@ class TestDataStore(TestCase):
             npt.assert_array_equal(dat['data'], np.array(arrs))
 
             for dh in [
-                store.get_data_handlers(c('name') == 'arr1')[0],
-                # store.get_data_handlers(c('handler') == UniformNDArrayDataHandler)[0],# Not working.
+                store.get_data_handlers(mdl.Col_('name') == 'arr1')[0],
+                # store.get_data_handlers(Col_('handler') == UniformNDArrayDataHandler)[0],# Not working.
             ]:
                 npt.assert_array_equal(
                     dh.load_data()['data'],
@@ -90,7 +109,7 @@ class TestDataStore(TestCase):
                     npt.assert_array_equal(
                         stacked_arrays,
                         store.get_data_handlers(
-                            mdl.col('name') == series_name)[0].load_data()['data'])
+                            mdl.Col_('name') == series_name)[0].load_data()['data'])
                     # Single array as string.
                     npt.assert_array_equal(
                         stacked_arrays,
@@ -99,6 +118,10 @@ class TestDataStore(TestCase):
                     npt.assert_array_equal(
                         stacked_arrays,
                         retrieved := store[(series_name,)]['series'][series_name]['data'])
+                    # Single array as dictionary.
+                    npt.assert_array_equal(
+                        stacked_arrays,
+                        retrieved := store[{'data': series_name}]['data'])
 
     def test_getitem__join(self):
         with get_store_with_data(num_uniform := [4, 3, 5, 2], num_ragged := [3, 8, 5]) \
@@ -134,7 +157,7 @@ class TestDataStore(TestCase):
                 #     npt.assert_array_equal(
                 #         stacked_arrays,
                 #         store.get_data_handlers(
-                #             mdl.col('name') == _series_name)[0].load_data()['data'])
+                #             mdl.Col_('name') == _series_name)[0].load_data()['data'])
                 #     npt.assert_array_equal(
                 #         stacked_arrays,
                 #         retrieved)

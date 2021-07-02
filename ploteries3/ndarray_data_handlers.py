@@ -1,6 +1,5 @@
 from threading import RLock
 import json
-from numpy.lib.format import dtype_to_descr, descr_to_dtype
 import numpy as np
 from collections import namedtuple
 from numpy.lib import recfunctions as recfns
@@ -8,13 +7,14 @@ from typing import Optional
 from .base_handlers import DataHandler
 from numpy.typing import ArrayLike
 from .data_store import DataStore
+from pglib.serializer import Serializer as _Serializer, AbstractTypeSerializer
 
 
-class NDArraySpec(namedtuple('_NDArraySpec', ('dtype', 'shape'))):
-    def __new__(cls, dtype, shape):
-        dtype = recfns.repack_fields(np.empty(0, dtype=dtype)).dtype
-        shape = tuple(shape)
-        return super().__new__(cls, dtype, shape)
+class NDArraySpec(AbstractTypeSerializer):
+
+    def __init__(self, dtype, shape):
+        self.dtype = recfns.repack_fields(np.empty(0, dtype=dtype)).dtype
+        self.shape = tuple(shape)
 
     @classmethod
     def produce(cls, val):
@@ -27,14 +27,21 @@ class NDArraySpec(namedtuple('_NDArraySpec', ('dtype', 'shape'))):
         else:
             raise TypeError(f'Cannot produce NDArraySpec from {type(val)}.')
 
-    def as_serializable(self):
-        return {'dtype': dtype_to_descr(self.dtype),
-                'shape': self.shape}
+    def __eq__(self, obj):
+        return (self.dtype == obj.dtype) and (self.shape == obj.shape)
 
     @classmethod
-    def from_serializable(cls, val):
-        return cls(dtype=descr_to_dtype(val['dtype']),
-                   shape=tuple(val['shape']))
+    def _as_serializable(self, obj):
+        return {'dtype': obj.dtype,
+                'shape': obj.shape}
+
+    @classmethod
+    def _from_serializable(cls, kwargs):
+        return cls(**kwargs)
+
+
+# Register NDArraySpec serialization with pglib.serializer.Serializer
+_Serializer.default_extension_types.append(NDArraySpec)
 
 
 class UniformNDArrayDataHandler(DataHandler):
@@ -106,19 +113,11 @@ class UniformNDArrayDataHandler(DataHandler):
 
     @classmethod
     def from_def_record(cls, data_store, data_def_record):
-        cls.decode_params(data_def_record.params)
         obj = cls(data_store, None, None, data_def_record)
-
         return obj
 
-    @classmethod
-    def decode_params(cls, params):
-        params['ndarray_spec'] = NDArraySpec.from_serializable(
-            params['ndarray_spec'])
-
     def encode_params(self, ndarray_spec=None):
-        ndarray_spec = ndarray_spec or self.ndarray_spec
-        return {'ndarray_spec': ndarray_spec.as_serializable()}
+        return {'ndarray_spec': ndarray_spec or self.ndarray_spec}
 
     @property
     def row_num_bytes(self):
@@ -214,30 +213,37 @@ class RaggedNDArrayDataHandler(DataHandler):
     data_store = None
     decoded_data_def = None
 
-    def __init__(self, data_store, name):
+    def __init__(self, data_store, name, _decoded_data_def=None):
         """
         :param data_store: :class:`ploteries3.data_store.DataStore` object.
         :param name: Data name.
         """
+        self._serializer = _Serializer()
         self.data_store = data_store
-        self.name = name
-        with self.data_store.begin_connection() as connection:
-            if not (loaded_def := self.load_decode_def(
-                    self.data_store, self.name, connection=connection)):
-                self.write_def(connection=connection)
-                loaded_def = self.load_decode_def(
-                    self.data_store, self.name, connection=connection)
-            if not loaded_def:
-                raise Exception('Unexpected error.')
-        self.decoded_data_def = loaded_def
+        if _decoded_data_def is None:
+            self.name = name
+            with self.data_store.begin_connection() as connection:
+                if not (loaded_def := self.load_decode_def(
+                        self.data_store, self.name, connection=connection)):
+                    self.write_def(connection=connection)
+                    loaded_def = self.load_decode_def(
+                        self.data_store, self.name, connection=connection)
+                if not loaded_def:
+                    raise Exception('Unexpected error.')
+            self.decoded_data_def = loaded_def
+        else:
+            if name is not None and _decoded_data_def.name != name:
+                raise Exception(
+                    f'Param name={name} does to not match _decoded_data_def.name={_decoded_data_def.name}! '
+                    'You can use None for param name or _decoded_data_def.')
+            else:
+                self.name = _decoded_data_def.name
+                self.decoded_data_def = _decoded_data_def
 
-    @ classmethod
+    @classmethod
     def from_def_record(cls, data_store, data_def_record):
-        obj = object.__new__(cls)
-        obj.data_store = data_store
-        obj.name = data_def_record.name
-        obj.decoded_data_def = data_def_record
-
+        cls.decode_params(data_def_record)
+        obj = cls(data_store, None, data_def_record)
         return obj
 
     def encode_record_bytes(self, arr):
@@ -248,14 +254,14 @@ class RaggedNDArrayDataHandler(DataHandler):
         packed_arr = packed_arr.data
 
         # Add header as bytes
-        ndarray_specs_as_bytes = json.dumps(ndarray_spec.as_serializable()).encode('utf-8')
+        ndarray_specs_as_bytes = self._serializer.serialize(ndarray_spec).encode('utf-8')
         ndarray_specs_len_as_bytes = (len(ndarray_specs_as_bytes)).to_bytes(8, 'big')
         return ndarray_specs_len_as_bytes + ndarray_specs_as_bytes + packed_arr
 
     def decode_record_bytes(self, arr_bytes):
         ndarray_specs_len_as_bytes = int.from_bytes(arr_bytes[:8], 'big')
-        ndarray_spec = NDArraySpec.from_serializable(json.loads(
-            arr_bytes[8: (data_start := (8 + ndarray_specs_len_as_bytes))].decode('utf-8')))
+        ndarray_spec = self._serializer.deserialize(
+            arr_bytes[8: (data_start := (8 + ndarray_specs_len_as_bytes))].decode('utf-8'))
         out_arr = np.empty(shape=ndarray_spec.shape, dtype=ndarray_spec.dtype)
 
         out_buffer = out_arr.view(dtype='u1')

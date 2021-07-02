@@ -5,7 +5,7 @@ from sqlalchemy.engine.result import Row
 from sqlalchemy import insert, func, select, exc
 from typing import Union
 import numpy as np
-from .data_store import col
+from .data_store import Col_
 from logging import getLogger
 
 LOGGER = getLogger(__name__)
@@ -30,7 +30,7 @@ class Handler(abc.ABC):
         """
         with data_store.begin_connection(connection) as connection:
             def_record = connection.execute(
-                select(cls.get_defs_table(data_store)).where(col('name') == name)).one()
+                select(cls.get_defs_table(data_store)).where(Col_('name') == name)).one()
         return cls.from_def_record(data_store, def_record)
 
     @property
