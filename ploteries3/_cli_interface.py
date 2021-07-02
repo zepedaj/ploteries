@@ -1,6 +1,7 @@
 import abc
+from pglib.py import class_name
 from pglib.validation import checked_get_single
-from ploteries3.data_store import col
+from ploteries3.data_store import Col_
 from typing import List
 from .figure_handler import FigureHandler as _FigureHandler
 from typing import Optional
@@ -123,13 +124,13 @@ class PloteriesLaunchInterface:
 
     def _build_formatted_figure_from_name(self, name):
         figure = checked_get_single(
-            self.data_store.get_figure_handlers(col('name') == name)).build_figure()
+            self.data_store.get_figure_handlers(Col_('name') == name)).build_figure()
         figure.update_layout(**self.figure_layout_kwargs)
         return figure
 
     @classmethod
     def encoded_class_name(cls):
-        return _ClassType.class_name(cls).replace('.', '|')
+        return class_name(cls).replace('.', '|')
 
     def create_callbacks(
             self, app: Dash,
