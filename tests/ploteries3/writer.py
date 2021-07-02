@@ -16,7 +16,7 @@ class TestWriter(TestCase):
             writer.add_scalars(fig_name, rec0_arr := np.array([0]*num_traces), 0)
             writer.add_scalars(fig_name, rec1_arr := np.array([1]*num_traces), 1)
 
-            data_name = mdl.Writer._get_table_name('add_scalars', tag=fig_name)
+            data_name = mdl.Writer._get_table_name('add_scalars', fig_name=fig_name)
 
             # Verify contents.
             store = DataStore(tmp_fo.name)

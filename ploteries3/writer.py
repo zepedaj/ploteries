@@ -16,7 +16,7 @@ from pglib.slice_sequence import SSQ_
 class Writer:
 
     _table_names = {
-        'add_scalars': '__add_scalars__.{tag}'}
+        'add_scalars': '__add_scalars__.{fig_name}'}
 
     def __init__(self, path):
         self.data_store = path if isinstance(path, DataStore) else DataStore(path)
@@ -25,10 +25,10 @@ class Writer:
     def _get_table_name(cls, func, **kwargs):
         return cls._table_names[func].format(**kwargs)
 
-    def add_scalars(self, tag: str, values: ArrayLike, global_step: int,
-                    trace_args: Optional[List[Dict]] = None):
+    def add_scalars(self, fig_name: str, values: ArrayLike, global_step: int,
+                    trace_args: Optional[List[Dict]] = None, data_name=None):
         """
-        :param tag: The figure name. If specified in format '<tab>/<group>/...' , the tab and group entries will determine the position of the figure in the page.
+        :param fig_name: The figure name. If specified in format '<tab>/<group>/...' , the tab and group entries will determine the position of the figure in the page.
         :param values: The values for each scalar trace as an array-like.
         :param names: The legend name to use for each trace.
         :param traces: List of length equal to that of values containing keyword arguments for the trace. The default value for unspecified valuew (None) is ``{'type':'scatter', 'mode':'lines'}``.
@@ -48,7 +48,8 @@ class Writer:
         with self.data_store.begin_connection() as connection:
 
             #
-            data_series_name = self._get_table_name('add_scalars', tag=tag)
+            data_name = data_name or self._get_table_name(
+                'add_scalars', fig_name=fig_name)
 
             # Check values input
             values = np.require(values)
@@ -57,7 +58,7 @@ class Writer:
 
             # Check if the figure exists.
             try:
-                fig_handler = FigureHandler.from_name(self.data_store, tag)
+                fig_handler = FigureHandler.from_name(self.data_store, fig_name)
                 figure_exists = True
             except exc.NoResultFound:
                 figure_exists = False
@@ -73,8 +74,8 @@ class Writer:
 
                 # Build default trace args.
                 traces = [
-                    {'x': Ref_(data_series_name)['meta']['index'],
-                     'y': Ref_(data_series_name)['data'][:, k],
+                    {'x': Ref_(data_name)['meta']['index'],
+                     'y': Ref_(data_name)['data'][:, k],
                      **(_trace_args or {'type': 'scatter', 'mode': 'lines'})}
                     for k, _trace_args in enumerate(
                         (trace_args or [None]*len(values)))]
@@ -86,15 +87,15 @@ class Writer:
                 # Save figure.
                 fig_handler = FigureHandler(
                     self.data_store,
-                    name=tag,
+                    name=fig_name,
                     figure_dict=figure)
                 fig_handler.write_def(connection=connection)
 
             # Write the data data.
-            data_handler = UniformNDArrayDataHandler(self.data_store, name=data_series_name)
+            data_handler = UniformNDArrayDataHandler(self.data_store, name=data_name)
             data_handler.add_data(global_step, values, connection=connection)
 
-    def add_plots(self, tag: str, values: ArrayLike, global_step: int, names=None,
+    def add_plots(self, fig_name: str, values: ArrayLike, global_step: int, names=None,
                   overwrite=False):
 
         values = [
