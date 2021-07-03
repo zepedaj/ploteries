@@ -193,14 +193,15 @@ class UniformNDArrayDataHandler(DataHandler):
         out_buffer.shape = np.prod(out_buffer.shape)
         row_itemsize = self.row_num_bytes
 
-        for k, row_bytes in enumerate(records_data):
-            out_buffer[k*row_itemsize:(k+1)*row_itemsize] = bytearray(row_bytes)
+        if records_data:
+            for k, row_bytes in enumerate(records_data):
+                out_buffer[k*row_itemsize:(k+1)*row_itemsize] = bytearray(row_bytes)
 
-        # Sanity checks.
-        if k != len(records_data)-1:
-            raise Exception('Could not load the expected number of rows!')
-        if (k+1)*row_itemsize != out_buffer.size:
-            raise Exception('Did not load the expected number of bytes!')
+            # Sanity checks.
+            if k != len(records_data)-1:
+                raise Exception('Could not load the expected number of rows!')
+            if (k+1)*row_itemsize != out_buffer.size:
+                raise Exception('Did not load the expected number of bytes!')
 
         return out_ndarray
 
@@ -213,7 +214,7 @@ class RaggedNDArrayDataHandler(DataHandler):
     data_store = None
     decoded_data_def = None
 
-    def __init__(self, data_store, name, _decoded_data_def=None):
+    def __init__(self, data_store, name, _decoded_data_def=None, connection=None):
         """
         :param data_store: :class:`ploteries3.data_store.DataStore` object.
         :param name: Data name.
@@ -221,7 +222,7 @@ class RaggedNDArrayDataHandler(DataHandler):
         self.data_store = data_store
         if _decoded_data_def is None:
             self.name = name
-            with self.data_store.begin_connection() as connection:
+            with self.data_store.begin_connection(connection=connection) as connection:
                 if not (loaded_def := self.load_decode_def(
                         self.data_store, self.name, connection=connection)):
                     self.write_def(connection=connection)

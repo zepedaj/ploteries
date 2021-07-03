@@ -142,6 +142,7 @@ class TestDataStore(TestCase):
                              for type_name, k in series_specs]
                 joined_length = min(series_lengths)
 
+                # Retrieve all
                 retrieved = store[series_names]
 
                 self.assertEqual(len(retrieved['series']), len(series_names))
@@ -151,22 +152,30 @@ class TestDataStore(TestCase):
                         _orig_data['arrays'][:joined_length],
                         retrieved['series'][_series_name]['data'])
 
-                # for _series_name in series_names:
-                #     #
-                #     stacked_arrays = orig_data[array_index]['arrays']
-                #     npt.assert_array_equal(
-                #         stacked_arrays,
-                #         store.get_data_handlers(
-                #             mdl.Col_('name') == _series_name)[0].load_data()['data'])
-                #     npt.assert_array_equal(
-                #         stacked_arrays,
-                #         retrieved)
+                # Retrieve latest record.
+                retrieved = store[{'data': series_names, 'index': 'latest'}]
+                for _series_name, _orig_data in zip(series_names, orig_data):
+                    npt.assert_array_equal(
+                        _orig_data['arrays'][joined_length-1][None, ...],
+                        retrieved['series'][_series_name]['data'])
 
-    def test_getitem__join_single_record(self):
-        pass
+                # Retrieve k-th record.
+                for index in range(joined_length):
+                    retrieved = store[{'data': series_names, 'index': index}]
+                    for _series_name, _orig_data in zip(series_names, orig_data):
+                        npt.assert_array_equal(
+                            _orig_data['arrays'][index][None, ...],
+                            retrieved['series'][_series_name]['data'])
 
-    def test_getitem__from_string(self):
-        pass
+                # # Retrieve non-existing record.
+                # retrieved = store[{'data': series_names, 'index': joined_length}]
+                # for _series_name, _orig_data in zip(series_names, orig_data):
+                #     npt.assert_array_equal(
+                #         _orig_data['arrays'][0][None, ...][:0],
+                #         retrieved['series'][_series_name]['data'])
 
     def test_index_writer_order_by(self):
+        pass
+
+    def test_retrieve_non_existing(self):
         pass

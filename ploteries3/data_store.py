@@ -255,10 +255,10 @@ class DataStore:
             # Get a single record.
             if idx['index'] == 'latest':
                 # Get the record with most recent index.
-                qry = qry.order_by(Col_('index').desc()).first()
+                qry = qry.order_by(Col_('index').desc()).limit(1)
             else:
                 # Get the record with the provided index.
-                qry = qry.where(Col_('index') == idx['index'])
+                qry = qry.where(_last_table.c.index == idx['index'])
         else:
             # Get all records in sorted order.
             qry = qry.order_by(Col_('index').asc(),
