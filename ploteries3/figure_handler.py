@@ -19,7 +19,8 @@ class FigureHandler(Handler):
     def __init__(self,
                  data_store,
                  name: str,
-                 figure_dict):
+                 figure_dict,
+                 decoded_data_def=None):
         """
         Instantiates a new figure handler. Note that this does not read or write a figure handler from the data store (use methos :meth:`from_name` and :meth:`write_def` for this purpose).
 
@@ -30,6 +31,7 @@ class FigureHandler(Handler):
         self.name = name
         self.figure_dict = figure_dict
         self._parse_figure()
+        self.decoded_data_def = decoded_data_def
 
     def _parse_figure(self):
         # Get all placeholder positions and values.
@@ -65,7 +67,10 @@ class FigureHandler(Handler):
 
     @classmethod
     def from_def_record(cls, data_store, data_def_record):
-        return cls(data_store, data_def_record.name, **data_def_record.params)
+        # cls.decode_params(data_def_record)
+        return cls(data_store, data_def_record.name,
+                   decoded_data_def=data_def_record,
+                   **data_def_record.params)
 
     @classmethod
     def get_defs_table(cls, data_store):

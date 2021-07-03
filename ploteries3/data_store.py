@@ -1,10 +1,9 @@
 from sqlalchemy import (func, Table, Column, Integer, String, DateTime, select,
                         ForeignKey, LargeBinary, create_engine, MetaData, and_,
                         UniqueConstraint)
-from copy import deepcopy
 import numpy as np
 import itertools as it
-from pglib.validation import checked_get_single, check_expected_kwargs
+from pglib.validation import checked_get_single
 from pglib.sqlalchemy import ClassType, SerializableType
 from pglib.serializer import Serializer as _Serializer
 from contextlib import contextmanager
@@ -193,6 +192,11 @@ class DataStore:
             **idx}
         if idx['index'] not in ('latest', None) and not isinstance(idx['index'], int):
             raise ValueError(f"Invalid value for index = {idx['index']}.")
+
+        # Remove redundant data names and sort.
+        # Sorting helps call_multi avoid repeated queries.
+        idx['data'] = sorted(set(idx['data']))
+
         return idx, multi_series
 
     def __getitem__(self, idx: Union[str, tuple, dict]):

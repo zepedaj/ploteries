@@ -17,7 +17,9 @@ from tempfile import TemporaryDirectory
             help='Number of seconds to wait before starting the next write operation.')
 @clx.option('--length', type=float, default=int(1e4),
             help='Number of timesteps - limits the total disk size of the generated data store.')
-def launch_mock_generator(out, interval, length):
+@clx.option('--keep', action='store_false', default=True, dest='delete',
+            help='Do not delete the temporary output upon exiting. Ignored if --out is supplied (in which case, it is not deleted).')
+def launch_mock_generator(out, interval, length, delete):
     """
     Creates a live mock data generator that can be used to showcase ploteries. To use it, first launch the mock generator, and then launch a ploteries server using the printed command:
 
@@ -27,14 +29,14 @@ def launch_mock_generator(out, interval, length):
        $ ./ploteries launch_mock_generator
          Launch a ploteries server with the following command:
              ploteries launch --interval 2 /tmp/tmp_55f_7jh/data_store.pltr
-         0%|                             | 0/10000 [00:00<?, ?it/s]
+         71it [12:41, 23.85it/s]
 
        # From shell 2
        $ ploteries launch --interval 2 /tmp/tmp_55f_7jh/data_store.pltr
     """
 
     try:
-        with (nullcontext() if out else TemporaryDirectory()) as root_dir:
+        with (nullcontext() if out else TemporaryDirectory(delete=delete)) as root_dir:
             out = out or osp.join(root_dir, 'data_store.pltr')
             #
             print(
@@ -70,15 +72,17 @@ def launch_mock_generator(out, interval, length):
                                        [{'name': f'plot {_l}'} for _l in range(N)])
                     writer.add_scalars('scalars/scalars2', next(scalars2), k)
 
-                    # # Add plots
-                    # X = list(range(50))
-                    # if k % 100 == 0:
-                    #     writer.add_plots(
-                    #         'plots/plot1', [{'x': X, 'y': list(islice(plot1, 50))} for _ in range(N)],
-                    #         k, names=[f'plot{_l}' for _l in range(N)])
-                    #     writer.add_plots(
-                    #         'plots/plot2', [{'x': X, 'y': list(islice(plot2, 50))} for _ in range(N)],
-                    #         k, names=[f'plot{_l}' for _l in range(N)])
+                    # Add plots
+                    X = list(range(50))
+                    if True:
+                        writer.add_plots(
+                            'plots/plot1',
+                            [{'x': X, 'y': list(islice(plot1, 50))} for _ in range(N)],
+                            k, [{'name': f'plot{_l}'} for _l in range(N)])
+                        writer.add_plots(
+                            'plots/plot2',
+                            [{'x': X, 'y': list(islice(plot2, 50))} for _ in range(N)],
+                            k, [{'name': f'plot{_l}'} for _l in range(N)])
 
                     # # Add histograms
                     # if k % 100 == 0:

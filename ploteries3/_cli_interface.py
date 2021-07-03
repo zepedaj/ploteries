@@ -84,6 +84,23 @@ class PloteriesLaunchInterface:
             raise Exception('Unexpected case!')
         return PosnTuple(tab=tab, group=group, rel_name=rel_name, abs_name=fig_name)
 
+    # Dictionary ids.
+    def _get_figure_id(self, figure_name, has_slider):
+        return {
+            'name': figure_name,
+            'type': self.encoded_class_name(),
+            'element': 'graph',
+            'has_slider': has_slider,
+        }
+
+    def _get_slider_id(self, figure_name):
+        return {
+            'name': figure_name,
+            'type': self.encoded_class_name(),
+            'element': 'slider'
+        }
+
+    ##
     def _build_empty_html(self, figure_handler):
         """
         Builds figure without any data and accompanying html.
@@ -99,21 +116,14 @@ class PloteriesLaunchInterface:
         #
         graph = dcc.Graph(
             figure=figure,
-            id={
-                'type': self.encoded_class_name(),
-                'element': 'graph',
-                'has_slider': has_slider,
-                'name': figure_handler.name
-            },
-            **self.graph_kwargs)
+            id=self._get_figure_id(
+                figure_name=figure_handler.name,
+                has_slider=has_slider),
+            ** self.graph_kwargs)
 
         if has_slider:
             slider = dcc.Slider(
-                id={
-                    'type': self.encoded_class_name(),
-                    'element': 'slider',
-                    'name': figure_handler.name
-                },
+                id=self._get_slider_id(figure_name=figure_handler.name),
                 **self.slider_kwargs)
 
         out = html.Div(
@@ -123,9 +133,9 @@ class PloteriesLaunchInterface:
 
         return out
 
-    def _build_formatted_figure_from_name(self, name):
+    def _build_formatted_figure_from_name(self, name, index=None):
         figure = checked_get_single(
-            self.data_store.get_figure_handlers(Col_('name') == name)).build_figure()
+            self.data_store.get_figure_handlers(Col_('name') == name)).build_figure(index=index)
         figure.update_layout(**self.figure_layout_kwargs)
         return figure
 
@@ -154,45 +164,47 @@ class PloteriesLaunchInterface:
         # Figure update on interval tick
         @app.callback(
             Output(
-                fig_id := {
-                    'type': self.encoded_class_name(),
-                    'element': 'graph',
-                    'has_slider': False,
-                    'name': MATCH},
+                self._get_figure_id(figure_name=MATCH, has_slider=False),
                 'figure'),
             n_interval_input,
-            State(fig_id, 'id'))
+            State(
+                self._get_figure_id(figure_name=MATCH, has_slider=False),
+                'id'))
         def update_figure_with_no_slider(n_interval, elem_id):
             return self._build_formatted_figure_from_name(elem_id['name'])
 
         # Figure update on slider change
 
         @app.callback(
-            Output(graph_id := {
-                'type': self.encoded_class_name(),
-                'element': 'graph',
-                'has_slider': True,
-                'name': MATCH},
+            Output(
+                self._get_figure_id(figure_name=MATCH, has_slider=True),
                 'figure'),
-            Input(slider_id := {**graph_id, 'element': 'slider'},
-                  'value'),
-            State(slider_id, 'id'))
-        def update_figure_with_slider(index, slider_value, slider_id):
+            Input(
+                self._get_slider_id(figure_name=MATCH),
+                'value'),
+            State(
+                self._get_slider_id(figure_name=MATCH),
+                'id'))
+        @time_and_print()
+        def update_figure_with_slider(slider_value, slider_id):
             if slider_value is None:
                 raise PreventUpdate
             return self._build_formatted_figure_from_name(slider_id['name'], index=slider_value)
 
         # Update all sliders and global index dropdown options on interval tick
 
-        slider_ids = {'type': self.encoded_class_name(),
-                      'element': 'slider',
-                      'name': ALL}
-
         @app.callback(
-            ([Output(slider_ids, _x) for _x in self._slider_output_keys] +
+            # Outputs
+            ([Output(
+                self._get_slider_id(ALL), _x)
+              for _x in self._slider_output_keys] +
              [global_index_dropdown_options]),
+            # Inputs
             [n_interval_input, global_index_input_value],
-            [State(slider_ids, 'id')])
+            # States
+            [State(
+                self._get_slider_id(ALL),
+                'id')])
         def update_all_sliders_and_global_index_dropdown_options(
                 n_intervals, global_index, slider_ids):
             return self._update_all_sliders_and_global_index_dropdown_options(
