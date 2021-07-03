@@ -1,7 +1,6 @@
 from threading import RLock
-import json
 import numpy as np
-from collections import namedtuple
+from pglib.numpy import encode_ndarray, decode_ndarray
 from numpy.lib import recfunctions as recfns
 from typing import Optional
 from .base_handlers import DataHandler
@@ -219,7 +218,6 @@ class RaggedNDArrayDataHandler(DataHandler):
         :param data_store: :class:`ploteries3.data_store.DataStore` object.
         :param name: Data name.
         """
-        self._serializer = _Serializer()
         self.data_store = data_store
         if _decoded_data_def is None:
             self.name = name
@@ -248,29 +246,10 @@ class RaggedNDArrayDataHandler(DataHandler):
         return obj
 
     def encode_record_bytes(self, arr):
+        return encode_ndarray(arr)
 
-        ndarray_spec = NDArraySpec(arr.dtype, arr.shape)
-        packed_arr = np.require(arr, dtype=ndarray_spec.dtype, requirements='C').view('u1')
-        packed_arr.shape = packed_arr.size
-        packed_arr = packed_arr.data
-
-        # Add header as bytes
-        ndarray_specs_as_bytes = self._serializer.serialize(ndarray_spec).encode('utf-8')
-        ndarray_specs_len_as_bytes = (len(ndarray_specs_as_bytes)).to_bytes(8, 'big')
-        return ndarray_specs_len_as_bytes + ndarray_specs_as_bytes + packed_arr
-
-    def decode_record_bytes(self, arr_bytes):
-        ndarray_specs_len_as_bytes = int.from_bytes(arr_bytes[:8], 'big')
-        ndarray_spec = self._serializer.deserialize(
-            arr_bytes[8: (data_start := (8 + ndarray_specs_len_as_bytes))].decode('utf-8'))
-        out_arr = np.empty(shape=ndarray_spec.shape, dtype=ndarray_spec.dtype)
-
-        out_buffer = out_arr.view(dtype='u1')
-        out_buffer.shape = np.prod(out_buffer.shape)
-
-        out_buffer[:] = bytearray(arr_bytes[data_start:])
-
-        return out_arr
+    def decode_record_bytes(self, data_bytes):
+        return decode_ndarray(data_bytes)
 
     def merge_records_data(self, records_data):
         return records_data
