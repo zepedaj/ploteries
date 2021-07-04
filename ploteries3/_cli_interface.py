@@ -171,6 +171,7 @@ class PloteriesLaunchInterface:
             State(
                 self._get_figure_id(figure_name=MATCH, has_slider=False),
                 'id'))
+        @time_and_print()
         def update_figure_with_no_slider(n_interval, elem_id):
             return self._build_formatted_figure_from_name(elem_id['name'])
 
@@ -206,6 +207,7 @@ class PloteriesLaunchInterface:
             [State(
                 self._get_slider_id(ALL),
                 'id')])
+        @time_and_print()
         def update_all_sliders_and_global_index_dropdown_options(
                 n_intervals, global_index, slider_ids):
             return self._update_all_sliders_and_global_index_dropdown_options(
