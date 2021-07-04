@@ -23,6 +23,7 @@ class Writer:
 
     def __init__(self, path):
         self.data_store = path if isinstance(path, DataStore) else DataStore(path)
+        self.existing_figures = set()
 
     @classmethod
     def _get_table_name(cls, func, **kwargs):
@@ -58,35 +59,38 @@ class Writer:
         if values.ndim != 1 or not isinstance(values[0], Number):
             raise ValueError('Expected a 1-dim array-like object.')
 
-        # Check traces_kwargs input
-        if traces_kwargs and len(traces_kwargs) != len(values):
-            raise ValueError(
-                f'Param traces_kwargs has {len(traces_kwargs)} values, '
-                f'but expected 0 or {len(values)}.')
-        traces_kwargs = traces_kwargs or [{}]*len(values)
+        # Write figure def
+        if figure_name not in self.existing_figures:
 
-        # Build traces with data store references.
-        traces = [
-            {'x': Ref_(data_name)['meta']['index'],
-             'y': Ref_(data_name)['data'][:, k],
-             **_traces_kwargs}
-            for k, _traces_kwargs in enumerate(traces_kwargs)]
+            # Check traces_kwargs input
+            if traces_kwargs and len(traces_kwargs) != len(values):
+                raise ValueError(
+                    f'Param traces_kwargs has {len(traces_kwargs)} values, '
+                    f'but expected 0 or {len(values)}.')
+            traces_kwargs = traces_kwargs or [{}]*len(values)
 
-        # Create figure handler.
-        fig_handler = FigureHandler.from_traces(
-            self.data_store,
-            name=figure_name,
-            traces=traces,
-            default_trace_kwargs=self.default_trace_kwargs,
-            layout_kwargs=layout_kwargs)
+            # Build traces with data store references.
+            traces = [
+                {'x': Ref_(data_name)['meta']['index'],
+                 'y': Ref_(data_name)['data'][:, k],
+                 **_traces_kwargs}
+                for k, _traces_kwargs in enumerate(traces_kwargs)]
 
-        with self.data_store.begin_connection() as connection:
-            # Write figure (if it does not exist)
-            fig_handler.write_def(connection=connection)
+            # Create figure handler.
+            fig_handler = FigureHandler.from_traces(
+                self.data_store,
+                name=figure_name,
+                traces=traces,
+                default_trace_kwargs=self.default_trace_kwargs,
+                layout_kwargs=layout_kwargs)
 
-            # Write data
-            data_handler = UniformNDArrayDataHandler(self.data_store, name=data_name)
-            data_handler.add_data(global_step, values, connection=connection)
+            # Write figure (if it does not exist).
+            fig_handler.write_def()
+            self.existing_figures.add(figure_name)
+
+        # Write data
+        data_handler = UniformNDArrayDataHandler(self.data_store, name=data_name)
+        data_handler.add_data(global_step, values)
 
     def add_plots(
             self, figure_name: str,
@@ -118,32 +122,33 @@ class Writer:
         data_name = data_name or self._get_table_name(
             'add_plots', figure_name=figure_name)
 
-        # Check traces_kwargs input
-        if traces_kwargs and len(traces_kwargs) != len(values):
-            raise ValueError(
-                f'Param traces_kwargs has {len(traces_kwargs)} values, '
-                f'but expected 0 or {len(values)}.')
-        traces_kwargs = traces_kwargs or [{}]*len(values)
+        # Write figure def.
+        if figure_name not in self.existing_figures:
+            # Check traces_kwargs input
+            if traces_kwargs and len(traces_kwargs) != len(values):
+                raise ValueError(
+                    f'Param traces_kwargs has {len(traces_kwargs)} values, '
+                    f'but expected 0 or {len(values)}.')
+            traces_kwargs = traces_kwargs or [{}]*len(values)
 
-        # Build traces with data store references.
-        traces = [
-            {**{_key: Ref_(data_name, index='latest')['data'][0][k][_key] for _key in values[k]},
-             **_traces_kwargs}
-            for k, _traces_kwargs in enumerate(traces_kwargs)]
+            # Build traces with data store references.
+            traces = [
+                {**{_key: Ref_(data_name, index='latest')['data'][0][k][_key] for _key in values[k]},
+                 **_traces_kwargs}
+                for k, _traces_kwargs in enumerate(traces_kwargs)]
 
-        # Create figure handler.
-        fig_handler = FigureHandler.from_traces(
-            self.data_store,
-            name=figure_name,
-            traces=traces,
-            default_trace_kwargs=self.default_trace_kwargs,
-            layout_kwargs=layout_kwargs)
+            # Create figure handler.
+            fig_handler = FigureHandler.from_traces(
+                self.data_store,
+                name=figure_name,
+                traces=traces,
+                default_trace_kwargs=self.default_trace_kwargs,
+                layout_kwargs=layout_kwargs)
 
-        with self.data_store.begin_connection() as connection:
             # Write figure (if it does not exist)
-            fig_handler.write_def(connection=connection)
+            fig_handler.write_def()
+            self.existing_figures.add(figure_name)
 
-            # Write data
-            data_handler = SerializableDataHandler(
-                self.data_store, name=data_name, connection=connection)
-            data_handler.add_data(global_step, values, connection=connection)
+        # Write data
+        data_handler = SerializableDataHandler(self.data_store, name=data_name)
+        data_handler.add_data(global_step, values)
