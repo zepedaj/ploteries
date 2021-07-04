@@ -297,8 +297,6 @@ class PloteriesLaunchInterface:
             {'label': self._int(int(_x)),
              'value': int(_x)} for _x in all_indices]
 
-        output = [
+        return [
             [_x[_key] for _x in new_slider_states]
             for _key in self._slider_output_keys] + [global_index_dropdown_options]
-        print(output)
-        return output
