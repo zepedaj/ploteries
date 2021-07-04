@@ -143,6 +143,7 @@ def launch(path, debug, host, interval, height, width, port, workers):
         Input('global-index-dropdown', 'value'),
         Output("global-index-dropdown", "options"),
     )
+    create_toolbar_callbacks()
 
     APP.layout = lambda: create_layout(update_interval=interval)
 
