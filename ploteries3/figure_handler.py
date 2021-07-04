@@ -1,4 +1,5 @@
 import plotly.graph_objects as go
+import itertools as it
 from sqlalchemy import exc
 from pglib.profiling import time_and_print
 from .base_handlers import Handler
@@ -65,14 +66,23 @@ class FigureHandler(Handler):
 
         return new_figure
 
-    @classmethod
+    def get_data_names(self):
+        """
+        Returns a list of all unique data names that this figure is dependent on.
+        """
+        all_data_names = list(set(
+            it.chain((_dk.slice_sequence[0]['data'] for _dk in self.data_keys))
+        ))
+        return all_data_names
+
+    @ classmethod
     def from_def_record(cls, data_store, data_def_record):
         # cls.decode_params(data_def_record)
         return cls(data_store, data_def_record.name,
                    decoded_data_def=data_def_record,
                    **data_def_record.params)
 
-    @classmethod
+    @ classmethod
     def get_defs_table(cls, data_store):
         """
         Returns the defs table (e..g., data_defs or figure_defs)

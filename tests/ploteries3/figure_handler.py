@@ -95,3 +95,26 @@ class TestFigureHandler(TestCase):
             self.assertEqual(
                 built_fig.to_json(),
                 built_fig_ft.to_json())
+
+    def test_get_data_names(self):
+        with get_store_with_fig() as (store, arr1_h, arr2_h, fig1_h):
+
+            # Add another fig.
+            arr3_h = UniformNDArrayDataHandler(store, 'arr3')
+            arr3_h.add_data(
+                0, np.array(
+                    list(zip(range(20, 30), range(30, 40))),
+                    dtype=[('f0', 'i'), ('f1', 'f')]))
+
+            fig2_h = mdl.FigureHandler.from_traces(
+                store, 'fig2',
+                [{'x': Ref_('arr3')['data']['f0'],
+                  'y':Ref_('arr3')['data']['f0']}])
+
+            #
+            self.assertEqual(
+                set(fig1_h.get_data_names()),
+                {'arr1', 'arr2'})
+            self.assertEqual(
+                set(fig2_h.get_data_names()),
+                {'arr3'})

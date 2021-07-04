@@ -49,14 +49,14 @@ class TestPloteriesLaunchInterface(TestCase):
 
         with get_store_with_fig() as (store, arr1_h, arr2_h, fig_h):
 
+            fig_h.write_def()
+
             output = mdl.PloteriesLaunchInterface(
                 store)._update_all_sliders_and_global_index_dropdown_options(
                     n_intervals=0,
                     global_index=(global_index := 3),
                     slider_ids=[
-                        {'type': mdl.PloteriesLaunchInterface.encoded_class_name(),
-                         'element': 'slider',
-                         'name': ALL}])
+                        mdl.PloteriesLaunchInterface._get_slider_id('fig1')])
 
             # 'marks', 'min', 'max', 'value', 'disabled'
             self.assertEqual(

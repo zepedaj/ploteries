@@ -1,19 +1,18 @@
-import abc
+import numpy as np
+import functools
+import itertools as it
 from pglib.profiling import time_and_print
 from pglib.py import class_name
 from pglib.validation import checked_get_single
 from ploteries3.data_store import Col_
-from typing import List
-from .figure_handler import FigureHandler as _FigureHandler
-from typing import Optional
 import plotly.graph_objects as go
-from sqlalchemy.sql import select
+#from sqlalchemy.sql import select
+from sqlalchemy import select, func
 from dash import Dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State, MATCH, ALL
 from dash.exceptions import PreventUpdate
-from pglib.sqlalchemy import ClassType as _ClassType
 from collections import namedtuple
 
 
@@ -85,18 +84,20 @@ class PloteriesLaunchInterface:
         return PosnTuple(tab=tab, group=group, rel_name=rel_name, abs_name=fig_name)
 
     # Dictionary ids.
-    def _get_figure_id(self, figure_name, has_slider):
+    @classmethod
+    def _get_figure_id(cls, figure_name, has_slider):
         return {
             'name': figure_name,
-            'type': self.encoded_class_name(),
+            'type': cls.encoded_class_name(),
             'element': 'graph',
             'has_slider': has_slider,
         }
 
-    def _get_slider_id(self, figure_name):
+    @classmethod
+    def _get_slider_id(cls, figure_name):
         return {
             'name': figure_name,
-            'type': self.encoded_class_name(),
+            'type': cls.encoded_class_name(),
             'element': 'slider'
         }
 
@@ -210,6 +211,44 @@ class PloteriesLaunchInterface:
             return self._update_all_sliders_and_global_index_dropdown_options(
                 n_intervals, global_index, slider_ids)
 
+    def _get_figure_indices(self, fig_handlers):
+        # Get data ids for each figure.
+        fig_to_data_def_ids = {
+            _fig.name:
+            [_dh.decoded_data_def.id for _dh in self.data_store.get_data_handlers(
+                Col_('name').in_(_fig.get_data_names()))]
+            for _fig in fig_handlers}
+
+        # Retrieve all the current indices
+        with self.data_store.begin_connection() as connection:
+            qry = select(
+                [self.data_store.data_records_table.c.index.asc(),
+                 self.data_store.data_records_table.c.data_def_id]
+            ).where(
+                self.data_store.data_records_table.c.data_def_id.in_(
+                    list(it.chain(*fig_to_data_def_ids.values())))
+            ).distinct()
+            indices_as_rows = connection.execute(qry)
+
+            # Assign to numpy record array.
+            max_possible_indices = connection.execute(
+                select([func.count()]).select_from(self.data_store.data_records_table)).one()[0]
+            indices = np.empty(max_possible_indices, dtype=[('index', 'i'), ('data_def_id', 'i')])
+            _k = -1
+            for _k, _row in enumerate(indices_as_rows):
+                indices[_k] = tuple(_row)
+            indices = indices[:_k+1]
+
+        # Obtain indices for each figure from intersection of data indices.
+        fig_to_indices = {
+            fig_name: functools.reduce(
+                np.intersect1d,
+                [indices['index'][indices['data_def_id'] == _data_def_id]
+                 for _data_def_id in data_def_ids])
+            for fig_name, data_def_ids in fig_to_data_def_ids.items()}
+
+        return fig_to_indices
+
     def _update_all_sliders_and_global_index_dropdown_options(
             self, n_intervals, global_index, slider_ids):
         """
@@ -222,31 +261,44 @@ class PloteriesLaunchInterface:
         : param n_intervals, global_index, slider_ids: Same as for: meth: `create_callbacks`.
         """
 
-        # Retrieve all the current indices
-        with self.data_store.begin_connection() as connection:
-            indices = [_x[0] for _x in connection.execute(
-                select(self.data_store.data_records_table.c.index.asc()).distinct()).fetchall()]
+        # Contains the unique, sorted fig indices for each figure name.
+        fig_names = [_x['name'] for _x in slider_ids]
+        fig_to_indices = self._get_figure_indices(
+            self.data_store.get_figure_handlers(self.data_store.figure_defs_table.c.name.in_(
+                fig_names)))
 
-        # Set the slider value.
-        value = global_index if global_index is not None else indices[-1]
+        # Build the slider state for each figure.
+        new_slider_states = []
+        for fig_name in [_x['name'] for _x in slider_ids]:
 
-        # Build marks.
-        marks = dict(zip(indices, ['']*len(indices)))
-        if len(marks) > 0:
-            for _m in [indices[0], indices[-1]]:
-                marks[_m] = self._int(int(_m))
-        min_mark = min(indices)
-        max_mark = max(indices)
+            #
+            indices = fig_to_indices[fig_name].tolist()
 
-        # Build slider parameters
-        shared_slider_state = {'marks': marks, 'min': min_mark,
-                               'max': max_mark, 'value': value, 'disabled': len(marks) == 1}
+            # Set the slider value.
+            value = global_index if global_index is not None else indices[-1]
 
+            # Build marks.
+            marks = dict(zip(indices, ['']*len(indices)))
+            if len(marks) > 0:
+                for _m in [indices[0], indices[-1]]:
+                    marks[_m] = self._int(int(_m))
+            min_mark = min(indices)
+            max_mark = max(indices)
+
+            # Build slider parameters
+            new_slider_states.append({
+                'marks': marks, 'min': min_mark,
+                'max': max_mark, 'value': value,
+                'disabled': len(marks) == 1})
+
+        # Get union of all indices for the global index dropdown.
+        all_indices = functools.reduce(np.union1d, fig_to_indices.values()).tolist()
         global_index_dropdown_options = [
             {'label': self._int(int(_x)),
-             'value': int(_x)} for _x in marks]
+             'value': int(_x)} for _x in all_indices]
 
-        return [
-            [shared_slider_state[key]]*len(slider_ids)
-            for key in self._slider_output_keys
-        ] + [global_index_dropdown_options]
+        output = [
+            [_x[_key] for _x in new_slider_states]
+            for _key in self._slider_output_keys] + [global_index_dropdown_options]
+        print(output)
+        return output
