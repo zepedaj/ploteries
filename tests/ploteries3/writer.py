@@ -66,5 +66,6 @@ class TestWriter(TestCase):
 
             # Check built figure.
             fig = fig_h.build_figure()
-            [_x.update(**mdl.Writer.default_trace_kwargs) for _x in traces]
+            default_trace_kwargs = {'type': 'scatter', 'mode': 'lines'}
+            [_x.update(**default_trace_kwargs) for _x in traces]
             npt.assert_equal(fig.to_dict()['data'], traces)

@@ -36,16 +36,18 @@ class RandomWalk:
             help='Number of seconds to wait before starting the next write operation.')
 @clx.option('--length', type=float, default=int(1e4),
             help='Number of timesteps - limits the total disk size of the generated data store.')
-@clx.option('--num_traces', type=int, default=3,
+@clx.option('--num-traces', type=int, default=3,
             help='Number of traces in each figure.')
-@clx.option('--num_scalars', type=int, default=2,
+@clx.option('--num-scalars', type=int, default=2,
             help='Number of `add_scalars` figures.')
-@clx.option('--num_plots', type=int, default=2,
+@clx.option('--num-plots', type=int, default=2,
             help='Number of `add_plots` figures.')
-@clx.option('--num_plot_points', type=int, default=50,
+@clx.option('--num-plot-points', type=int, default=50,
             help='Number of points in each `add_plots` figure.')
+@clx.option('--num-histograms', type=int, default=2,
+            help='Number of `add_plots` figures.')
 def launch_mock_generator(
-        out, interval, length, num_traces, num_scalars, num_plots, num_plot_points):
+        out, interval, length, num_traces, num_scalars, num_plots, num_plot_points, num_histograms):
     """
     Creates a live mock data generator that can be used to showcase ploteries. To use it, first launch the mock generator, and then launch a ploteries server using the printed command:
 
@@ -71,18 +73,21 @@ def launch_mock_generator(
             writer = Writer(out)
             try:
 
+                # Define figures
                 scalars = [
-                    {'name': f'scalars/scalars{_k}',
+                    {'name': f'scalars/scalars-{_k}',
                      'iter': RandomWalk(num_traces)}
                     for _k in range(num_scalars)]
 
                 plots = [
-                    {'name': f'plots/plots{_k}',
+                    {'name': f'plots/plots-{_k}',
                      'iter': [RandomWalk(num_plot_points, var=0.01, smoothing=0.2) for _ in range(num_traces)]}
                     for _k in range(num_scalars)]
 
-                # histo1 = iter(random_walk())
-                # histo2 = iter(random_walk())
+                histograms = [
+                    {'name': f'histograms/histogram-{_k}',
+                     'iter': [RandomWalk(500) for _ in range(num_traces)]}
+                    for _k in range(num_histograms)]
 
                 k = 0
                 with tqdm() as pbar:
@@ -103,19 +108,18 @@ def launch_mock_generator(
                                 [{'y': next(_iter)} for _iter in _plot['iter']],
                                 k)
 
-                        # # Add histograms
-                        # if k % 100 == 0:
-                        #     writer.add_histograms('histograms/histogram1',
-                        #                           [list(islice(histo1, 1000)) for _ in range(N)],
-                        #                           k, names=[f'histo{_l}' for _l in range(N)])
-                        #     writer.add_histograms('histograms/histogram2',
-                        #                           [list(islice(histo2, 1000)) for _ in range(N)],
-                        #                           k, names=[f'histo{_l}' for _l in range(N)])
+                        # Add histograms
+                        for _histo in histograms:
+                            writer.add_histograms(
+                                _histo['name'],
+                                [next(_iter) for _iter in _histo['iter']],
+                                k)
 
                         # Sleep
                         sleep(interval)
                         pbar.update(1)
             finally:
+                # Wait for the writer thread to finish to avoid error messages.
                 writer.flush()
 
     except KeyboardInterrupt:

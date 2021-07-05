@@ -5,7 +5,7 @@ import numpy as np
 from numbers import Number
 from sqlalchemy import exc
 from .data_store import DataStore, Ref_
-from .ndarray_data_handlers import UniformNDArrayDataHandler
+from .ndarray_data_handlers import UniformNDArrayDataHandler, RaggedNDArrayDataHandler
 from .serializable_data_handler import SerializableDataHandler
 from .figure_handler import FigureHandler
 import plotly.graph_objects as go
@@ -15,11 +15,14 @@ from pglib.slice_sequence import SSQ_
 
 
 class Writer:
+    """
+    .. todo:: We need to 1) check that figure-definition values are compatible with the existing figure; 2) add mode="overwrite" functionality. It might be best to make each add_* function a class deriving from a BaseAdder class.
+    """
 
     _table_names = {
         'add_scalars': '__add_scalars__.{figure_name}',
-        'add_plots': '__add_plots__.{figure_name}'}
-    default_trace_kwargs = {'type': 'scatter', 'mode': 'lines'}
+        'add_plots': '__add_plots__.{figure_name}',
+        'add_histograms': '__add_histograms__.{figure_name}'}
 
     def __init__(self, path):
         self.data_store = path if isinstance(path, DataStore) else DataStore(path)
@@ -41,8 +44,50 @@ class Writer:
             self.existing_data_handlers[data_name] = (data_handler := func())
         return data_handler
 
-    def add_scalars(self, figure_name: str, values: ArrayLike, global_step: int,
-                    traces_kwargs: Optional[List[Dict]] = None, data_name=None, layout_kwargs={}):
+    def _write_figure(self, figure_name, values_as_traces, traces_kwargs,
+                      default_trace_kwargs, layout_kwargs):
+        """
+        Checks that the number of values and number of traces_kwargs match.
+        """
+        figure_written = False
+        if figure_name not in self.existing_figures:
+
+            # Check traces_kwargs input
+            if traces_kwargs and len(traces_kwargs) != len(values_as_traces):
+                raise ValueError(
+                    f'Param traces_kwargs has {len(traces_kwargs)} values, '
+                    f'but expected 0 or {len(values_as_traces)}.')
+            traces_kwargs = traces_kwargs or [{}]*len(values_as_traces)
+
+            # Add trace kwargs
+            values_as_traces = [
+                {**_trace, **_trace_kwargs}
+                for _trace, _trace_kwargs
+                in zip(values_as_traces, traces_kwargs)]
+
+            # Create figure handler.
+            fig_handler = FigureHandler.from_traces(
+                self.data_store,
+                name=figure_name,
+                traces=values_as_traces,
+                default_trace_kwargs=default_trace_kwargs,
+                layout_kwargs=layout_kwargs)
+
+            # Write figure (if it does not exist).
+            figure_written = fig_handler.write_def()
+            self.existing_figures.add(figure_name)
+
+        #
+        return figure_written
+
+    def add_scalars(
+            self,
+            figure_name: str,
+            values: ArrayLike,
+            global_step: int,
+            traces_kwargs: Optional[List[Dict]] = None,
+            layout_kwargs=None,
+            data_name: Optional[str] = None):
         """
         :param figure_name: The figure name. If specified in format '<tab>/<group>/...' , the tab and group entries will determine the position of the figure in the page.
         :param values: The values for each scalar trace as an array-like.
@@ -53,7 +98,7 @@ class Writer:
         Example:
 
         ```
-        writer.add_scalar(
+        writer.add_scalars(
             'three_plots', [0.1, 0.4, 0.5],
             10,
             [{'type': 'scatter', 'name': 'trace 0'},
@@ -61,44 +106,27 @@ class Writer:
              {'type': 'bar', 'name': 'trace 2'}])
         ```
         """
+        layout_kwargs = layout_kwargs or {}
+        default_trace_kwargs = {'type': 'scatter', 'mode': 'lines'}
 
         # Get data name.
         data_name = data_name or self._get_table_name(
             'add_scalars', figure_name=figure_name)
 
         # Check values input
-        values = np.require(values)
+        values = np.require([values] if isinstance(values, Number) else values)
         if values.ndim != 1 or not isinstance(values[0], Number):
-            raise ValueError('Expected a 1-dim array-like object.')
+            raise ValueError(
+                f'Expected a 1-dim array-like object of numbers, but obtained an '
+                f'array of shape {values.shape} with {type(values[0])} entries.')
 
         # Write figure def
         if figure_name not in self.existing_figures:
-
-            # Check traces_kwargs input
-            if traces_kwargs and len(traces_kwargs) != len(values):
-                raise ValueError(
-                    f'Param traces_kwargs has {len(traces_kwargs)} values, '
-                    f'but expected 0 or {len(values)}.')
-            traces_kwargs = traces_kwargs or [{}]*len(values)
-
-            # Build traces with data store references.
             traces = [
                 {'x': Ref_(data_name)['meta']['index'],
-                 'y': Ref_(data_name)['data'][:, k],
-                 **_traces_kwargs}
-                for k, _traces_kwargs in enumerate(traces_kwargs)]
-
-            # Create figure handler.
-            fig_handler = FigureHandler.from_traces(
-                self.data_store,
-                name=figure_name,
-                traces=traces,
-                default_trace_kwargs=self.default_trace_kwargs,
-                layout_kwargs=layout_kwargs)
-
-            # Write figure (if it does not exist).
-            fig_handler.write_def()
-            self.existing_figures.add(figure_name)
+                 'y': Ref_(data_name)['data'][:, k]} for k in range(len(values))]
+            self._write_figure(figure_name, traces, traces_kwargs,
+                               default_trace_kwargs, layout_kwargs)
 
         # Write data.
         data_handler = self._get_data_handler(
@@ -106,18 +134,19 @@ class Writer:
         data_handler.add_data(global_step, values)
 
     def add_plots(
-            self, figure_name: str,
+            self,
+            figure_name: str,
             values: ArrayLike,
             global_step: int,
             traces_kwargs: Optional[List[Dict]] = None,
-            data_name: Optional[List[str]] = None,
-            layout_kwargs={}):
+            layout_kwargs=None,
+            data_name: Optional[str] = None):
         """
-        :param figure_name: (See :meth:`add_scalar`).
+        :param figure_name: (See :meth:`add_scalars`).
         :param values: The values for each scalar trace as a dictionary, e.g., ``[{'x': [0,2,4], 'y': [0,2,4]}, {'x': [0,2,4], 'y': [0,4,16]}]``. Dictionaries can contain lists, strings numpy ndarrays and generally anything compatible with :class:`~pglib.serializer.Serializer`.
-        :param data_name: (See :meth:`add_scalar`).
-        :param traces_kwargs: (See :meth:`add_scalar`).
-        :param layout_kwargs: (See :meth:`add_scalar`).
+        :param data_name: (See :meth:`add_scalars`).
+        :param traces_kwargs: (See :meth:`add_scalars`).
+        :param layout_kwargs: (See :meth:`add_scalars`).
 
         Example:
 
@@ -131,38 +160,141 @@ class Writer:
         ```
         """
 
+        layout_kwargs = layout_kwargs or {}
+        default_trace_kwargs = {'type': 'scatter', 'mode': 'lines'}
+
         # Get data name.
         data_name = data_name or self._get_table_name(
             'add_plots', figure_name=figure_name)
 
         # Write figure def.
         if figure_name not in self.existing_figures:
-            # Check traces_kwargs input
-            if traces_kwargs and len(traces_kwargs) != len(values):
-                raise ValueError(
-                    f'Param traces_kwargs has {len(traces_kwargs)} values, '
-                    f'but expected 0 or {len(values)}.')
-            traces_kwargs = traces_kwargs or [{}]*len(values)
-
             # Build traces with data store references.
             traces = [
-                {**{_key: Ref_(data_name, index='latest')['data'][0][k][_key] for _key in values[k]},
-                 **_traces_kwargs}
-                for k, _traces_kwargs in enumerate(traces_kwargs)]
-
-            # Create figure handler.
-            fig_handler = FigureHandler.from_traces(
-                self.data_store,
-                name=figure_name,
-                traces=traces,
-                default_trace_kwargs=self.default_trace_kwargs,
-                layout_kwargs=layout_kwargs)
-
-            # Write figure (if it does not exist)
-            fig_handler.write_def()
-            self.existing_figures.add(figure_name)
+                {_key: Ref_(data_name, index='latest')['data'][0][k][_key]
+                 for _key in values[k]}
+                for k in range(len(values))]
+            self._write_figure(figure_name, traces, traces_kwargs,
+                               default_trace_kwargs, layout_kwargs)
 
         # Write data
         data_handler = self._get_data_handler(
             data_name, lambda: SerializableDataHandler(self.data_store, name=data_name))
         data_handler.add_data(global_step, values)
+
+    def add_histograms(
+            self,
+            figure_name: str,
+            values: ArrayLike,
+            global_step: int,
+            traces_kwargs: Optional[List[Dict]] = None,
+            layout_kwargs=None,
+            data_name: Optional[str] = None,
+            compute_histogram: bool = True,
+            histogram_kwargs: dict = None
+    ):
+        """
+        :param figure_name: (See :meth:`add_scalars`).
+        :param values: A list of 1-row array-like entries.
+            * When :attr:`compute_histogram` is ``True`` (the default), bin centers will be computed from all entries together, taking param :attr:`histogram_kwargs` into account.
+            * When :attr:`compute_histogram` is ``False`` (requires an entry 'bin_centers' in param :attr:`histogram_kwargs`), each entry will be assumed to be a pre-computed histogram.
+        :param data_name: (See :meth:`add_scalars`).
+        :param traces_kwargs: (See :meth:`add_scalars`).
+        :param <layout_kwargs: (See :meth:`add_scalars`).
+        :param compute_histogram: (See param :attr:`values`.). Note that this param can change between different calls with the same figure_name.
+        :param histogram_kwargs: When :attr:`compute_histogram` is ``True``, these kwargs will be passed to :meth:`compute_histogram`. Note that this param can change between different calls with the same figure_name.
+
+        Example:
+
+        ```
+        """
+
+        layout_kwargs = layout_kwargs or {}
+        histogram_kwargs = histogram_kwargs or {}
+        default_trace_kwargs = {'type': 'bar',
+                                # 'marker_line_width': 1.5,
+                                # 'opacity': 0.7
+                                }
+        layout_kwargs = {
+            # **{'bargap': 0.01, 'bargroupgap': 0.05, 'barmode': 'group'},
+            **layout_kwargs
+        }
+
+        # Get data name.
+        data_name = data_name or self._get_table_name(
+            'add_histograms', figure_name=figure_name)
+
+        # Check values
+        values = [np.require(_x).reshape(-1) for _x in values]
+        if not compute_histogram and 'bin_centers' not in histogram_kwargs:
+            raise Exception(
+                "When compute_histogram=False, histogram_kwargs needs to contain a key "
+                "'bin_centers' with the bin centers.")
+
+        def fld_(k):
+            return f'field_{k}'
+
+        # Write figure def.
+        if figure_name not in self.existing_figures:
+            # Build traces with data store references.
+            traces = [
+                {'x': Ref_(data_name, index='latest')['data'][0]['bin_centers'],
+                 'y': Ref_(data_name, index='latest')['data'][0][fld_(_k)]}
+                for _k in range(len(values))]
+            self._write_figure(figure_name, traces, traces_kwargs,
+                               default_trace_kwargs, layout_kwargs)
+
+        # Compute histogram.
+        if 'bin_centers' not in histogram_kwargs:
+            histogram_kwargs['bin_centers'] = self.compute_histogram(np.concatenate(values))[0]
+        if compute_histogram:
+            values = [np.array(self.compute_histogram(_v, **histogram_kwargs))[1] for _v in values]
+
+        # Assemble data to write
+        bin_centers = histogram_kwargs['bin_centers']
+        values_array = np.empty(
+            len(bin_centers),
+            dtype=(
+                [('bin_centers', bin_centers.dtype)] +
+                [(fld_(_k), _val.dtype) for _k, _val in enumerate(values)]))
+        values_array['bin_centers'] = bin_centers
+        for _k, _val in enumerate(values):
+            values_array[f'field_{_k}'][:] = _val
+
+        # Write data
+        data_handler = self._get_data_handler(
+            data_name, lambda: RaggedNDArrayDataHandler(self.data_store, name=data_name))
+        data_handler.add_data(global_step, values_array)
+
+    @staticmethod
+    def compute_histogram(dat, bins=20, bin_centers=None, normalize=True):
+        """
+        :param dat: Array-like from which the histogram will be computed.
+        :param bins: Num bins or bin edges (passed to numpy.histogram to create a histogram).
+        :param bin_centers: Overrides 'bins' and specifies the bin centers instead of the edges.
+            The first and last bin centers are assumed to extend to +/- infinity.
+        :param normalize: Normalize the histogram so that it adds up to one.
+        """
+        dat = np.require(dat)
+        dat = dat.reshape(-1)
+
+        # Infer bin edges
+        if bin_centers is not None:
+            bins = np.block(
+                [-np.inf, np.convolve(bin_centers, [0.5, 0.5], mode='valid'), np.inf])
+
+        # Build histogram
+        hist, edges = np.histogram(dat, bins=bins)
+
+        # Infer bin centers
+        if bin_centers is None:
+            bin_centers = np.convolve(edges, [0.5, 0.5], mode='valid')
+            for k in [0, -1]:
+                if not np.isfinite(bin_centers[k]):
+                    bin_centers[k] = edges[k]
+
+        # Normalize histogram
+        if normalize:
+            hist = hist/dat.size
+
+        return bin_centers, hist

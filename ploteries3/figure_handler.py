@@ -125,7 +125,9 @@ class FigureHandler(Handler):
             {**default_trace_kwargs, **_trace} for _trace in traces]
 
         # Create figure and append traces
-        fig_dict = go.Figure(**{'layout_template': None, **layout_kwargs}).to_dict()
+        fig = go.Figure(layout_template=None)
+        fig.update_layout(**layout_kwargs)
+        fig_dict = fig.to_dict()
         fig_dict['data'].extend(traces)
 
         # Save figure.
