@@ -141,7 +141,7 @@ class DataStore:
 
     def insert_data_record(self, data_record: Union[dict, List[dict]]):
         """
-        Employs cached, threaded insert (:class:`~pglib.sqlalchemy.threaded_insert_cache.ThreadedInsertCache`). Call :meth:`flush` to ensure all records have been written to the database.
+        Employs cached, threaded insert (:class:`~pglib.sqlalchemy.threaded_insert_cache.ThreadedInsertCache`). Call :meth:`flush` to ensure all records have been written to the database and to wait for the insert thread to join (assumes no more records are being inserted after flush is called). Using this method will automatically batch inserts in a new thread to increase disk-write efficiency.
 
         :param data_record: Record dictionary or list of record dictionaries.
         """
