@@ -152,25 +152,24 @@ class UniformNDArrayDataHandler(DataHandler):
                 f"The input ndarray spec {input_ndarray_spec} does not match the value "
                 f"{self._init_ndarray_spec} provided at initialization.")
 
-        with self.lock, self.data_store.begin_connection(connection=connection) as connection:
-
-            # Write data def if it does not exist.
+        # Write data def if it does not exist.
+        with self.lock:
             if self.decoded_data_def is None:
-                self.write_def(connection=connection, extra_params={
-                               'ndarray_spec': input_ndarray_spec})
-                self.decoded_data_def = self.load_decode_def(
-                    self.data_store, self.name, connection=connection)
+                with self.data_store.begin_connection(connection=connection) as connection:
+                    self.write_def(connection=connection, extra_params={
+                                   'ndarray_spec': input_ndarray_spec})
+                    self.decoded_data_def = self.load_decode_def(
+                        self.data_store, self.name, connection=connection)
 
-            #
-            decoded_ndarray_spec = self.decoded_data_def['params']['ndarray_spec']
-            # Check the input ndarray spec against the stored ndarray spec.
-            if (self.decoded_data_def and input_ndarray_spec != decoded_ndarray_spec):
-                raise TypeError(
-                    f"The input ndarray spec {input_ndarray_spec} does not match the value "
-                    f"{decoded_ndarray_spec} in data store table {self.name}.")
+        # Check the input ndarray spec against the stored ndarray spec.
+        decoded_ndarray_spec = self.decoded_data_def['params']['ndarray_spec']
+        if (self.decoded_data_def and input_ndarray_spec != decoded_ndarray_spec):
+            raise TypeError(
+                f"The input ndarray spec {input_ndarray_spec} does not match the value "
+                f"{decoded_ndarray_spec} in data store table {self.name}.")
 
-            # ADd data.
-            super().add_data(index, arr, connection=connection)
+        # Add data.
+        super().add_data(index, arr, connection=connection)
 
     def encode_record_bytes(self, arr):
 

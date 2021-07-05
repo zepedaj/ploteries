@@ -210,6 +210,8 @@ class PloteriesLaunchInterface:
         @time_and_print()
         def update_all_sliders_and_global_index_dropdown_options(
                 n_intervals, global_index, slider_ids):
+            if not slider_ids:
+                raise PreventUpdate
             return self._update_all_sliders_and_global_index_dropdown_options(
                 n_intervals, global_index, slider_ids)
 

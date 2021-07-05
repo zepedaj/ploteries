@@ -23,11 +23,23 @@ class Writer:
 
     def __init__(self, path):
         self.data_store = path if isinstance(path, DataStore) else DataStore(path)
+
+        # Keep a cache of existing figures and data handlers
+        # to avoid saturating the database with requests.
         self.existing_figures = set()
+        self.existing_data_handlers = {}
+
+    def flush(self):
+        self.data_store.flush()
 
     @classmethod
     def _get_table_name(cls, func, **kwargs):
         return cls._table_names[func].format(**kwargs)
+
+    def _get_data_handler(self, data_name, func):
+        if (data_handler := self.existing_data_handlers.get(data_name, None)) is None:
+            self.existing_data_handlers[data_name] = (data_handler := func())
+        return data_handler
 
     def add_scalars(self, figure_name: str, values: ArrayLike, global_step: int,
                     traces_kwargs: Optional[List[Dict]] = None, data_name=None, layout_kwargs={}):
@@ -88,8 +100,9 @@ class Writer:
             fig_handler.write_def()
             self.existing_figures.add(figure_name)
 
-        # Write data
-        data_handler = UniformNDArrayDataHandler(self.data_store, name=data_name)
+        # Write data.
+        data_handler = self._get_data_handler(
+            data_name, lambda: UniformNDArrayDataHandler(self.data_store, name=data_name))
         data_handler.add_data(global_step, values)
 
     def add_plots(
@@ -150,5 +163,6 @@ class Writer:
             self.existing_figures.add(figure_name)
 
         # Write data
-        data_handler = SerializableDataHandler(self.data_store, name=data_name)
+        data_handler = self._get_data_handler(
+            data_name, lambda: SerializableDataHandler(self.data_store, name=data_name))
         data_handler.add_data(global_step, values)

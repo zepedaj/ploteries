@@ -150,8 +150,9 @@ class DataHandler(Handler):
         # records = [{'row_bytes': np.ascontiguousarray(recfns.repack_fields(arr_row)).tobytes()} for arr_row in arr]
 
         # Write to database.
-        with self.data_store.begin_connection(connection) as connection:
-            connection.execute(insert(self.data_store.data_records_table), record)
+        self.data_store.insert_data_record(record)
+        # with self.data_store.begin_connection(connection) as connection:
+        #    connection.execute(insert(self.data_store.data_records_table), record)
 
     def load_data(self, *criterion, single_record=False, connection=None):
         """

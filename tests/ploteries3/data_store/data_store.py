@@ -28,6 +28,7 @@ def get_store_with_data(num_uniform=[3, 5, 2], num_ragged=[11, 6, 4, 9]):
                 pgnp.random_array((10, 5, 7), dtype=[('f0', 'datetime64[s]'), ('f1', 'int')])
                 for _ in range(num_time_indices)]
             [dh.add_data(k, _arr) for k, _arr in enumerate(arrs)]
+            store.flush()
             uniform.append({'handler': dh, 'arrays': arrs})
 
         ragged = []
@@ -40,6 +41,7 @@ def get_store_with_data(num_uniform=[3, 5, 2], num_ragged=[11, 6, 4, 9]):
                            ('f1', 'int')])
                 for _ in range(num_time_indices)]
             [dh.add_data(k, _arr) for k, _arr in enumerate(arrs)]
+            store.flush()
             ragged.append({'handler': dh, 'arrays': arrs})
 
         yield store, uniform, ragged
@@ -80,6 +82,7 @@ class TestDataStore(TestCase):
                     for _ in range(num_arrays)]
 
             [dh.add_data(time_index := time_index+1, _arr) for _arr in arrs]
+            store.flush()
 
             dat = dh.load_data()
             npt.assert_array_equal(dat['data'], np.array(arrs))

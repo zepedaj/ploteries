@@ -4,13 +4,13 @@ from sqlalchemy import (func, Table, Column, Integer, String, DateTime, select,
 import numpy as np
 import itertools as it
 from pglib.validation import checked_get_single
-from pglib.sqlalchemy import ClassType, SerializableType
+from pglib.sqlalchemy import ClassType, SerializableType, ThreadedInsertCache
 from pglib.serializer import Serializer as _Serializer
 from contextlib import contextmanager
 from pglib.sqlalchemy import begin_connection
 from sqlalchemy.sql.elements import BinaryExpression
 from sqlalchemy.sql import column
-from typing import Union
+from typing import Union, List
 from pglib.slice_sequence import SSQ_ as _SSQ_
 
 Col_ = column
@@ -67,12 +67,20 @@ _Serializer.default_extension_types.append(Ref_)
 
 
 class DataStore:
-    def __init__(self, path, read_only=False):
+    def __init__(self, path, read_only=False, max_queue_size=1000):
+        """
+        Stores heterogenous data in a single data records table. Data inserts can be made using a threaded insert cache to achieve the disk throughput bound (via :meth:`insert_data_record`).
+
+        :param path: Database path.
+        :param read_only: Use database in read-only mode.
+        :param max_queue_size: Max size of insert cache queue.
+        """
         #
         if read_only:
             with open(path, 'r'):
                 pass
             self.writer_id = None
+            self.threaded_insert_cache = None
         #
         self.path = path
         self.engine = create_engine(f'sqlite:///{path}')
@@ -87,6 +95,9 @@ class DataStore:
             with self.engine.connect() as conn:
                 self.writer_id = conn.execute(
                     self._metadata.tables['writers'].insert()).inserted_primary_key.id
+            #
+            self.threaded_insert_cache = ThreadedInsertCache(
+                self.data_records_table, self.engine, max_queue_size)
 
     @contextmanager
     def begin_connection(self, connection=None):
@@ -127,6 +138,22 @@ class DataStore:
 
         return self._get_handlers(
             self.figure_defs_table, *column_constraints, connection=connection)
+
+    def insert_data_record(self, data_record: Union[dict, List[dict]]):
+        """
+        Employs cached, threaded insert (:class:`~pglib.sqlalchemy.threaded_insert_cache.ThreadedInsertCache`). Call :meth:`flush` to ensure all records have been written to the database.
+
+        :param data_record: Record dictionary or list of record dictionaries.
+        """
+        if self.threaded_insert_cache is None:
+            raise Exception(
+                'Attempting to insert into a data store that was opened in read-only mode.')
+        else:
+            self.threaded_insert_cache.insert(data_record)
+
+    def flush(self):
+        if self.threaded_insert_cache:
+            self.threaded_insert_cache.flush()
 
     def _create_tables(self):
         """

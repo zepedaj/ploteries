@@ -33,6 +33,7 @@ class TestUniformNDArrayDataHandler(TestCase):
             # Implicit
             ndh2 = mdl.UniformNDArrayDataHandler(store, 'arr2')
             ndh2.add_data(0, data2 := pgnp.random_array(ndarray_spec.shape, ndarray_spec.dtype))
+            store.flush()
             self.assertEqual(ndh2.ndarray_spec, ndarray_spec)
             npt.assert_array_equal(data2[None, ...], ndh2.load_data()['data'])
 
@@ -49,6 +50,7 @@ class TestUniformNDArrayDataHandler(TestCase):
                     for _ in range(num_arrays)]
 
             [dh.add_data(k, _arr) for (k, _arr) in enumerate(arrs)]
+            store.flush()
 
             dat = dh.load_data()
             npt.assert_array_equal(dat['data'], np.array(arrs))
@@ -65,6 +67,7 @@ class TestUniformNDArrayDataHandler(TestCase):
             arrs = [_v for _v in range(num_arrays)]
 
             [dh.add_data(k, _arr) for (k, _arr) in enumerate(arrs)]
+            store.flush()
 
             dat = dh.load_data()
             npt.assert_array_equal(dat['data'], np.array(arrs))
@@ -93,6 +96,7 @@ class TestRaggedNDArrayDataHandler(TestCase):
             dh = mdl.RaggedNDArrayDataHandler(store, 'arr1')
             for k, _arr in enumerate(arrs):
                 dh.add_data(k, _arr)
+            store.flush()
 
             loaded_arrs = dh.load_data()
 
