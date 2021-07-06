@@ -16,6 +16,7 @@ def get_store():
     with NamedTemporaryFile() as tmpf:
         obj = mdl.DataStore(tmpf.name)
         yield obj
+        obj.flush()
 
 
 @contextmanager

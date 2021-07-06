@@ -3,15 +3,13 @@ Provides a higher-level interface to ploteries that exposes a :class:`Writer` cl
 """
 import numpy as np
 from numbers import Number
-from sqlalchemy import exc
 from .data_store import DataStore, Ref_
 from .ndarray_data_handlers import UniformNDArrayDataHandler, RaggedNDArrayDataHandler
 from .serializable_data_handler import SerializableDataHandler
 from .figure_handler import FigureHandler
-import plotly.graph_objects as go
 from numpy.typing import ArrayLike
 from typing import Optional, List, Dict, Any
-from pglib.slice_sequence import SSQ_
+from pglib.nnets import numtor
 
 
 class Writer:
@@ -88,6 +86,12 @@ class Writer:
         #
         return figure_written
 
+    def add_scalar(self, *arg, **kwargs):
+        """
+        Alias for :meth:`add_scalars`.
+        """
+        return self.add_scalars(*arg, **kwargs)
+
     def add_scalars(
             self,
             figure_name: str,
@@ -122,11 +126,12 @@ class Writer:
             'add_scalars', figure_name=figure_name)
 
         # Check values input
-        values = np.require([values] if isinstance(values, Number) else values)
+        values = numtor.asnumpy(values)
+        values = values[None] if values.ndim == 0 else values
         if values.ndim != 1 or not isinstance(values[0], Number):
             raise ValueError(
                 f'Expected a 1-dim array-like object of numbers, but obtained an '
-                f'array of shape {values.shape} with {type(values[0])} entries.')
+                f'array of shape {values.shape} with {values.dtype} entries.')
 
         # Write figure def
         if figure_name not in self.existing_figures:
@@ -233,7 +238,7 @@ class Writer:
             'add_histograms', figure_name=figure_name)
 
         # Check values
-        values = [np.require(_x).reshape(-1) for _x in values]
+        values = [numtor.asnumpy(_x).reshape(-1) for _x in values]
         if not compute_histogram and 'bin_centers' not in histogram_kwargs:
             raise Exception(
                 "When compute_histogram=False, histogram_kwargs needs to contain a key "
@@ -283,7 +288,7 @@ class Writer:
             The first and last bin centers are assumed to extend to +/- infinity.
         :param normalize: Normalize the histogram so that it adds up to one.
         """
-        dat = np.require(dat)
+        dat = numtor.asnumpy(dat)
         dat = dat.reshape(-1)
 
         # Infer bin edges
