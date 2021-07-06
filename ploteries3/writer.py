@@ -1,5 +1,5 @@
 """
-This module aims to simulate the tensorboard API so that ploteries can easily used in place of tensorboard in existing or new projects.
+Provides a higher-level interface to ploteries that exposes a :class:`Writer` class with :meth:`add_*` methods similar to Tensorboard's API.
 """
 import numpy as np
 from numbers import Number
@@ -10,13 +10,15 @@ from .serializable_data_handler import SerializableDataHandler
 from .figure_handler import FigureHandler
 import plotly.graph_objects as go
 from numpy.typing import ArrayLike
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from pglib.slice_sequence import SSQ_
 
 
 class Writer:
     """
-    .. todo:: We need to 1) check that figure-definition values are compatible with the existing figure; 2) add mode="overwrite" functionality. It might be best to make each add_* function a class deriving from a BaseAdder class.
+    All :meth:`add_*` methods build a list of trace dictionaries by combining corresponding dictionaries derived from the argument iterable :attr:`values` and the list of dictionaries in the argument :attr:`traces_kwargs`. The :attr:`values` iterable is expected to change from one time index to the next and its contents are stored for each time index in the data records table using a name tag derived from the :meth:`add_*` methods's name or specified using argument :attr:`data_name`. The :attr:`traces_kwargs`, however, will be saved along with :attr:`layout_kwargs` in a figure template that is stored in the figure definitions table. Note that this figure template is only built the first time the :attr:`add_*` method is called, and that arguments :attr:`traces_kwargs` and :attr:`layout_kwargs` are ignored in subsequent calls.
+
+`    .. todo:: We need to 1) check that figure-definition values are compatible with the existing figure; 2) add mode="overwrite" functionality. It might be best to make each add_* function a class deriving from a BaseAdder class.
     """
 
     _table_names = {
@@ -44,32 +46,38 @@ class Writer:
             self.existing_data_handlers[data_name] = (data_handler := func())
         return data_handler
 
-    def _write_figure(self, figure_name, values_as_traces, traces_kwargs,
-                      default_trace_kwargs, layout_kwargs):
+    def _write_figure(self,
+                      figure_name,
+                      value_refs_as_traces: List[Dict[str, Ref_]],
+                      traces_kwargs: List[Dict[str, Any]],
+                      default_trace_kwargs: Dict[str, Any],
+                      layout_kwargs: Dict[str, Any]):
         """
-        Checks that the number of values and number of traces_kwargs match.
+        Checks that the lengths of value_refs_as_traces and number of traces_kwargs match. Writes the figure to the figure definitions table if the figure does not yet exist. Returns ``True`` if the figure was written and ``False`` otherwise. Trace keyword args will be built by combining corresponding dictionaries in value_refs_as_traces and traces_kwargs, and applying to each the dictionary in default_trace_kwargs. Key collisions are resolved in the following highest-to-lowest priority order: ``value_refs_as_traces``, ``traces_kwargs``, ``default_trace_kwargs``.
+
+        :param value_refs_as_traces: List of trace dictionaries containing :class:`Ref_` data placeholders.
         """
         figure_written = False
         if figure_name not in self.existing_figures:
 
             # Check traces_kwargs input
-            if traces_kwargs and len(traces_kwargs) != len(values_as_traces):
+            if traces_kwargs and len(traces_kwargs) != len(value_refs_as_traces):
                 raise ValueError(
                     f'Param traces_kwargs has {len(traces_kwargs)} values, '
-                    f'but expected 0 or {len(values_as_traces)}.')
-            traces_kwargs = traces_kwargs or [{}]*len(values_as_traces)
+                    f'but expected 0 or {len(value_refs_as_traces)}.')
+            traces_kwargs = traces_kwargs or [{}]*len(value_refs_as_traces)
 
             # Add trace kwargs
-            values_as_traces = [
-                {**_trace, **_trace_kwargs}
+            value_refs_as_traces = [
+                {**_trace_kwargs, **_trace}
                 for _trace, _trace_kwargs
-                in zip(values_as_traces, traces_kwargs)]
+                in zip(value_refs_as_traces, traces_kwargs)]
 
             # Create figure handler.
             fig_handler = FigureHandler.from_traces(
                 self.data_store,
                 name=figure_name,
-                traces=values_as_traces,
+                traces=value_refs_as_traces,
                 default_trace_kwargs=default_trace_kwargs,
                 layout_kwargs=layout_kwargs)
 
@@ -143,7 +151,7 @@ class Writer:
             data_name: Optional[str] = None):
         """
         :param figure_name: (See :meth:`add_scalars`).
-        :param values: The values for each scalar trace as a dictionary, e.g., ``[{'x': [0,2,4], 'y': [0,2,4]}, {'x': [0,2,4], 'y': [0,4,16]}]``. Dictionaries can contain lists, strings numpy ndarrays and generally anything compatible with :class:`~pglib.serializer.Serializer`.
+        :param values: The values for each scalar trace as a dictionary, e.g., ``[{'x': [0,2,4], 'y': [0,2,4]}, {'x': [0,2,4], 'y': [0,4,16]}]``. Dictionaries can contain lists, strings numpy ndarrays and generally anything compatible with :class:`~pglib.serializer.Serializer`. These dictionaries will be udpated with the corresponding value of traces_kwargs, if any. Note that the content of values will change with the global step and is saved in the data records table, but the content of traces_kwargs will remain constant and stored with the figure definition.
         :param data_name: (See :meth:`add_scalars`).
         :param traces_kwargs: (See :meth:`add_scalars`).
         :param layout_kwargs: (See :meth:`add_scalars`).
@@ -266,7 +274,7 @@ class Writer:
             data_name, lambda: RaggedNDArrayDataHandler(self.data_store, name=data_name))
         data_handler.add_data(global_step, values_array)
 
-    @staticmethod
+    @ staticmethod
     def compute_histogram(dat, bins=20, bin_centers=None, normalize=True):
         """
         :param dat: Array-like from which the histogram will be computed.
