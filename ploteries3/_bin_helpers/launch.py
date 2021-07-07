@@ -55,23 +55,26 @@ def create_layout(update_interval):
                 html.Div([
                     daq.ToggleSwitch(id='auto-update-switch', size=20,
                                      value=True,
+                                     persistence=True,
                                      label=' ',
                                      style=CONTROL_WIDGET_STYLE),  # 'display': 'inline-block'
                     html.Label(
                         ['Global step:',
                          dcc.Dropdown(
-                             id='global-index-dropdown')],
+                             id='global-index-dropdown',
+                             persistence=True)],
                         style=dict(**{'min-width': '20em'}, **CONTROL_WIDGET_STYLE)),
                     html.Label(
                         ['Data store:',
                          dcc.Dropdown(
                              id='data-store-dropdown',
+                             persistence=True,
                              options=[{'label': _x, 'value': _x}
                                       for _x in DATA_INTERFACES.keys()],
                              value=(next(iter(DATA_INTERFACES.keys())) if DATA_INTERFACES else None))],
                         style=dict(**{'min-width': '40em'}, **CONTROL_WIDGET_STYLE))], )
             ], style={'content': "", 'clear': 'both', 'display': 'table', 'width': '100%'}),
-            dcc.Tabs(id='figure-tabs'),
+            dcc.Tabs(id='figure-tabs', persistence=True),
             dcc.Interval(
                 id='interval-component',
                 interval=update_interval*1000,  # in milliseconds
