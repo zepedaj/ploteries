@@ -1,6 +1,6 @@
 from unittest import TestCase
 import numpy.testing as npt
-from dash.dependencies import Input, Output, ALL
+from dash.dependencies import Input, Output, State, ALL
 import dash
 from .figure_handler import get_store_with_fig
 from ploteries3 import _cli_interface as mdl
@@ -39,8 +39,11 @@ class TestPloteriesLaunchInterface(TestCase):
         app = dash.Dash()
         with get_store_with_fig() as (store, arr1_h, arr2_h, fig_h):
             #
-            mdl.PloteriesLaunchInterface(store).create_callbacks(
+            pli = mdl.PloteriesLaunchInterface(store)
+            mdl.PloteriesLaunchInterface.create_callbacks(
                 app,
+                lambda: pli,
+                interface_name_state=State('data-store-dropdown', 'value'),
                 n_interval_input=Input('interval-component', 'n_intervals'),
                 global_index_input_value=Input('global-index-dropdown', 'value'),
                 global_index_dropdown_options=Output("global-step-dropdown", "options"))

@@ -1,7 +1,6 @@
 from .main import main, path_arg
+import glob
 from pglib.profiling import time_and_print
-
-from collections import namedtuple, OrderedDict
 #
 import climax as clx
 from ploteries3._cli_interface import PloteriesLaunchInterface
@@ -11,16 +10,20 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_daq as daq
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from plotly import graph_objects as go
 from multiprocessing import cpu_count
 from pglib.gunicorn import GunicornServer
+import logging
+from collections import OrderedDict
+
+LOGGER = logging.getLogger(__name__)
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 #
 
-global DATA_INTERFACE, DATA_STORE, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, APP
+global DATA_INTERFACES, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, APP
 HEIGHT, WIDTH = None, None
 global GRAPH_KWARGS
 GRAPH_KWARGS = {}  # {'config': {'displayModeBar': True}}
@@ -33,21 +36,14 @@ CONTROL_WIDGET_STYLE = {'float': 'left', 'margin': '0em 1em 0em 1em'}
 
 #
 # suppress_callback_exceptions=True)
-APP = dash.Dash(__name__, external_stylesheets=external_stylesheets,
+APP = dash.Dash(__name__,  external_stylesheets=external_stylesheets,
                 suppress_callback_exceptions=True)
 
 # Layout creation
 
 
 def create_layout(update_interval):
-    global DATA_INTERFACE
-
-    # Get figure handlers, posns, tabs, groups.
-    empty_figs = DATA_INTERFACE.render_empty_figures()
-    # Ordered, unique tabs
-    tabs = list(OrderedDict.fromkeys([_fig.posn.tab for _fig in empty_figs]))
-    # Ordered, unique groups
-    groups = list(OrderedDict.fromkeys([_fig.posn.group for _fig in empty_figs]))
+    global DATA_INTERFACES
 
     # Layout
     layout = html.Div(
@@ -61,20 +57,21 @@ def create_layout(update_interval):
                                      value=True,
                                      label=' ',
                                      style=CONTROL_WIDGET_STYLE),  # 'display': 'inline-block'
-                    html.Label(['Global step:', dcc.Dropdown(
-                        id='global-index-dropdown')], style=dict(**{'min-width': '20em'}, **CONTROL_WIDGET_STYLE))], )
+                    html.Label(
+                        ['Global step:',
+                         dcc.Dropdown(
+                             id='global-index-dropdown')],
+                        style=dict(**{'min-width': '20em'}, **CONTROL_WIDGET_STYLE)),
+                    html.Label(
+                        ['Data store:',
+                         dcc.Dropdown(
+                             id='data-store-dropdown',
+                             options=[{'label': _x, 'value': _x}
+                                      for _x in DATA_INTERFACES.keys()],
+                             value=(next(iter(DATA_INTERFACES.keys())) if DATA_INTERFACES else None))],
+                        style=dict(**{'min-width': '40em'}, **CONTROL_WIDGET_STYLE))], )
             ], style={'content': "", 'clear': 'both', 'display': 'table', 'width': '100%'}),
-            dcc.Tabs([
-                dcc.Tab(
-                    label=tab,
-                    children=[html.Details([
-                        html.Summary(group),
-                        html.Div(
-                            [_fig.html
-                             for _fig in empty_figs
-                             if _fig.posn.group == group and _fig.posn.tab == tab])], open=True)
-                        for group in groups])
-                for tab in tabs]),
+            dcc.Tabs(id='figure-tabs'),
             dcc.Interval(
                 id='interval-component',
                 interval=update_interval*1000,  # in milliseconds
@@ -82,6 +79,38 @@ def create_layout(update_interval):
             )]
     )
     return layout
+
+
+@APP.callback(
+    Output('figure-tabs', 'children'),
+    Input('data-store-dropdown', 'value'),
+)
+@time_and_print()
+def update_figure_tabs(data_store_name):
+
+    if data_store_name is None:
+        raise PreventUpdate
+
+    # Get figure handlers, posns, tabs, groups.
+    empty_figs = DATA_INTERFACES[data_store_name].render_empty_figures()
+    # Ordered, unique tabs
+    tabs = list(OrderedDict.fromkeys([_fig.posn.tab for _fig in empty_figs]))
+    # Ordered, unique groups
+    groups = list(OrderedDict.fromkeys([_fig.posn.group for _fig in empty_figs]))
+
+    out_tabs = [
+        dcc.Tab(
+            label=tab,
+            children=[html.Details([
+                html.Summary(group),
+                html.Div(
+                    [_fig.html
+                     for _fig in empty_figs
+                     if _fig.posn.group == group and _fig.posn.tab == tab])], open=True)
+                for group in groups])
+        for tab in tabs]
+
+    return out_tabs
 
 
 def create_toolbar_callbacks():
@@ -97,52 +126,71 @@ def create_toolbar_callbacks():
     )(auto_update_switch)
 
 
-@main.command(parents=[path_arg])
-@clx.option('--interval', type=float, help='Seconds between automatic update of all plots.', default=300)
-@clx.option('--debug', action='store_true', help='Enables javascript debug console', default=False)
-@clx.option('--host', help='Host name.', default='0.0.0.0')
-@clx.option('--port', help='Port number.', default='8000')
-@clx.option('--workers', help='Number of workers (ignored in debug mode).', default=(cpu_count() * 2) + 1)
+@main.command()
+@clx.option('glob_path',
+            help='Data store path. Will be interpreted with a call to recursive glob (see https://docs.python.org/3/library/glob.html).')
+@clx.option('--interval',
+            help='Seconds between automatic update of all plots.',
+            type=float,
+            default=300)
+@clx.option('--debug', action='store_true',
+            help='Enables javascript debug console', default=False)
+@clx.option('--host',
+            help='Host name.', default='0.0.0.0')
+@clx.option('--port',
+            help='Port number.', default='8000')
+@clx.option('--workers',
+            help='Number of workers (ignored in debug mode).', default=(cpu_count() * 2) + 1)
 @clx.option(
     '--height', help=f'Figure height (default={DEFAULT_WIDTH*DEFAULT_HEIGHT_TO_WIDTH})', type=int,
     default=DEFAULT_WIDTH * DEFAULT_HEIGHT_TO_WIDTH)
 @clx.option(
     '--width', help=f'Figure width (default={DEFAULT_WIDTH}),', type=int,
     default=DEFAULT_WIDTH)
-def launch(path, debug, host, interval, height, width, port, workers):
+def launch(glob_path, debug, host, interval, height, width, port, workers):
     """
     Launch a ploteries visualization server.
     """
     #
-    global DATA_INTERFACE, DATA_STORE, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH
+    global DATA_INTERFACES, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH
     HEIGHT = height
     WIDTH = width
     LARGE_HEIGHT = 2*HEIGHT
     LARGE_WIDTH = 2*WIDTH
 
-    DATA_STORE = DataStore(path, read_only=True)
-    DATA_INTERFACE = PloteriesLaunchInterface(
-        DATA_STORE,
-        figure_layout_kwargs={
-            'height': HEIGHT,
-            'width': WIDTH,
-            'margin': go.layout.Margin(**dict(zip('lrbt', [0, 30, 0, 0]), pad=4)),
-            'legend': {
-                'orientation': "h",
-                'yanchor': "bottom",
-                'y': 1.02,
-                'xanchor': "right",
-                'x': 1},
-            'modebar': {
-                'orientation': 'v'}})
+    DATA_INTERFACES = OrderedDict()
+    for _path in sorted(glob.glob(glob_path, recursive=True)):
+        try:
+            data_store = DataStore(_path, read_only=True)
+            print(f'Loaded {_path}')
+        except Exception:
+            LOGGER.error('Error loading {_path}.')
+        else:
+            DATA_INTERFACES[_path] = PloteriesLaunchInterface(
+                data_store,
+                figure_layout_kwargs={
+                    'height': HEIGHT,
+                    'width': WIDTH,
+                    'margin': go.layout.Margin(**dict(zip('lrbt', [0, 30, 0, 0]), pad=4)),
+                    'legend': {
+                        'orientation': "h",
+                        'yanchor': "bottom",
+                        'y': 1.02,
+                        'xanchor': "right",
+                        'x': 1},
+                    'modebar': {
+                        'orientation': 'v'}})
 
-    #
-    DATA_INTERFACE.create_callbacks(
-        APP,
-        Input('interval-component', 'n_intervals'),
-        Input('global-index-dropdown', 'value'),
-        Output("global-index-dropdown", "options"),
-    )
+    # Create callbacks
+    for data_interface_type in set(type(_x) for _x in DATA_INTERFACES.values()):
+        data_interface_type.create_callbacks(
+            APP,
+            lambda data_store_name: DATA_INTERFACES[data_store_name],
+            State('data-store-dropdown', 'value'),
+            Input('interval-component', 'n_intervals'),
+            Input('global-index-dropdown', 'value'),
+            Output("global-index-dropdown", "options"),
+        )
     create_toolbar_callbacks()
 
     APP.layout = lambda: create_layout(update_interval=interval)

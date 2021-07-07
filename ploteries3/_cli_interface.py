@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Callable
 import functools
 import itertools as it
 from pglib.profiling import time_and_print
@@ -72,15 +73,8 @@ class PloteriesLaunchInterface:
 
     def _name_to_posn(self, fig_name):
         default = None
-        hierarchy = fig_name.split('/')
-        if len(hierarchy) == 1:
-            tab, group, rel_name = (default, default, fig_name)
-        elif len(hierarchy) == 2:
-            tab, group, rel_name = (hierarchy[0], default, hierarchy[1])
-        elif len(hierarchy) > 2:
-            tab, group, rel_name = hierarchy[0], hierarchy[1],  '/'.join(hierarchy[2:])
-        else:
-            raise Exception('Unexpected case!')
+        hierarchy = [_x or default for _x in fig_name.split('/', maxsplit=2)] + [default]*3
+        tab, group, rel_name = hierarchy[:3]
         return PosnTuple(tab=tab, group=group, rel_name=rel_name, abs_name=fig_name)
 
     # Dictionary ids.
@@ -144,76 +138,91 @@ class PloteriesLaunchInterface:
     def encoded_class_name(cls):
         return class_name(cls).replace('.', '|')
 
+    @classmethod
     def create_callbacks(
-            self, app: Dash,
+            cls,
+            app: Dash,
+            get_interface: Callable[[str], 'PloteriesLaunchInterface'],
+            interface_name_state: State,
             n_interval_input: Input,
             global_index_input_value: Input,
             global_index_dropdown_options: Output):
-        """
-        Produces three callbacks(corresponding to arrows below):
-        * n_interval_input -> slider-less figures
-        * n_interval_input -> slider -> with-slider figures
+        """        
+
+        This method creates the callbacks required to support web valizations. In only needs to be called once for each :class:`PloteriesLaunchInterface` class. It produces three pattern-matching callbacks (corresponding to the arrows below):
+        * n_interval_input -> each slider-less figures
+        * n_interval_input -> each slider -> each with-slider figures        
+
+        :class:`PloteriesLaunchInterface` supports Dash apps where the data store (i.e., the instance of the :class:`PloteriesLaunchInterface`) is changed by the user from the web interface. Each callback will thus first retrieve the relevant :class:`PloteriesLaunchInterface` object by calling the input callable :attr:`get_interface`, which takes an interface name that is in turn received by the callback from the :class:`Input` :attr:`interface_name`.
 
         : param app: The Dash object where callbacks are added.
-        : param data_store: The data store.
+        : param get_interface: Callable that returns an instance of this class. Will be used within callbacks to process requests.
+        : param interface_name: The ``Dropdown.value`` attribute that provides the interface name, e.g., ``State('data-store-dropdown', 'value')``
         : param n_interval_input: The ``Interval.n_intervals`` atttribute that that will trigger the auto-updates, e.g., ``Input('interval-component', 'n_intervals')``.
         : param global_index_input_value: The global index value that will trigger on-demand figure updates, e.g., ``Input('global-index-dropdown', 'value')``
         : param global_index_dropdown_options: Options for global index dropdown menu, e.g., ``Output("global-step-dropdown", "options")``.
-        : param registry: A set where figure handlers are registered to avoid re-creating existing callbacks. An error will be raised if the callbacks for this handler have already been registered.
         """
 
         # Figure update on interval tick
         @app.callback(
             Output(
-                self._get_figure_id(figure_name=MATCH, has_slider=False),
+                cls._get_figure_id(figure_name=MATCH, has_slider=False),
                 'figure'),
             n_interval_input,
             State(
-                self._get_figure_id(figure_name=MATCH, has_slider=False),
-                'id'))
+                cls._get_figure_id(figure_name=MATCH, has_slider=False),
+                'id'),
+            interface_name_state
+        )
         @time_and_print()
-        def update_figure_with_no_slider(n_interval, elem_id):
-            return self._build_formatted_figure_from_name(elem_id['name'])
+        def update_figure_with_no_slider(n_interval, elem_id, interface_name):
+            return get_interface(interface_name)._build_formatted_figure_from_name(elem_id['name'])
 
         # Figure update on slider change
 
         @app.callback(
             Output(
-                self._get_figure_id(figure_name=MATCH, has_slider=True),
+                cls._get_figure_id(figure_name=MATCH, has_slider=True),
                 'figure'),
             Input(
-                self._get_slider_id(figure_name=MATCH),
+                cls._get_slider_id(figure_name=MATCH),
                 'value'),
             State(
-                self._get_slider_id(figure_name=MATCH),
-                'id'))
+                cls._get_slider_id(figure_name=MATCH),
+                'id'),
+            interface_name_state
+        )
         @time_and_print()
-        def update_figure_with_slider(slider_value, slider_id):
+        def update_figure_with_slider(slider_value, slider_id, interface_name):
             if slider_value is None:
                 raise PreventUpdate
-            return self._build_formatted_figure_from_name(slider_id['name'], index=slider_value)
+            return get_interface(interface_name)._build_formatted_figure_from_name(
+                slider_id['name'],
+                index=slider_value)
 
         # Update all sliders and global index dropdown options on interval tick
 
         @app.callback(
             # Outputs
             ([Output(
-                self._get_slider_id(ALL), _x)
-              for _x in self._slider_output_keys] +
+                cls._get_slider_id(ALL), _x)
+              for _x in cls._slider_output_keys] +
              [global_index_dropdown_options]),
             # Inputs
             [n_interval_input, global_index_input_value],
             # States
-            [State(
-                self._get_slider_id(ALL),
-                'id')])
+            State(
+                cls._get_slider_id(ALL),
+                'id'),
+            interface_name_state)
         @time_and_print()
         def update_all_sliders_and_global_index_dropdown_options(
-                n_intervals, global_index, slider_ids):
+                n_intervals, global_index, slider_ids, interface_name):
             if not slider_ids:
                 raise PreventUpdate
-            return self._update_all_sliders_and_global_index_dropdown_options(
-                n_intervals, global_index, slider_ids)
+            return \
+                get_interface(interface_name)._update_all_sliders_and_global_index_dropdown_options(
+                    n_intervals, global_index, slider_ids)
 
     def _get_figure_indices(self, fig_handlers):
         # Get data ids for each figure.
