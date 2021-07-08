@@ -3,8 +3,8 @@ import numpy.testing as npt
 from dash.dependencies import Input, Output, ALL
 import dash
 from .figure_handler import get_store_with_fig
-from ploteries3 import _cli_interface as mdl
-from ploteries3.data_store import Col_
+from ploteries import _cli_interface as mdl
+from ploteries.data_store import Col_
 
 
 class TestPloteriesLaunchInterface(TestCase):

@@ -8,7 +8,7 @@ from typing import Dict, Union, Any
 from pglib.slice_sequence import SSQ_
 from dataclasses import dataclass
 from copy import deepcopy
-from ploteries3.data_store import Col_, Ref_
+from ploteries.data_store import Col_, Ref_
 from pglib.py import get_nested_keys
 
 
@@ -25,7 +25,7 @@ class FigureHandler(Handler):
         """
         Instantiates a new figure handler. Note that this does not read or write a figure handler from the data store (use methos :meth:`from_name` and :meth:`write_def` for this purpose).
 
-        :param figure_dict: Dictionary representation of a plotly figure containing placeholder values of type :class:`ploteries3.data_store.Ref_` that will be replaced by data from the store when building the figure.
+        :param figure_dict: Dictionary representation of a plotly figure containing placeholder values of type :class:`ploteries.data_store.Ref_` that will be replaced by data from the store when building the figure.
 
         """
         self.data_store = data_store

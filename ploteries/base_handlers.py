@@ -13,7 +13,7 @@ LOGGER = getLogger(__name__)
 
 class Handler(abc.ABC):
     """
-    Base class for :class:`~ploteries3.figure_handler.FigureHandler`s and :class:`DataHandler`s
+    Base class for :class:`~ploteries.figure_handler.FigureHandler`s and :class:`DataHandler`s
     """
 
     @classmethod
@@ -37,7 +37,7 @@ class Handler(abc.ABC):
     @abc.abstractmethod
     def data_store(self):
         """
-        Contains a :class:`~ploteries3.data_store.DataStore` object.
+        Contains a :class:`~ploteries.data_store.DataStore` object.
         """
 
     @property

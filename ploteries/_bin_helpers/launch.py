@@ -4,8 +4,8 @@ from pglib.profiling import time_and_print
 from collections import namedtuple, OrderedDict
 #
 import climax as clx
-from ploteries3._cli_interface import PloteriesLaunchInterface
-from ploteries3.data_store import DataStore
+from ploteries._cli_interface import PloteriesLaunchInterface
+from ploteries.data_store import DataStore
 # from ploteries2._ploteries2_helper import get_train_args
 import dash
 import dash_core_components as dcc

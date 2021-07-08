@@ -80,7 +80,7 @@ class UniformNDArrayDataHandler(DataHandler):
                  ndarray_spec: Optional[NDArraySpec] = None,
                  _decoded_data_def=None):
         """
-        :param data_store: :class:`ploteries3.data_store.DataStore` object.
+        :param data_store: :class:`ploteries.data_store.DataStore` object.
         :param name: Data name.
         :param ndarray_spec: An :class:`NDArraySpec` producible.
         """
@@ -215,7 +215,7 @@ class RaggedNDArrayDataHandler(DataHandler):
 
     def __init__(self, data_store, name, _decoded_data_def=None, connection=None):
         """
-        :param data_store: :class:`ploteries3.data_store.DataStore` object.
+        :param data_store: :class:`ploteries.data_store.DataStore` object.
         :param name: Data name.
         """
         self.data_store = data_store

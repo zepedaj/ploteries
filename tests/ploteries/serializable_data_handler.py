@@ -4,7 +4,7 @@ from sqlalchemy.sql import column as c
 import numpy.testing as npt
 import pglib.numpy as pgnp
 import numpy as np
-from ploteries3 import serializable_data_handler as mdl
+from ploteries import serializable_data_handler as mdl
 from .data_store import get_store
 from pglib.sqlalchemy import begin_connection
 

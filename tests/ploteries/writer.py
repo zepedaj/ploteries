@@ -1,69 +1,71 @@
+import ploteries.writer as mdl
+import numpy.testing as npt
 from unittest import TestCase
-from tempfile import TemporaryDirectory
-import os.path as osp
+from tempfile import NamedTemporaryFile
+from ploteries.data_store import DataStore
 import numpy as np
-#
-from sqlalchemy import create_engine, Table, Column, Integer, String, MetaData, ForeignKey, select
-from ploteries import writer as ptw
-#
-import plotly.express as px, plotly.graph_objects as go
 
 
 class TestWriter(TestCase):
-    def _helper_figure(self):
-        tips = px.data.tips()
-        fig = px.histogram(tips, x="total_bill")        
-        return fig
+    def test_add_scalars(self):
+        with NamedTemporaryFile() as tmp_fo:
+            # Write data
+            writer = mdl.Writer(tmp_fo.name)
+            num_traces = 3
+            figure_name = 'fig1'
+            writer.add_scalars(figure_name, rec0_arr := np.array([0]*num_traces), 0)
+            writer.add_scalars(figure_name, rec1_arr := np.array([1]*num_traces), 1)
 
-    def test_create(self):
-        with TemporaryDirectory() as td:
-            # Create 
-            writer=ptw.Writer(td)
-            writer._engine.table_names()
-            self.assertTrue(osp.isfile(writer.path))
-            
-            # Add one figure
-            figure1 = self._helper_figure()
-            writer.add_figure('abc', figure1, 1)
-            writer.flush()
-            self.assertEqual(writer._engine.table_names(), ['__ps__table_meta', 'abc'])
-            #
-            result = list(writer._execute(select([writer._metadata.tables['abc']])))
-            self.assertEqual(len(result), 1)
-            
-            # Add second figure
-            figure2 = self._helper_figure()
-            writer.add_figure('abc', figure2,2)
-            #
-            writer.flush()
-            result = list(writer._execute(select([writer._metadata.tables['abc']])))            
-            self.assertEqual(len(result), 2)
-            
-            # Add 3,4 figures
-            figure3 = self._helper_figure()
-            writer.add_figure('xyz', figure3,2)
-            writer.add_figure('fig3', figure3,2)
-            writer.add_figure('fig4', figure3,2)
-            
-            # Test field is plotly figure
-            self.assertEqual(type(result[0]['content']), go.Figure)
-            
-            # Add scalar
-            writer.add_scalar('scalar1',  1, 1)
-            writer.add_scalar('scalar1',  2, 2)
-            
-            # Add scalar
-            writer.add_scalar('scalar2',  5, 1)
-            writer.add_scalar('scalar2',  -1, 2)
+            data_name = mdl.Writer._get_table_name('add_scalars', figure_name=figure_name)
 
-            # Add scalar
-            writer.add_scalar('scalar3',  5, 1)
-            writer.add_scalar('scalar3',  -1, 2)
-            writer.add_scalar('scalar4',  5, 1)
-            writer.add_scalar('scalar4',  -1, 2)
+            # Verify contents.
+            store = DataStore(tmp_fo.name)
+            self.assertEqual([_x.name for _x in store.get_figure_handlers()],
+                             [figure_name])
+            self.assertEqual([_x.name for _x in store.get_data_handlers()],
+                             [data_name])
 
-            # Add histogram
-            writer.add_histogram('histoA' , np.random.randn(1000), 1)
+            # Check loaded data.
+            fig_h = store.get_figure_handlers()[0]
 
-            writer.flush()
-            #import ipdb; ipdb.set_trace()
+            # Check built figure.
+            fig = fig_h.build_figure()
+            self.assertEqual(len(fig['data']), num_traces)
+
+            for _k in range(num_traces):
+                npt.assert_array_equal(
+                    np.stack((rec0_arr, rec1_arr))[:, _k],
+                    fig['data'][_k]['y'])
+
+    def test_add_plots(self):
+        with NamedTemporaryFile() as tmp_fo:
+            # Write data
+            writer = mdl.Writer(tmp_fo.name)
+            figure_name = 'fig1'
+            writer.add_plots(figure_name,
+                             traces := [
+                                 {'x': np.arange(0, 10),
+                                  'y': np.arange(10, 20),
+                                  'text': ['a']*10},
+                                 {'x': np.arange(20, 30),
+                                  'y': np.arange(30, 40),
+                                  'text': ['b']*10}],
+                             0)
+
+            data_name = mdl.Writer._get_table_name('add_plots', figure_name=figure_name)
+
+            # Verify contents.
+            store = DataStore(tmp_fo.name)
+            self.assertEqual([_x.name for _x in store.get_figure_handlers()],
+                             [figure_name])
+            self.assertEqual([_x.name for _x in store.get_data_handlers()],
+                             [data_name])
+
+            # Check loaded data.
+            fig_h = store.get_figure_handlers()[0]
+
+            # Check built figure.
+            fig = fig_h.build_figure()
+            default_trace_kwargs = {'type': 'scatter', 'mode': 'lines'}
+            [_x.update(**default_trace_kwargs) for _x in traces]
+            npt.assert_equal(fig.to_dict()['data'], traces)

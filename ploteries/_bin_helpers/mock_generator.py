@@ -5,7 +5,7 @@ from time import sleep
 from itertools import islice
 import os.path as osp
 import numpy as np
-from ploteries3.writer import Writer
+from ploteries.writer import Writer
 from contextlib import nullcontext
 from tempfile import TemporaryDirectory
 

@@ -1,6 +1,6 @@
-from ploteries3._bin_helpers import launch as mdl
+from ploteries._bin_helpers import launch as mdl
 from unittest import TestCase
-from ploteries3._cli_interface import PloteriesLaunchInterface
+from ploteries._cli_interface import PloteriesLaunchInterface
 from dash.development.base_component import Component
 from ..figure_handler import get_store_with_fig
 

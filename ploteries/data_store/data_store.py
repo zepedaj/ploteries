@@ -119,7 +119,7 @@ class DataStore:
         Gets the data handlers satisfying the specified binary constraints. E.g.,
 
         ```
-        from ploteries3.data_store import col
+        from ploteries.data_store import col
         ```
 
         * ``get_data_handlers()`` returns all handlers,

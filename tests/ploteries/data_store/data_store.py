@@ -1,12 +1,12 @@
 from unittest import TestCase
-import ploteries3.data_store as mdl
+import ploteries.data_store as mdl
 from tempfile import NamedTemporaryFile
 from contextlib import contextmanager
 import pglib.numpy as pgnp
 import numpy as np
 import numpy.testing as npt
 from sqlalchemy.sql import column as c
-from ploteries3.ndarray_data_handlers import UniformNDArrayDataHandler, RaggedNDArrayDataHandler
+from ploteries.ndarray_data_handlers import UniformNDArrayDataHandler, RaggedNDArrayDataHandler
 from pglib.sqlalchemy import ClassType
 from sqlalchemy.sql.expression import bindparam
 

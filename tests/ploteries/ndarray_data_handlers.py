@@ -3,7 +3,7 @@ from sqlalchemy.sql import column as c
 import numpy.testing as npt
 import pglib.numpy as pgnp
 import numpy as np
-from ploteries3 import ndarray_data_handlers as mdl
+from ploteries import ndarray_data_handlers as mdl
 from .data_store import get_store
 from pglib.sqlalchemy import begin_connection
 
