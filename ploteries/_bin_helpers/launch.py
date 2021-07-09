@@ -53,17 +53,6 @@ def create_layout(update_interval):
                         'float': 'right', 'margin-right': '1em', 'font-family': 'Courier New'}),
                 # html.Div([
                 html.Div([
-                    daq.ToggleSwitch(id='auto-update-switch', size=20,
-                                     value=True,
-                                     persistence=True,
-                                     label=' ',
-                                     style=CONTROL_WIDGET_STYLE),  # 'display': 'inline-block'
-                    html.Label(
-                        ['Global step:',
-                         dcc.Dropdown(
-                             id='global-index-dropdown',
-                             persistence=True)],
-                        style=dict(**{'min-width': '20em'}, **CONTROL_WIDGET_STYLE)),
                     html.Label(
                         ['Data store:',
                          dcc.Dropdown(
@@ -72,8 +61,29 @@ def create_layout(update_interval):
                              options=[{'label': _x, 'value': _x}
                                       for _x in DATA_INTERFACES.keys()],
                              value=(next(iter(DATA_INTERFACES.keys())) if DATA_INTERFACES else None))],
-                        style=dict(**{'min-width': '40em'}, **CONTROL_WIDGET_STYLE))], )
-            ], style={'content': "", 'clear': 'both', 'display': 'table', 'width': '100%'}),
+                        style=dict(**{'min-width': '40em'}, **CONTROL_WIDGET_STYLE)),
+                    html.Label(
+                        ['Global step:',
+                         html.Span(
+                             id='global-index-dropdown-container',
+                             children=dcc.Dropdown(id='global-index-dropdown'))],
+                        style=dict(**{'min-width': '20em'}, **CONTROL_WIDGET_STYLE)),
+                    daq.ToggleSwitch(id='auto-update-switch', size=20,
+                                     value=True,
+                                     persistence=True,
+                                     label=' ',
+                                     style=CONTROL_WIDGET_STYLE),  # 'display': 'inline-block'
+
+                ], )
+            ], style={
+                'content': "",
+                'clear': 'both',
+                'display': 'table',
+                'width': '100%',
+                'position': 'sticky',
+                'top': 0,
+                'backgroundColor': 'white',
+                'zIndex': 100000}),
             dcc.Tabs(id='figure-tabs', persistence=True),
             dcc.Interval(
                 id='interval-component',
@@ -82,6 +92,18 @@ def create_layout(update_interval):
             )]
     )
     return layout
+
+
+@APP.callback(
+    Output('global-index-dropdown-container', 'children'),
+    Input('data-store-dropdown', 'value')
+)
+def create_global_index_dropdown_with_persistence(data_store_name):
+    if data_store_name is None:
+        raise PreventUpdate
+    return dcc.Dropdown(
+        id='global-index-dropdown',
+        persistence=data_store_name)
 
 
 @APP.callback(
