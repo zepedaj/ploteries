@@ -31,9 +31,11 @@ Under the hood mechanisms:
 * Checksum-based verification of server/client data parity.
 
 
- .. todo ::
- * Decouple data store and visualization
-   * Create a parent DataStore class with no data_records.index column, and a derived class that has the index column.
-   * Change data_records.index to data_records.time_step.
-   * Consider adding data record insertion support by means of a "parent" data_records column.
+ .. todo::
+ 
+    * Decouple data store and visualization      
+    
+      * Create a parent DataStore class with no data_records.index column, and a derived class that has the index column.      
+      * Change data_records.index to data_records.time_step.	
+      * Consider adding data record insertion support by means of a "parent" data_records column.
    

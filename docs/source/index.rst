@@ -8,7 +8,21 @@ Welcome to ploteries's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:	     
+   :caption: Contents:
+
+Specifications
+==============
+.. include:: ./specifications.rst
+
+Modules
+=======
+
+.. autosummary::
+   :nosignatures:
+   :recursive:
+   :toctree: _stubs/modules
+
+   ploteries
 
 
 
