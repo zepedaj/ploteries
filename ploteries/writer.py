@@ -7,7 +7,7 @@ from .data_store import DataStore, Ref_
 from .ndarray_data_handlers import UniformNDArrayDataHandler, RaggedNDArrayDataHandler
 from .serializable_data_handler import SerializableDataHandler
 from .figure_handler import FigureHandler
-from numpy.typing import ArrayLike
+from pglib.numpy import ArrayLike
 from typing import Optional, List, Dict, Any
 from pglib.nnets import numtor
 

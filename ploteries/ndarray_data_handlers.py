@@ -1,10 +1,9 @@
 from threading import RLock
 import numpy as np
-from pglib.numpy import encode_ndarray, decode_ndarray
+from pglib.numpy import encode_ndarray, decode_ndarray, ArrayLike
 from numpy.lib import recfunctions as recfns
 from typing import Optional
 from .base_handlers import DataHandler
-from numpy.typing import ArrayLike
 from .data_store import DataStore
 from pglib.serializer import Serializer as _Serializer, AbstractTypeSerializer
 
