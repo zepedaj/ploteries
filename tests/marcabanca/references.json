@@ -1,0 +1,2036 @@
+[
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/_cli_interface.py::TestPloteriesLaunchInterface::test_create_callbacks"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.33355116844177246,
+                0.3426504135131836,
+                0.3320920467376709,
+                0.3439168930053711,
+                0.3636765480041504,
+                0.2954549789428711,
+                0.36222314834594727,
+                0.35509562492370605,
+                0.2995476722717285,
+                0.425534725189209
+            ],
+            "model_args": [
+                5.307010614484182,
+                0.26383193480472256,
+                0.015365033340183076
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/_cli_interface.py::TestPloteriesLaunchInterface::test_render_empty_figures"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.44385790824890137,
+                0.5449888706207275,
+                0.4807851314544678,
+                0.45615696907043457,
+                0.626185417175293,
+                0.5339365005493164,
+                0.40417957305908203,
+                0.5425596237182617,
+                0.4512612819671631,
+                0.34441590309143066
+            ],
+            "model_args": [
+                760.9848353258312,
+                -1.6393145855733575,
+                0.0027887020176891094
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/_cli_interface.py::TestPloteriesLaunchInterface::test_update_all_sliders_and_global_index_dropdown_options_callback"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.44487643241882324,
+                0.46125078201293945,
+                0.3467068672180176,
+                0.48702239990234375,
+                0.29663658142089844,
+                0.27750110626220703,
+                0.3002164363861084,
+                0.46993494033813477,
+                0.31721949577331543,
+                0.31790900230407715
+            ],
+            "model_args": [
+                0.7130649098670666,
+                0.277501106262207,
+                0.0949403536882527
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/figure_handler.py::TestFigureHandler::test_create"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.5368247032165527,
+                0.4010751247406006,
+                0.35817623138427734,
+                0.5063717365264893,
+                0.46976661682128906,
+                0.4016687870025635,
+                0.3899385929107666,
+                0.7168643474578857,
+                0.4378993511199951,
+                0.4979090690612793
+            ],
+            "model_args": [
+                0.8237431961289639,
+                0.3581762313842773,
+                0.12767370588064225
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/figure_handler.py::TestFigureHandler::test_encode_decode_params"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.21263957023620605,
+                0.2720909118652344,
+                0.2146284580230713,
+                0.29939866065979004,
+                0.2984585762023926,
+                0.29511260986328125,
+                0.27177953720092773,
+                0.443267822265625,
+                0.41458845138549805,
+                0.33965110778808594
+            ],
+            "model_args": [
+                0.7240233933581365,
+                0.21263957023620603,
+                0.0899174517537003
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/figure_handler.py::TestFigureHandler::test_from_traces"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.2844810485839844,
+                0.33126282691955566,
+                0.379075288772583,
+                0.26207590103149414,
+                0.40755701065063477,
+                0.35123157501220703,
+                0.4330098628997803,
+                0.39338064193725586,
+                0.4380004405975342,
+                0.2937052249908447
+            ],
+            "model_args": [
+                409.6586559812798,
+                -0.8559786355480554,
+                0.0029612360662676293
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/figure_handler.py::TestFigureHandler::test_get_data_names"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.3467745780944824,
+                0.3069946765899658,
+                0.2916133403778076,
+                0.31334495544433594,
+                0.30313682556152344,
+                0.4905564785003662,
+                0.27454042434692383,
+                0.41469287872314453,
+                0.34951233863830566,
+                0.407062292098999
+            ],
+            "model_args": [
+                0.9146788370124985,
+                0.2745404243469238,
+                0.06834099059258877
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/ndarray_data_handlers.py::TestUniformNDArrayDataHandler::test_add"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.2658233642578125,
+                0.19379091262817383,
+                0.4034423828125,
+                0.23073887825012207,
+                0.25750207901000977,
+                0.27175140380859375,
+                0.3999948501586914,
+                0.21342873573303223,
+                0.1862168312072754,
+                0.22077608108520508
+            ],
+            "model_args": [
+                0.8522340354577644,
+                0.18621683120727536,
+                0.07696860290504143
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/ndarray_data_handlers.py::TestUniformNDArrayDataHandler::test_add_scalars"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.16323018074035645,
+                0.20202326774597168,
+                0.2160325050354004,
+                0.23147153854370117,
+                0.23819231986999512,
+                0.26790928840637207,
+                0.21244263648986816,
+                0.16504263877868652,
+                0.16790342330932617,
+                0.1586308479309082
+            ],
+            "model_args": [
+                0.8919657997294314,
+                0.1586308479180679,
+                0.03777135405900346
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/ndarray_data_handlers.py::TestUniformNDArrayDataHandler::test_create"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.1977849006652832,
+                0.26339101791381836,
+                0.2527928352355957,
+                0.2332301139831543,
+                0.23187661170959473,
+                0.2519721984863281,
+                0.24108123779296875,
+                0.2641019821166992,
+                0.2299187183380127,
+                0.2836611270904541
+            ],
+            "model_args": [
+                342.9888828021592,
+                -0.18075512642565034,
+                0.0012408717902419406
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/ndarray_data_handlers.py::TestRaggedNDArrayDataHandler::test_add"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.26647281646728516,
+                0.3034815788269043,
+                0.23484039306640625,
+                0.23745441436767578,
+                0.1925051212310791,
+                0.30176448822021484,
+                0.19573736190795898,
+                0.1636795997619629,
+                0.27671313285827637,
+                0.33841848373413086
+            ],
+            "model_args": [
+                1670.5969044789576,
+                -1.9293887737785207,
+                0.001305182633483381
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/ndarray_data_handlers.py::TestRaggedNDArrayDataHandler::test_create"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.19781804084777832,
+                0.17146015167236328,
+                0.12639355659484863,
+                0.13712453842163086,
+                0.15210270881652832,
+                0.11250877380371094,
+                0.11473941802978516,
+                0.13350391387939453,
+                0.1229543685913086,
+                0.17841887474060059
+            ],
+            "model_args": [
+                0.7761386173552811,
+                0.11250877380371091,
+                0.02873276389862488
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/ndarray_data_handlers.py::TestRaggedNDArrayDataHandler::test_encode_decode"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.0011518001556396484,
+                0.0009362697601318359,
+                0.0011327266693115234,
+                0.0008795261383056641,
+                0.0008111000061035156,
+                0.002451658248901367,
+                0.002943277359008789,
+                0.0026082992553710938,
+                0.003383159637451172,
+                0.0017323493957519531
+            ],
+            "model_args": [
+                0.8680628871913671,
+                0.0008111000061035154,
+                0.0007974045016664676
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/serializable_data_handler.py::TestSerializableDataHandler::test_add"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.3495967388153076,
+                0.24163413047790527,
+                0.3002207279205322,
+                0.27268266677856445,
+                0.3361701965332031,
+                0.22154521942138672,
+                0.2654995918273926,
+                0.24493861198425293,
+                0.2286670207977295,
+                0.2650773525238037
+            ],
+            "model_args": [
+                0.8354208916205788,
+                0.22154521942138666,
+                0.05616163189551296
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/serializable_data_handler.py::TestSerializableDataHandler::test_create"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.14703869819641113,
+                0.1570577621459961,
+                0.14754366874694824,
+                0.15395593643188477,
+                0.1338977813720703,
+                0.12091374397277832,
+                0.19941926002502441,
+                0.1174769401550293,
+                0.158705472946167,
+                0.12321853637695312
+            ],
+            "model_args": [
+                0.7252910561886317,
+                0.11747694015502927,
+                0.031190442772384388
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/serializable_data_handler.py::TestSerializableDataHandler::test_encode_decode"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.003454446792602539,
+                0.0044324398040771484,
+                0.0043277740478515625,
+                0.0036957263946533203,
+                0.0036504268646240234,
+                0.0031321048736572266,
+                0.003212451934814453,
+                0.0031309127807617188,
+                0.0025510787963867188,
+                0.004836320877075195
+            ],
+            "model_args": [
+                9.67166965357493,
+                0.001530006628445494,
+                0.00021840714472147552
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/writer.py::TestWriter::test_add_plots"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.23799467086791992,
+                0.36623096466064453,
+                0.21756649017333984,
+                0.21970748901367188,
+                0.2000408172607422,
+                0.23371481895446777,
+                0.32104015350341797,
+                0.22728300094604492,
+                0.21982908248901367,
+                0.21174120903015137
+            ],
+            "model_args": [
+                0.7170794685120611,
+                0.20004081726074216,
+                0.045999129523386126
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/writer.py::TestWriter::test_add_scalars"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.23917841911315918,
+                0.25984621047973633,
+                0.39193010330200195,
+                0.3709533214569092,
+                0.42557263374328613,
+                0.4022519588470459,
+                0.3902723789215088,
+                0.3520188331604004,
+                0.2806358337402344,
+                0.40265822410583496
+            ],
+            "model_args": [
+                302.5706681869176,
+                -0.7800702334960219,
+                0.003739054690993844
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/_bin_helpers/launch.py::TestFunctions::test_call_methods"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.37227416038513184,
+                0.3590390682220459,
+                0.30892109870910645,
+                0.2802896499633789,
+                0.3196241855621338,
+                0.27573084831237793,
+                0.2481060028076172,
+                0.2677724361419678,
+                0.21878981590270996,
+                0.22702765464782715
+            ],
+            "model_args": [
+                0.8961189756356169,
+                0.2187898159018813,
+                0.06415353435572818
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/data_store/data_store.py::TestRef_::test_copy"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.00014400482177734375,
+                0.00012803077697753906,
+                0.00012159347534179688,
+                0.00011920928955078125,
+                0.00011897087097167969,
+                0.00011992454528808594,
+                0.00018405914306640625,
+                0.00022864341735839844,
+                0.00014638900756835938,
+                0.0001220703125
+            ],
+            "model_args": [
+                0.4163317221826208,
+                0.00011897087097167967,
+                2.843557244681026e-05
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/data_store/data_store.py::TestRef_::test_hash"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.0005459785461425781,
+                0.0016617774963378906,
+                0.0003802776336669922,
+                0.00036334991455078125,
+                0.001422882080078125,
+                0.0008771419525146484,
+                0.0006542205810546875,
+                0.0003845691680908203,
+                0.00080108642578125,
+                0.00046372413635253906
+            ],
+            "model_args": [
+                0.4276400505013904,
+                0.00036334991455078114,
+                0.0007162855465811162
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/data_store/data_store.py::TestRef_::test_serialization"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.00030517578125,
+                0.0001556873321533203,
+                0.000270843505859375,
+                0.0004565715789794922,
+                0.0004763603210449219,
+                0.0004162788391113281,
+                0.000408172607421875,
+                0.00034499168395996094,
+                0.0003955364227294922,
+                0.0003745555877685547
+            ],
+            "model_args": [
+                0.12974312030172946,
+                0.00015568733215332029,
+                1.1596462910606744
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/data_store/data_store.py::TestDataStore::test_create"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.150346040725708,
+                0.1351768970489502,
+                0.21053385734558105,
+                0.1462411880493164,
+                0.17964649200439453,
+                0.15169501304626465,
+                0.16798806190490723,
+                0.14339828491210938,
+                0.16673636436462402,
+                0.18396878242492676
+            ],
+            "model_args": [
+                0.3508728509165465,
+                0.13517689704895017,
+                0.037265927205649
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/data_store/data_store.py::TestDataStore::test_get_data_handlers"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.20856928825378418,
+                0.20314574241638184,
+                0.3167870044708252,
+                0.18901419639587402,
+                0.17209577560424805,
+                0.15732026100158691,
+                0.16837024688720703,
+                0.16397547721862793,
+                0.24709630012512207,
+                0.2717132568359375
+            ],
+            "model_args": [
+                0.617065437245875,
+                0.1573202610015869,
+                0.05435579028452451
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/data_store/data_store.py::TestDataStore::test_getitem__join"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.7863967418670654,
+                1.2906320095062256,
+                0.9595944881439209,
+                0.7008674144744873,
+                0.7173166275024414,
+                0.8517742156982422,
+                0.9908030033111572,
+                1.0708065032958984,
+                1.0035908222198486,
+                1.0223405361175537
+            ],
+            "model_args": [
+                0.8402949562070386,
+                0.7008674144743962,
+                0.21924072206055367
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/data_store/data_store.py::TestDataStore::test_getitem__single_series"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.7819175720214844,
+                0.8546323776245117,
+                0.6919927597045898,
+                0.619743824005127,
+                0.9288895130157471,
+                0.7695906162261963,
+                0.8899998664855957,
+                0.951054573059082,
+                0.8967490196228027,
+                0.8338866233825684
+            ],
+            "model_args": [
+                219.76194603589715,
+                -0.709764786397491,
+                0.006973343293156516
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/data_store/data_store.py::TestDataStore::test_index_writer_order_by"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                3.24249267578125e-05,
+                2.5987625122070312e-05,
+                2.3365020751953125e-05,
+                2.4080276489257812e-05,
+                2.193450927734375e-05,
+                2.193450927734375e-05,
+                2.1457672119140625e-05,
+                2.09808349609375e-05,
+                2.09808349609375e-05,
+                2.0742416381835938e-05
+            ],
+            "model_args": [
+                0.426834188668501,
+                2.074241638183593e-05,
+                3.921752881744207e-06
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "29c8e42424e4dece9061b79a0062953c",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/data_store/data_store.py::TestDataStore::test_retrieve_non_existing"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                2.7179718017578125e-05,
+                2.1457672119140625e-05,
+                1.9311904907226562e-05,
+                1.9311904907226562e-05,
+                1.811981201171875e-05,
+                1.7642974853515625e-05,
+                1.71661376953125e-05,
+                1.71661376953125e-05,
+                1.7642974853515625e-05,
+                1.71661376953125e-05
+            ],
+            "model_args": [
+                0.3745765282118354,
+                1.7166137695312497e-05,
+                2.9747169729754705e-06
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/writer.py::TestWriter::test_add_plots"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.2569704055786133,
+                0.2500193119049072,
+                0.22212719917297363,
+                0.22929763793945312,
+                0.2447800636291504,
+                0.21666622161865234,
+                0.23632431030273438,
+                0.26105260848999023,
+                0.2709076404571533,
+                0.21464800834655762,
+                0.21607112884521484,
+                0.2812035083770752,
+                0.2128593921661377,
+                0.2564260959625244,
+                0.2329556941986084,
+                0.2821948528289795,
+                0.2161870002746582,
+                0.23384666442871094,
+                0.2585794925689697,
+                0.25507640838623047,
+                0.2703537940979004,
+                0.24744391441345215,
+                0.2821946144104004,
+                0.24143648147583008,
+                0.2750115394592285,
+                0.23173999786376953,
+                0.23469805717468262,
+                0.24810218811035156,
+                0.20888304710388184,
+                0.19910430908203125
+            ],
+            "model_args": [
+                559.9353808411283,
+                -0.30834297325448756,
+                0.0009844591503501664
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "6ab91630cb8c08670b7d38f070149839",
+                "test_node_id": "ploteries/writer.py::TestWriter::test_add_scalars"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.28313136100769043,
+                0.2879760265350342,
+                0.2969803810119629,
+                0.29636120796203613,
+                0.29760265350341797,
+                0.3001861572265625,
+                0.2982046604156494,
+                0.30645298957824707,
+                0.2609853744506836,
+                0.2747342586517334,
+                0.23162269592285156,
+                0.266582727432251,
+                0.29282283782958984,
+                0.3176844120025635,
+                0.2684142589569092,
+                0.28860020637512207,
+                0.29404306411743164,
+                0.2644515037536621,
+                0.284883975982666,
+                0.2825291156768799,
+                0.27007079124450684,
+                0.27523112297058105,
+                0.3052823543548584,
+                0.29163527488708496,
+                0.2709476947784424,
+                0.27231287956237793,
+                0.27391695976257324,
+                0.2914419174194336,
+                0.23817157745361328,
+                0.22511649131774902
+            ],
+            "model_args": [
+                0.3140287024336873,
+                0.22511649131774897,
+                1.1316425862993063
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/_cli_interface.py::TestPloteriesLaunchInterface::test_create_callbacks"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.2135756015777588,
+                0.2143568992614746,
+                0.21815705299377441,
+                0.2153937816619873,
+                0.21428179740905762,
+                0.20866131782531738,
+                0.20961713790893555,
+                0.2181072235107422,
+                0.2138500213623047,
+                0.22993230819702148,
+                0.22869157791137695,
+                0.2198483943939209,
+                0.22661828994750977,
+                0.2204914093017578,
+                0.2213277816772461,
+                0.22143340110778809,
+                0.22002840042114258,
+                0.21818876266479492,
+                0.21262764930725098,
+                0.21658706665039062
+            ],
+            "model_args": [
+                8.506317672639184,
+                0.2015745714130943,
+                0.0019414064289402125
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/_cli_interface.py::TestPloteriesLaunchInterface::test_render_empty_figures"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.30745697021484375,
+                0.31026387214660645,
+                0.3068833351135254,
+                0.30821704864501953,
+                0.3212716579437256,
+                0.2883484363555908,
+                0.4102652072906494,
+                0.32008910179138184,
+                0.30619335174560547,
+                0.31596851348876953,
+                0.3056952953338623,
+                0.4960618019104004,
+                0.47811245918273926,
+                0.30674147605895996,
+                0.42937207221984863,
+                0.3081343173980713,
+                0.36374807357788086,
+                0.31077027320861816,
+                0.30996131896972656,
+                0.33422231674194336
+            ],
+            "model_args": [
+                0.9220117507169324,
+                0.28834843635559076,
+                0.04945542139451918
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/_cli_interface.py::TestPloteriesLaunchInterface::test_update_all_sliders_and_global_index_dropdown_options_callback"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.24576640129089355,
+                0.2579314708709717,
+                0.26842594146728516,
+                0.23811650276184082,
+                0.2443089485168457,
+                0.24232769012451172,
+                0.24848508834838867,
+                0.25821852684020996,
+                0.2390897274017334,
+                0.2569303512573242,
+                0.3045191764831543,
+                0.35071635246276855,
+                0.34807777404785156,
+                0.2630631923675537,
+                0.23638391494750977,
+                0.23590993881225586,
+                0.2358839511871338,
+                0.2574479579925537,
+                0.2452249526977539,
+                0.2452988624572754
+            ],
+            "model_args": [
+                0.6464820252849356,
+                0.23588395118713376,
+                0.029158736664980568
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/figure_handler.py::TestFigureHandler::test_create"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.30448102951049805,
+                0.4076199531555176,
+                0.2891511917114258,
+                0.30630922317504883,
+                0.2896292209625244,
+                0.28684568405151367,
+                0.2879016399383545,
+                0.2961099147796631,
+                0.3011021614074707,
+                0.287459135055542,
+                0.30974721908569336,
+                0.31432366371154785,
+                0.31128406524658203,
+                0.30187034606933594,
+                0.34341859817504883,
+                0.30957770347595215,
+                0.28856897354125977,
+                0.3199470043182373,
+                0.28543639183044434,
+                0.3161027431488037
+            ],
+            "model_args": [
+                0.1788953339013377,
+                0.2854363918304443,
+                1.349762000429568
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/figure_handler.py::TestFigureHandler::test_encode_decode_params"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.2485201358795166,
+                0.27397799491882324,
+                0.23458552360534668,
+                0.23288893699645996,
+                0.24614667892456055,
+                0.2323167324066162,
+                0.22827458381652832,
+                0.23392128944396973,
+                0.23499369621276855,
+                0.20850157737731934,
+                0.20814776420593262,
+                0.21323704719543457,
+                0.2204725742340088,
+                0.21883249282836914,
+                0.21578407287597656,
+                0.23321533203125,
+                0.22312259674072266,
+                0.22209715843200684,
+                0.22212433815002441,
+                0.23218250274658203
+            ],
+            "model_args": [
+                3.0464930891460513,
+                0.20272406969746182,
+                0.008679859288252479
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/figure_handler.py::TestFigureHandler::test_from_traces"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.2509880065917969,
+                0.2676522731781006,
+                0.30193495750427246,
+                0.3088717460632324,
+                0.2625443935394287,
+                0.3050353527069092,
+                0.3387589454650879,
+                0.3542966842651367,
+                0.2764713764190674,
+                0.2971460819244385,
+                0.25916457176208496,
+                0.2556650638580322,
+                0.29947423934936523,
+                0.30069565773010254,
+                0.2684493064880371,
+                0.2613646984100342,
+                0.2682006359100342,
+                0.2596108913421631,
+                0.20415067672729492,
+                0.23050379753112793
+            ],
+            "model_args": [
+                127.23323588352235,
+                -0.10839998658027755,
+                0.0030412568793352457
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/figure_handler.py::TestFigureHandler::test_get_data_names"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.2763187885284424,
+                0.30639219284057617,
+                0.3393433094024658,
+                0.2921435832977295,
+                0.2540731430053711,
+                0.24548840522766113,
+                0.25232815742492676,
+                0.2593061923980713,
+                0.2627553939819336,
+                0.3187222480773926,
+                0.26315879821777344,
+                0.31989312171936035,
+                0.2458333969116211,
+                0.2591681480407715,
+                0.25684475898742676,
+                0.25339746475219727,
+                0.26296091079711914,
+                0.2591984272003174,
+                0.2527482509613037,
+                0.2589414119720459
+            ],
+            "model_args": [
+                0.740277866291752,
+                0.24548840522766108,
+                0.024598607293524793
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/ndarray_data_handlers.py::TestUniformNDArrayDataHandler::test_add"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.17537331581115723,
+                0.1776256561279297,
+                0.1830003261566162,
+                0.18140077590942383,
+                0.18160057067871094,
+                0.1805591583251953,
+                0.1758134365081787,
+                0.17455029487609863,
+                0.1735830307006836,
+                0.1682898998260498,
+                0.1803116798400879,
+                0.17943501472473145,
+                0.17815113067626953,
+                0.17864584922790527,
+                0.17769360542297363,
+                0.17091798782348633,
+                0.16999220848083496,
+                0.18056654930114746,
+                0.18584370613098145,
+                0.1811974048614502
+            ],
+            "model_args": [
+                255.0369927211711,
+                0.10598711379754891,
+                0.0002812018337694937
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/ndarray_data_handlers.py::TestUniformNDArrayDataHandler::test_add_scalars"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.16627836227416992,
+                0.17529940605163574,
+                0.17725801467895508,
+                0.15873122215270996,
+                0.1554403305053711,
+                0.16002821922302246,
+                0.15532183647155762,
+                0.16107678413391113,
+                0.15543723106384277,
+                0.1601412296295166,
+                0.15807151794433594,
+                0.16676831245422363,
+                0.15768051147460938,
+                0.15204215049743652,
+                0.1552577018737793,
+                0.15890192985534668,
+                0.15953421592712402,
+                0.15547394752502441,
+                0.15959429740905762,
+                0.17347502708435059
+            ],
+            "model_args": [
+                2.0355995559331346,
+                0.15132323458142505,
+                0.00479829910181212
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/ndarray_data_handlers.py::TestUniformNDArrayDataHandler::test_create"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.16332745552062988,
+                0.15481352806091309,
+                0.1573808193206787,
+                0.15976691246032715,
+                0.1676011085510254,
+                0.15232396125793457,
+                0.15442252159118652,
+                0.15709638595581055,
+                0.1652367115020752,
+                0.23107552528381348,
+                0.2613341808319092,
+                0.2396993637084961,
+                0.19789981842041016,
+                0.17280197143554688,
+                0.16955995559692383,
+                0.16992902755737305,
+                0.16728758811950684,
+                0.1678791046142578,
+                0.1673727035522461,
+                0.16745471954345703
+            ],
+            "model_args": [
+                0.7781948611600313,
+                0.15232396125793454,
+                0.03041273663747836
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/ndarray_data_handlers.py::TestRaggedNDArrayDataHandler::test_add"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.19810199737548828,
+                0.18070101737976074,
+                0.18114042282104492,
+                0.18152475357055664,
+                0.18168187141418457,
+                0.19194269180297852,
+                0.2041912078857422,
+                0.19790315628051758,
+                0.1850419044494629,
+                0.17826461791992188,
+                0.17798972129821777,
+                0.19280314445495605,
+                0.19938397407531738,
+                0.29041051864624023,
+                0.19001221656799316,
+                0.1984694004058838,
+                0.20259714126586914,
+                0.19740772247314453,
+                0.1804513931274414,
+                0.1826918125152588
+            ],
+            "model_args": [
+                0.3561323382451894,
+                0.17798972129821775,
+                0.955004612636071
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/ndarray_data_handlers.py::TestRaggedNDArrayDataHandler::test_create"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.1216135025024414,
+                0.11913704872131348,
+                0.12462186813354492,
+                0.12574052810668945,
+                0.12625980377197266,
+                0.12880468368530273,
+                0.12600922584533691,
+                0.12813830375671387,
+                0.12736797332763672,
+                0.1315784454345703,
+                0.12476062774658203,
+                0.12045097351074219,
+                0.12185955047607422,
+                0.12844181060791016,
+                0.12083935737609863,
+                0.12088823318481445,
+                0.11999702453613281,
+                0.11925458908081055,
+                0.12139272689819336,
+                0.12314605712890625
+            ],
+            "model_args": [
+                0.7507895613990732,
+                0.11913704872131346,
+                0.005986497259341979
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/ndarray_data_handlers.py::TestRaggedNDArrayDataHandler::test_encode_decode"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.0010402202606201172,
+                0.0013427734375,
+                0.0011641979217529297,
+                0.0010523796081542969,
+                0.0010232925415039062,
+                0.0011250972747802734,
+                0.0011093616485595703,
+                0.0011334419250488281,
+                0.001013040542602539,
+                0.0008800029754638672,
+                0.0011665821075439453,
+                0.0008411407470703125,
+                0.0007729530334472656,
+                0.0007681846618652344,
+                0.0007512569427490234,
+                0.0007386207580566406,
+                0.0007975101470947266,
+                0.0006842613220214844,
+                0.0006859302520751953,
+                0.0006928443908691406
+            ],
+            "model_args": [
+                0.9376203276239727,
+                0.0006842613219324969,
+                0.00021834377628575884
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/serializable_data_handler.py::TestSerializableDataHandler::test_add"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.1766185760498047,
+                0.18705153465270996,
+                0.17417645454406738,
+                0.23764276504516602,
+                0.19891953468322754,
+                0.2057361602783203,
+                0.2073957920074463,
+                0.22699642181396484,
+                0.22144031524658203,
+                0.27266573905944824,
+                0.1775987148284912,
+                0.23493504524230957,
+                0.24217939376831055,
+                0.22504639625549316,
+                0.23035454750061035,
+                0.22122883796691895,
+                0.23113441467285156,
+                0.22799372673034668,
+                0.27450084686279297,
+                0.2033698558807373
+            ],
+            "model_args": [
+                47.21343493622833,
+                0.029714528327073865,
+                0.004005951728467147
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/serializable_data_handler.py::TestSerializableDataHandler::test_create"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.1317310333251953,
+                0.11545896530151367,
+                0.12260079383850098,
+                0.1247255802154541,
+                0.12758898735046387,
+                0.12616896629333496,
+                0.11989808082580566,
+                0.12015676498413086,
+                0.1213521957397461,
+                0.12181282043457031,
+                0.12938594818115234,
+                0.12554168701171875,
+                0.11949419975280762,
+                0.11858439445495605,
+                0.12149715423583984,
+                0.12309098243713379,
+                0.12313294410705566,
+                0.1230158805847168,
+                0.12028694152832031,
+                0.12047338485717773
+            ],
+            "model_args": [
+                15.357323068456264,
+                0.10810137772015974,
+                0.0009571008553084935
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/serializable_data_handler.py::TestSerializableDataHandler::test_encode_decode"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.002930164337158203,
+                0.0028383731842041016,
+                0.0024552345275878906,
+                0.002362489700317383,
+                0.0021195411682128906,
+                0.0020732879638671875,
+                0.002061128616333008,
+                0.002180337905883789,
+                0.0026769638061523438,
+                0.0021991729736328125,
+                0.0020401477813720703,
+                0.002063274383544922,
+                0.0024068355560302734,
+                0.002093076705932617,
+                0.0020339488983154297,
+                0.0021326541900634766,
+                0.002155780792236328,
+                0.0025675296783447266,
+                0.002141714096069336,
+                0.0020966529846191406
+            ],
+            "model_args": [
+                0.5882520067057009,
+                0.0020339488983154293,
+                0.0003067309518274327
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/writer.py::TestWriter::test_add_plots"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.19664859771728516,
+                0.20628714561462402,
+                0.19642400741577148,
+                0.197523832321167,
+                0.27876925468444824,
+                0.3078129291534424,
+                0.41329050064086914,
+                0.29864072799682617,
+                0.2421879768371582,
+                0.2240450382232666,
+                0.29006338119506836,
+                0.21708130836486816,
+                0.30669426918029785,
+                0.2616567611694336,
+                0.1908097267150879,
+                0.19788765907287598,
+                0.1951611042022705,
+                0.1889631748199463,
+                0.18795299530029297,
+                0.1951918601989746
+            ],
+            "model_args": [
+                0.8255613821291485,
+                0.18795299530029294,
+                0.041381570664535614
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/writer.py::TestWriter::test_add_scalars"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.23343753814697266,
+                0.22233891487121582,
+                0.2192087173461914,
+                0.2012462615966797,
+                0.20367670059204102,
+                0.20521163940429688,
+                0.21807622909545898,
+                0.2062077522277832,
+                0.20850348472595215,
+                0.20627450942993164,
+                0.20165729522705078,
+                0.21092772483825684,
+                0.22045254707336426,
+                0.21087646484375,
+                0.22394204139709473,
+                0.2231142520904541,
+                0.2251574993133545,
+                0.21431279182434082,
+                0.258634090423584,
+                0.23475074768066406
+            ],
+            "model_args": [
+                0.8485061854360751,
+                0.20124626159667966,
+                0.015709388279186838
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/_bin_helpers/launch.py::TestFunctions::test_call_methods"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.20790934562683105,
+                0.22141289710998535,
+                0.23227190971374512,
+                0.2102675437927246,
+                0.21289563179016113,
+                0.2160193920135498,
+                0.20980596542358398,
+                0.2141251564025879,
+                0.2120504379272461,
+                0.2115306854248047,
+                0.21604609489440918,
+                0.20227885246276855,
+                0.20659995079040527,
+                0.20865082740783691,
+                0.2094268798828125,
+                0.20496249198913574,
+                0.21747922897338867,
+                0.21819281578063965,
+                0.21658873558044434,
+                0.2138218879699707
+            ],
+            "model_args": [
+                6.779246513772275,
+                0.19667887479964385,
+                0.0024247472381059964
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/data_store/data_store.py::TestRef_::test_copy"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.00012946128845214844,
+                0.00013494491577148438,
+                0.0001494884490966797,
+                0.00020170211791992188,
+                0.00018334388732910156,
+                0.0006055831909179688,
+                0.00016570091247558594,
+                0.00012445449829101562,
+                0.00014448165893554688,
+                0.0001327991485595703,
+                0.00015211105346679688,
+                0.00013494491577148438,
+                0.0001289844512939453,
+                0.00013184547424316406,
+                0.00011754035949707031,
+                0.00011467933654785156,
+                0.0001125335693359375,
+                0.0001125335693359375,
+                0.00015282630920410156,
+                0.00013065338134765625,
+                0.00012803077697753906,
+                0.0001285076141357422,
+                0.0001270771026611328,
+                0.00012612342834472656,
+                0.00012803077697753906,
+                0.00015163421630859375,
+                0.00012946128845214844,
+                0.0001270771026611328,
+                0.00012445449829101562,
+                0.00012564659118652344
+            ],
+            "model_args": [
+                0.08070363702920784,
+                0.00011253356933593747,
+                0.7125959603596612
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/data_store/data_store.py::TestRef_::test_hash"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.00036907196044921875,
+                0.0003380775451660156,
+                0.0003077983856201172,
+                0.0003528594970703125,
+                0.0003409385681152344,
+                0.0003387928009033203,
+                0.00036597251892089844,
+                0.0003380775451660156,
+                0.0003371238708496094,
+                0.0003609657287597656,
+                0.0003380775451660156,
+                0.00037598609924316406,
+                0.0003407001495361328,
+                0.0003380775451660156,
+                0.0004305839538574219,
+                0.0003542900085449219,
+                0.0005655288696289062,
+                0.0005590915679931641,
+                0.0008499622344970703,
+                0.000820159912109375,
+                0.0007374286651611328,
+                0.0003833770751953125,
+                0.00034332275390625,
+                0.00036215782165527344,
+                0.0003399848937988281,
+                0.00035881996154785156,
+                0.000335693359375,
+                0.0003361701965332031,
+                0.00035762786865234375,
+                0.0003387928009033203
+            ],
+            "model_args": [
+                0.8132529057547124,
+                0.00030779838562011713,
+                0.00012162558759601903
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/data_store/data_store.py::TestRef_::test_serialization"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.00014710426330566406,
+                0.00013828277587890625,
+                0.00013756752014160156,
+                0.00013709068298339844,
+                0.00013589859008789062,
+                0.00015878677368164062,
+                0.00013971328735351562,
+                0.00013709068298339844,
+                0.00013899803161621094,
+                0.0001366138458251953,
+                0.00013780593872070312,
+                0.00013709068298339844,
+                0.00017523765563964844,
+                0.00013828277587890625,
+                0.0001366138458251953,
+                0.0001380443572998047,
+                0.00013709068298339844,
+                0.00013828277587890625,
+                0.000156402587890625,
+                0.00014257431030273438,
+                0.0001366138458251953,
+                0.00013756752014160156,
+                0.00013637542724609375,
+                0.0001373291015625,
+                0.00013756752014160156,
+                0.00016021728515625,
+                0.00013756752014160156,
+                0.00015854835510253906,
+                0.00019669532775878906,
+                0.00021338462829589844
+            ],
+            "model_args": [
+                0.7257236472739192,
+                0.0001358985900878906,
+                2.13139825146266e-05
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/data_store/data_store.py::TestDataStore::test_create"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.10287857055664062,
+                0.10041928291320801,
+                0.10361123085021973,
+                0.10334277153015137,
+                0.10190534591674805,
+                0.10497140884399414,
+                0.10434889793395996,
+                0.10656213760375977,
+                0.10778021812438965,
+                0.10091161727905273,
+                0.10774970054626465,
+                0.10333704948425293,
+                0.10942673683166504,
+                0.10740160942077637,
+                0.10602664947509766,
+                0.1037912368774414,
+                0.10071039199829102,
+                0.10406780242919922,
+                0.09935736656188965,
+                0.10391807556152344,
+                0.10270047187805176,
+                0.10054540634155273,
+                0.10038423538208008,
+                0.10631155967712402,
+                0.10628032684326172,
+                0.10546708106994629,
+                0.10154080390930176,
+                0.10413837432861328,
+                0.10331225395202637,
+                0.10244417190551758
+            ],
+            "model_args": [
+                13.445879274159477,
+                0.09448340592250787,
+                0.0006969660105339546
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/data_store/data_store.py::TestDataStore::test_get_data_handlers"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.1841726303100586,
+                0.1862339973449707,
+                0.16377973556518555,
+                0.1704251766204834,
+                0.17571091651916504,
+                0.18884754180908203,
+                0.17640185356140137,
+                0.17459821701049805,
+                0.17652511596679688,
+                0.1840066909790039,
+                0.17337560653686523,
+                0.19616913795471191,
+                0.2771341800689697,
+                0.18957209587097168,
+                0.2066349983215332,
+                0.19176912307739258,
+                0.19495439529418945,
+                0.19481182098388672,
+                0.1889955997467041,
+                0.18534541130065918,
+                0.1782550811767578,
+                0.17024636268615723,
+                0.17203569412231445,
+                0.16974544525146484,
+                0.1717209815979004,
+                0.17246532440185547,
+                0.16778039932250977,
+                0.16190409660339355,
+                0.17200279235839844,
+                0.1755063533782959
+            ],
+            "model_args": [
+                0.3821050283946329,
+                0.16190409660339353,
+                0.9431128309991887
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/data_store/data_store.py::TestDataStore::test_getitem__join"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.6479208469390869,
+                0.6636533737182617,
+                0.6470692157745361,
+                0.6731383800506592,
+                0.625035285949707,
+                0.627171516418457,
+                0.8174974918365479,
+                0.7530319690704346,
+                0.6604180335998535,
+                0.706545352935791,
+                0.6891398429870605,
+                0.7040984630584717,
+                0.6637334823608398,
+                0.6350202560424805,
+                0.6924855709075928,
+                0.6502134799957275,
+                0.7252552509307861,
+                0.6448838710784912,
+                0.7139902114868164,
+                0.6707711219787598,
+                0.6271278858184814,
+                0.6538033485412598,
+                0.639930009841919,
+                0.6665151119232178,
+                0.6289756298065186,
+                0.6720662117004395,
+                0.6364789009094238,
+                0.7853429317474365,
+                0.6958222389221191,
+                0.6345555782318115
+            ],
+            "model_args": [
+                0.9179939408784237,
+                0.6250352859497069,
+                0.04954862600736874
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/data_store/data_store.py::TestDataStore::test_getitem__single_series"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                0.601987361907959,
+                0.6041791439056396,
+                0.5812606811523438,
+                0.6060514450073242,
+                0.7005815505981445,
+                0.624251127243042,
+                0.6055223941802979,
+                0.6422786712646484,
+                0.5785691738128662,
+                0.6104300022125244,
+                0.6561529636383057,
+                0.5928361415863037,
+                0.6227266788482666,
+                0.6083147525787354,
+                0.6257812976837158,
+                0.6265237331390381,
+                0.649672269821167,
+                0.6027531623840332,
+                0.5718255043029785,
+                0.6212701797485352,
+                0.6484291553497314,
+                0.5738744735717773,
+                0.6033427715301514,
+                0.7908613681793213,
+                0.6697068214416504,
+                0.6083345413208008,
+                0.5804071426391602,
+                0.5976030826568604,
+                0.7540512084960938,
+                0.6174371242523193
+            ],
+            "model_args": [
+                0.3255673244357441,
+                0.5718255043029784,
+                1.0907945912016603
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/data_store/data_store.py::TestDataStore::test_index_writer_order_by"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                2.3603439331054688e-05,
+                1.8596649169921875e-05,
+                4.673004150390625e-05,
+                2.4080276489257812e-05,
+                2.193450927734375e-05,
+                2.1457672119140625e-05,
+                2.09808349609375e-05,
+                2.0503997802734375e-05,
+                2.1219253540039062e-05,
+                2.0742416381835938e-05,
+                2.0265579223632812e-05,
+                2.0742416381835938e-05,
+                2.0503997802734375e-05,
+                2.002716064453125e-05,
+                2.002716064453125e-05,
+                2.002716064453125e-05,
+                2.0265579223632812e-05,
+                2.0265579223632812e-05,
+                1.9788742065429688e-05,
+                2.002716064453125e-05,
+                1.9550323486328125e-05,
+                2.0265579223632812e-05,
+                1.9788742065429688e-05,
+                2.1219253540039062e-05,
+                2.002716064453125e-05,
+                1.9788742065429688e-05,
+                2.002716064453125e-05,
+                2.002716064453125e-05,
+                2.002716064453125e-05,
+                1.9788742065429688e-05
+            ],
+            "model_args": [
+                0.15114924945071245,
+                1.859664916992187e-05,
+                1.0021967421548355
+            ]
+        }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.ReferenceModel",
+        "__value__": {
+            "reference_id": {
+                "machine_config_id": "9361fd63101b9011b9e96cc5326b75e7",
+                "python_config_id": "b5890cc91bd95285adae027877086255",
+                "test_node_id": "ploteries/data_store/data_store.py::TestDataStore::test_retrieve_non_existing"
+            },
+            "model_name": "gamma",
+            "runtimes": [
+                2.5033950805664062e-05,
+                1.8358230590820312e-05,
+                1.8358230590820312e-05,
+                1.811981201171875e-05,
+                1.7642974853515625e-05,
+                1.7404556274414062e-05,
+                1.7404556274414062e-05,
+                1.7404556274414062e-05,
+                2.0503997802734375e-05,
+                5.030632019042969e-05,
+                2.288818359375e-05,
+                2.002716064453125e-05,
+                1.8358230590820312e-05,
+                1.8358230590820312e-05,
+                1.811981201171875e-05,
+                1.811981201171875e-05,
+                1.7881393432617188e-05,
+                1.7642974853515625e-05,
+                1.7404556274414062e-05,
+                8.702278137207031e-05,
+                2.6702880859375e-05,
+                2.2411346435546875e-05,
+                3.0279159545898438e-05,
+                2.9325485229492188e-05,
+                4.1961669921875e-05,
+                0.00010132789611816406,
+                4.9114227294921875e-05,
+                2.7418136596679688e-05,
+                2.002716064453125e-05,
+                1.8596649169921875e-05
+            ],
+            "model_args": [
+                0.6520318698675442,
+                1.740455627441406e-05,
+                2.008655023014777e-05
+            ]
+        }
+    }
+]
