@@ -295,8 +295,8 @@ class PloteriesLaunchInterface:
             if len(marks) > 0:
                 for _m in [indices[0], indices[-1]]:
                     marks[_m] = self._int(int(_m))
-            min_mark = min(indices)
-            max_mark = max(indices)
+            min_mark = min(indices) if indices else None
+            max_mark = max(indices) if indices else None
 
             # Build slider parameters
             new_slider_states.append({

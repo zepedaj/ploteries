@@ -43,6 +43,7 @@ def get_store_with_fig():
         #
         fig_h = mdl.FigureHandler(store, 'fig1', fig_dict)
 
+        store.flush()
         yield store, arr1_h, arr2_h, fig_h
         store.flush()
 
