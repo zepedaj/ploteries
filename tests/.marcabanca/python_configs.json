@@ -1433,5 +1433,1568 @@
                 ]
             }
         }
+    },
+    {
+        "__type__": "pytest_marcabanca.utils.PythonConfiguration",
+        "__value__": {
+            "config_id": "6b832e63d4465a8942781293d8ce976d",
+            "specs": {
+                "python": "3.8.8 (default, Apr 13 2021, 19:58:26) \n[GCC 7.3.0]",
+                "modules": [
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "absl-py",
+                            "version": "0.12.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "alabaster",
+                            "version": "0.7.12",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "antlr4-python3-runtime",
+                            "version": "4.8",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "apeye",
+                            "version": "0.8.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "appdirs",
+                            "version": "1.4.4",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "astunparse",
+                            "version": "1.6.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "atomicwrites",
+                            "version": "1.4.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "attrs",
+                            "version": "20.3.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "autodocsumm",
+                            "version": "0.2.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "autopep8",
+                            "version": "1.5.6",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "Babel",
+                            "version": "2.9.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "backcall",
+                            "version": "0.2.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "beautifulsoup4",
+                            "version": "4.9.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "black",
+                            "version": "21.4b0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "Brotli",
+                            "version": "1.0.9",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "CacheControl",
+                            "version": "0.12.6",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "cachetools",
+                            "version": "4.2.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "certifi",
+                            "version": "2020.12.5",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "chardet",
+                            "version": "4.0.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "cli-helpers",
+                            "version": "2.1.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "click",
+                            "version": "7.1.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "climax",
+                            "version": "0.4.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "cloudpickle",
+                            "version": "1.6.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "colorama",
+                            "version": "0.4.4",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "commonmark",
+                            "version": "0.9.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "configobj",
+                            "version": "5.0.6",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "consolekit",
+                            "version": "1.1.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "css-parser",
+                            "version": "1.0.6",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "cycler",
+                            "version": "0.10.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "dash",
+                            "version": "1.20.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "dash-core-components",
+                            "version": "1.16.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "dash-daq",
+                            "version": "0.5.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "dash-html-components",
+                            "version": "1.1.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "dash-renderer",
+                            "version": "1.9.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "dash-table",
+                            "version": "4.11.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "decorator",
+                            "version": "5.0.7",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "deprecation",
+                            "version": "2.1.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "deprecation-alias",
+                            "version": "0.2.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "dict2css",
+                            "version": "0.2.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "dill",
+                            "version": "0.3.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "docutils",
+                            "version": "0.16",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "domdf-python-tools",
+                            "version": "2.9.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "elpy-packages",
+                            "version": "0.1.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "enum-tools",
+                            "version": "0.6.4",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "filelock",
+                            "version": "3.0.12",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "flake8",
+                            "version": "3.9.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "Flask",
+                            "version": "1.1.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "Flask-Compress",
+                            "version": "1.9.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "flatbuffers",
+                            "version": "1.12",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "freezegun",
+                            "version": "1.1.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "future",
+                            "version": "0.18.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "gast",
+                            "version": "0.4.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "google-auth",
+                            "version": "1.30.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "google-auth-oauthlib",
+                            "version": "0.4.4",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "google-pasta",
+                            "version": "0.2.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "gprof2dot",
+                            "version": "2021.2.21",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "greenlet",
+                            "version": "1.1.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "grpcio",
+                            "version": "1.34.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "gunicorn",
+                            "version": "20.1.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "gym",
+                            "version": "0.18.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "h5py",
+                            "version": "3.1.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "html5lib",
+                            "version": "1.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "humanize",
+                            "version": "3.5.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "Hydra",
+                            "version": "2.5",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "hydra-core",
+                            "version": "1.0.6",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "ibapi",
+                            "version": "9.76.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "idna",
+                            "version": "2.10",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "imagesize",
+                            "version": "1.2.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "importlib-metadata",
+                            "version": "4.0.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "importlib-resources",
+                            "version": "5.1.4",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "iniconfig",
+                            "version": "1.1.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "ipdb",
+                            "version": "0.13.7",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "ipython",
+                            "version": "7.22.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "ipython-genutils",
+                            "version": "0.2.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "itsdangerous",
+                            "version": "1.1.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "jedi",
+                            "version": "0.17.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "Jinja2",
+                            "version": "2.11.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "jzfin",
+                            "version": "0.1.0",
+                            "location": "/home/zjoaquin/git/jazs-git/jzfin"
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "keras-nightly",
+                            "version": "2.5.0.dev2021032900",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "Keras-Preprocessing",
+                            "version": "1.1.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "kiwisolver",
+                            "version": "1.3.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "litecli",
+                            "version": "1.6.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "llvmlite",
+                            "version": "0.36.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "lockfile",
+                            "version": "0.12.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "Markdown",
+                            "version": "3.3.4",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "MarkupSafe",
+                            "version": "1.1.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "matplotlib",
+                            "version": "3.4.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "mccabe",
+                            "version": "0.6.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "mistletoe",
+                            "version": "0.7.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "mkl-fft",
+                            "version": "1.3.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "mkl-random",
+                            "version": "1.1.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "mkl-service",
+                            "version": "2.3.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "more-itertools",
+                            "version": "8.8.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "msgpack",
+                            "version": "1.0.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "mypy-extensions",
+                            "version": "0.4.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "natsort",
+                            "version": "7.1.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "numba",
+                            "version": "0.53.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "numpy",
+                            "version": "1.19.5",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "oauthlib",
+                            "version": "3.1.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "olefile",
+                            "version": "0.46",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "omegaconf",
+                            "version": "2.0.6",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "opt-einsum",
+                            "version": "3.3.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "packaging",
+                            "version": "20.9",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pandas",
+                            "version": "1.2.4",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pandas-market-calendars",
+                            "version": "1.6.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "parso",
+                            "version": "0.7.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pathspec",
+                            "version": "0.8.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pbr",
+                            "version": "5.6.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pexpect",
+                            "version": "4.8.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pglib",
+                            "version": "0.1.0",
+                            "location": "/home/zjoaquin/git/jazs-git/pglib"
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pickleshare",
+                            "version": "0.7.5",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "Pillow",
+                            "version": "8.2.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pip",
+                            "version": "21.0.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "ploteries",
+                            "version": "0.1.0",
+                            "location": "/home/zjoaquin/git/jazs-git/ploteries"
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "plotly",
+                            "version": "4.14.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pluggy",
+                            "version": "0.13.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "prompt-toolkit",
+                            "version": "3.0.18",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "protobuf",
+                            "version": "3.17.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "psutil",
+                            "version": "5.8.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "ptyprocess",
+                            "version": "0.7.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "py",
+                            "version": "1.10.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "py-cpuinfo",
+                            "version": "8.0.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pyasn1",
+                            "version": "0.4.8",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pyasn1-modules",
+                            "version": "0.2.8",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pycodestyle",
+                            "version": "2.7.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pydash",
+                            "version": "5.0.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pyflakes",
+                            "version": "2.3.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pyglet",
+                            "version": "1.5.15",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "Pygments",
+                            "version": "2.8.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pyparsing",
+                            "version": "2.4.7",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pytest",
+                            "version": "6.2.4",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pytest-marcabanca",
+                            "version": "0.1.0",
+                            "location": "/home/zjoaquin/git/jazs-git/marcabanca"
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pytest-profiling",
+                            "version": "1.7.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "python-dateutil",
+                            "version": "2.8.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "pytz",
+                            "version": "2021.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "PyYAML",
+                            "version": "5.4.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "regex",
+                            "version": "2021.4.4",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "requests",
+                            "version": "2.25.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "requests-file",
+                            "version": "1.5.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "requests-oauthlib",
+                            "version": "1.3.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "retrying",
+                            "version": "1.3.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "rich",
+                            "version": "10.1.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "rope",
+                            "version": "0.19.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "rsa",
+                            "version": "4.7.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "ruamel.yaml",
+                            "version": "0.17.4",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "ruamel.yaml.clib",
+                            "version": "0.2.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "scipy",
+                            "version": "1.7.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "setuptools",
+                            "version": "52.0.0.post20210125",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "six",
+                            "version": "1.15.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "snakeviz",
+                            "version": "2.1.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "snowballstemmer",
+                            "version": "2.1.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "soupsieve",
+                            "version": "2.2.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "Sphinx",
+                            "version": "3.3.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "sphinx-autodoc-typehints",
+                            "version": "1.11.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "sphinx-prompt",
+                            "version": "1.4.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "sphinx-tabs",
+                            "version": "2.0.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "sphinx-toolbox",
+                            "version": "2.6.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "sphinxcontrib-applehelp",
+                            "version": "1.0.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "sphinxcontrib-devhelp",
+                            "version": "1.0.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "sphinxcontrib-htmlhelp",
+                            "version": "1.0.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "sphinxcontrib-jsmath",
+                            "version": "1.0.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "sphinxcontrib-qthelp",
+                            "version": "1.0.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "sphinxcontrib-serializinghtml",
+                            "version": "1.1.4",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "SQLAlchemy",
+                            "version": "1.4.20",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "sqlparse",
+                            "version": "0.4.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "tabulate",
+                            "version": "0.8.9",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "tendo",
+                            "version": "0.2.15",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "tensorboard",
+                            "version": "2.5.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "tensorboard-data-server",
+                            "version": "0.6.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "tensorboard-plugin-wit",
+                            "version": "1.8.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "tensorflow",
+                            "version": "2.5.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "tensorflow-estimator",
+                            "version": "2.5.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "termcolor",
+                            "version": "1.1.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "terminaltables",
+                            "version": "3.1.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "tldextract",
+                            "version": "3.1.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "toml",
+                            "version": "0.10.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "toolz",
+                            "version": "0.11.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "torch",
+                            "version": "1.8.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "torchaudio",
+                            "version": "0.8.0a0+e4e171a",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "torchvision",
+                            "version": "0.9.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "tornado",
+                            "version": "6.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "tqdm",
+                            "version": "4.60.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "trading-calendars",
+                            "version": "2.1.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "traitlets",
+                            "version": "5.0.5",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "typing-extensions",
+                            "version": "3.7.4.3",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "urllib3",
+                            "version": "1.26.4",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "wcwidth",
+                            "version": "0.2.5",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "webencodings",
+                            "version": "0.5.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "Werkzeug",
+                            "version": "1.0.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "wheel",
+                            "version": "0.36.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "wrapt",
+                            "version": "1.12.1",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "yapf",
+                            "version": "0.31.0",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "yappi",
+                            "version": "1.3.2",
+                            "location": null
+                        }
+                    },
+                    {
+                        "__type__": "pytest_marcabanca.utils.PythonModule",
+                        "__value__": {
+                            "package": "zipp",
+                            "version": "3.4.1",
+                            "location": null
+                        }
+                    }
+                ]
+            }
+        }
     }
 ]
