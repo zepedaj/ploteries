@@ -51,6 +51,7 @@ def get_store_with_data(num_uniform=[3, 5, 2], num_ragged=[11, 6, 4, 9]):
 
 class TestRef_(TestCase):
 
+    @benchmark(False)
     def test_serialization(self):
         ref_ = mdl.Ref_('series1')['abc'][1]['def'][3]
         serialized = ref_.serialize()
@@ -180,8 +181,10 @@ class TestDataStore(TestCase):
                 #         _orig_data['arrays'][0][None, ...][:0],
                 #         retrieved['series'][_series_name]['data'])
 
+    @benchmark(False)
     def test_index_writer_order_by(self):
         pass
 
+    @benchmark(False)
     def test_retrieve_non_existing(self):
         pass

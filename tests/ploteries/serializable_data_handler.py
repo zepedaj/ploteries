@@ -1,4 +1,5 @@
 from unittest import TestCase
+from marcabanca import benchmark
 from pglib.serializer import Serializer
 from sqlalchemy.sql import column as c
 import numpy.testing as npt
@@ -17,6 +18,7 @@ class TestSerializableDataHandler(TestCase):
         with get_store() as store:
             dh = mdl.SerializableDataHandler(store, 'arr1')
 
+    @benchmark(False)
     def test_encode_decode(self):
         class Mock:
             _serializer = Serializer()
