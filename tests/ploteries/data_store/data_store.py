@@ -1,4 +1,5 @@
 from unittest import TestCase
+from marcabanca import benchmark
 import ploteries.data_store as mdl
 from tempfile import NamedTemporaryFile
 from contextlib import contextmanager
@@ -62,6 +63,7 @@ class TestRef_(TestCase):
         ssq2.slice_sequence[2]['abc'] = 1
         self.assertNotEqual(ssq, ssq2)
 
+    @benchmark(False)
     def test_hash(self):
         ssq = mdl.Ref_('series1')['abc'][{'abc': 0, 'def': 1}][0][::2][3:100][{'xyz': 2}]
         self.assertEqual({ssq: 0, ssq: 1}, {ssq: 1})

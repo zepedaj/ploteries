@@ -1,4 +1,5 @@
 from unittest import TestCase
+from marcabanca import benchmark
 from sqlalchemy.sql import column as c
 import numpy.testing as npt
 import pglib.numpy as pgnp
@@ -82,6 +83,7 @@ class TestRaggedNDArrayDataHandler(TestCase):
         with get_store() as store:
             dh = mdl.RaggedNDArrayDataHandler(store, 'arr1')
 
+    @benchmark(False)
     def test_encode_decode(self):
         arr = pgnp.random_array((10, 5, 7), dtype=complex_dtype())
 
