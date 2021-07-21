@@ -32,6 +32,8 @@ Under the hood mechanisms:
 
 
  .. todo::
+
+    * Make launch load files automatically on every interval (when a --discover option is specified).
  
     * Decouple data store and visualization      
     
@@ -39,3 +41,5 @@ Under the hood mechanisms:
       * Change data_records.index to data_records.time_step.	
       * Consider adding data record insertion support by means of a "parent" data_records column.
    
+
+    
