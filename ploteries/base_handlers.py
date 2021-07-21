@@ -1,8 +1,8 @@
 import abc
-from time import sleep
+import pglib.validation as pgval
 import re
 from sqlalchemy.engine.result import Row
-from sqlalchemy import insert, func, select, exc
+from sqlalchemy import insert, update, func, select, exc
 from typing import Union
 import numpy as np
 from .data_store import Col_
@@ -94,6 +94,8 @@ class Handler(abc.ABC):
         Adds an entry to the data defs table and returns True if successful. If an entry already exists, returns False.
         """
 
+        pgval.check_option('mode', mode, ['insert', 'update'])
+
         record_dict = {
             'name': self.name,
             'handler': type(self),
@@ -101,19 +103,31 @@ class Handler(abc.ABC):
         }
 
         with self.data_store.begin_connection(connection) as connection:
-            try:
-                connection.execute(
-                    insert((defs_table := self.get_defs_table(self.data_store))), record_dict)
-            except exc.IntegrityError as err:
-                if re.match(
-                        f'\\(sqlite3.IntegrityError\\) UNIQUE constraint failed\\: {defs_table.name}\\.name',
-                        str(err)):
-                    return False
-                else:
-                    raise
+            defs_table = self.get_defs_table(self.data_store)
+            if mode == 'insert':
+                try:
+                    connection.execute(
+                        insert(defs_table), record_dict)
+                except exc.IntegrityError as err:
+                    if re.match(
+                            f'\\(sqlite3.IntegrityError\\) UNIQUE constraint failed\\: {defs_table.name}\\.name',
+                            str(err)):
+                        return False
+                    else:
+                        raise
 
+                else:
+                    return True
+            elif mode == 'update':
+                if self.decoded_data_def is None:
+                    raise Exception(
+                        'Cannot update a definition that has not been retrieved from the data store.')
+                connection.execute(
+                    update(defs_table).
+                    where(defs_table.c.id == self.decoded_data_def.id).
+                    values(**record_dict))
             else:
-                return True
+                raise Exception('Unexpected case.')
 
 
 class DataHandler(Handler):

@@ -2,7 +2,7 @@ import plotly.graph_objects as go
 import itertools as it
 from sqlalchemy import exc
 from pglib.profiling import time_and_print
-from .base_handlers import Handler
+from ploteries.base_handlers import Handler
 from typing import List, Optional
 from typing import Dict, Union, Any
 from pglib.slice_sequence import SSQ_
@@ -26,6 +26,8 @@ class FigureHandler(Handler):
         Instantiates a new figure handler. Note that this does not read or write a figure handler from the data store (use methos :meth:`from_name` and :meth:`write_def` for this purpose).
 
         :param figure_dict: Dictionary representation of a plotly figure containing placeholder values of type :class:`ploteries.data_store.Ref_` that will be replaced by data from the store when building the figure.
+
+        .. todo:: Example.
 
         """
         self.data_store = data_store
@@ -75,14 +77,14 @@ class FigureHandler(Handler):
         ))
         return all_data_names
 
-    @ classmethod
+    @classmethod
     def from_def_record(cls, data_store, data_def_record):
         # cls.decode_params(data_def_record)
         return cls(data_store, data_def_record.name,
                    decoded_data_def=data_def_record,
                    **data_def_record.params)
 
-    @ classmethod
+    @classmethod
     def get_defs_table(cls, data_store):
         """
         Returns the defs table (e..g., data_defs or figure_defs)

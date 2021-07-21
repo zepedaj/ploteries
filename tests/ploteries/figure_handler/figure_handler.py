@@ -1,11 +1,11 @@
-from ploteries import figure_handler as mdl
+from ploteries.figure_handler import figure_handler as mdl
 from ploteries.data_store import Ref_
 import numpy.testing as npt
 from pglib.slice_sequence import SSQ_
 import plotly.graph_objects as go
 from ploteries.ndarray_data_handlers import UniformNDArrayDataHandler
 from unittest import TestCase
-from .data_store import get_store
+from ..data_store import get_store
 import numpy as np
 from pglib.profiling import time_and_print
 from contextlib import contextmanager
@@ -120,3 +120,18 @@ class TestFigureHandler(TestCase):
             self.assertEqual(
                 set(fig2_h.get_data_names()),
                 {'arr3'})
+
+    def test_update(self):
+        with get_store_with_fig() as (store, arr1_h, arr2_h, fig_h):
+            # fig_h.figure_dict['layout']['template']=None
+            with self.assertRaisesRegex(Exception, r'Cannot update a definition that has not been retrieved from the data store.'):
+                fig_h.write_def(mode='update')
+            self.assertTrue(fig_h.write_def())
+            self.assertFalse(fig_h.write_def())
+
+            fig_h = store.get_figure_handlers()[0]
+            self.assertIsInstance(fig_h.figure_dict['layout']['template'], dict)
+            fig_h.figure_dict['layout']['template'] = None
+            fig_h.write_def(mode='update')
+            fig_h = store.get_figure_handlers()[0]
+            self.assertIsNone(fig_h.figure_dict['layout']['template'])
