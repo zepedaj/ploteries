@@ -1,0 +1,18 @@
+ .. todo::
+
+    * Make tabs sticky on top, make them narrower and collapsible
+
+    * Move hard-coded styling to single css file.
+
+    # 
+
+    * Make launch load files automatically on every interval (when a --discover option is specified).
+ 
+    * Decouple data store and visualization      
+    
+      * Create a parent DataStore class with no data_records.index column, and a derived class that has the index column.      
+      * Change data_records.index to data_records.time_step.	
+      * Consider adding data record insertion support by means of a "parent" data_records column.
+   
+
+    

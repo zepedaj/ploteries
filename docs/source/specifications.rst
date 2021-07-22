@@ -29,17 +29,3 @@ Under the hood mechanisms:
   *
 * Single-table stores all data to make it easy to obtain the full range of global steps, and to suppport resolution downsampling, or client-side updating.
 * Checksum-based verification of server/client data parity.
-
-
- .. todo::
-
-    * Make launch load files automatically on every interval (when a --discover option is specified).
- 
-    * Decouple data store and visualization      
-    
-      * Create a parent DataStore class with no data_records.index column, and a derived class that has the index column.      
-      * Change data_records.index to data_records.time_step.	
-      * Consider adding data record insertion support by means of a "parent" data_records column.
-   
-
-    
