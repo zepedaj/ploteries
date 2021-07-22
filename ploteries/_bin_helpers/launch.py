@@ -1,4 +1,5 @@
 from .main import main, path_arg
+import os.path as osp
 import glob
 from pglib.profiling import time_and_print
 #
@@ -23,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 #
 
-global DATA_INTERFACES, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, APP
+global DATA_INTERFACES, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, APP, GLOB_PATH
 HEIGHT, WIDTH = None, None
 global GRAPH_KWARGS
 GRAPH_KWARGS = {}  # {'config': {'displayModeBar': True}}
@@ -54,7 +55,7 @@ def create_layout(update_interval):
                 # html.Div([
                 html.Div([
                     html.Label(
-                        ['Data store:',
+                        [html.Span(['Data store ', html.Span(f'({GLOB_PATH})', style={'color': 'gray', 'fontSize': '.9em'}), ':']),
                          dcc.Dropdown(
                              id='data-store-dropdown',
                              persistence=True,
@@ -180,11 +181,12 @@ def launch(glob_path, debug, host, interval, height, width, port, workers):
     Launch a ploteries visualization server.
     """
     #
-    global DATA_INTERFACES, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH
+    global DATA_INTERFACES, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH, GLOB_PATH
     HEIGHT = height
     WIDTH = width
     LARGE_HEIGHT = 2*HEIGHT
     LARGE_WIDTH = 2*WIDTH
+    GLOB_PATH = glob_path
 
     DATA_INTERFACES = OrderedDict()
     for _path in sorted(glob.glob(glob_path, recursive=True)):
