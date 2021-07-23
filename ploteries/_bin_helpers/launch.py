@@ -168,7 +168,7 @@ def create_toolbar_callbacks():
 @clx.option('--port',
             help='Port number.', default='8000')
 @clx.option('--workers',
-            help='Number of workers (ignored in debug mode).', default=(cpu_count() * 2) + 1)
+            help='Number of workers (ignored in debug mode).', default=3)
 @clx.option(
     '--height', help=f'Figure height (default={DEFAULT_WIDTH*DEFAULT_HEIGHT_TO_WIDTH})', type=int,
     default=DEFAULT_WIDTH * DEFAULT_HEIGHT_TO_WIDTH)
