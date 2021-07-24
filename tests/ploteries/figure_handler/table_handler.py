@@ -61,57 +61,28 @@ class TestTableHandler(TestCase):
                 built_tbl_loaded.to_json())
 
     def test_encode_decode_params(self):
-        with get_store_with_fig() as (store, arr1_h, arr2_h, fig_h):
+        with get_store_with_table() as (store, data1_h, tab1_h):
             orig_params = {
-                'figure_dict': dict(fig_h.figure_dict)}
-            mdl.FigureHandler.decode_params(decoded_params := fig_h.encode_params())
+                'source_data_name': tab1_h.source_data_name,
+                'figure_dict': tab1_h.figure_dict,
+                'transposed': tab1_h.transposed,
+                'header_kwargs': tab1_h.header_kwargs,
+                'cells_kwargs': tab1_h.cells_kwargs,
+                'keys': tab1_h.keys}
+            mdl.TableHandler.decode_params(decoded_params := tab1_h.encode_params())
             self.assertDictEqual(orig_params, decoded_params)
 
-    def test_from_traces(self):
-        with get_store_with_fig() as (store, arr1_h, arr2_h, fig_h):
-            built_fig = fig_h.build_figure()
-            fig_h_ft = mdl.FigureHandler.from_traces(
-                store, 'from_traces', fig_h.figure_dict['data'])
-            built_fig_ft = fig_h_ft.build_figure()
-
-            self.assertEqual(
-                built_fig.to_json(),
-                built_fig_ft.to_json())
-
-    def test_get_data_names(self):
-        with get_store_with_fig() as (store, arr1_h, arr2_h, fig1_h):
-
-            # Add another fig.
-            arr3_h = UniformNDArrayDataHandler(store, 'arr3')
-            arr3_h.add_data(
-                0, np.array(
-                    list(zip(range(20, 30), range(30, 40))),
-                    dtype=[('f0', 'i'), ('f1', 'f')]))
-
-            fig2_h = mdl.FigureHandler.from_traces(
-                store, 'fig2',
-                [{'x': Ref_('arr3')['data']['f0'],
-                  'y':Ref_('arr3')['data']['f0']}])
-
-            #
-            self.assertEqual(
-                set(fig1_h.get_data_names()),
-                {'arr1', 'arr2'})
-            self.assertEqual(
-                set(fig2_h.get_data_names()),
-                {'arr3'})
-
     def test_update(self):
-        with get_store_with_fig() as (store, arr1_h, arr2_h, fig_h):
-            # fig_h.figure_dict['layout']['template']=None
+        with get_store_with_table() as (store, data1_h, tab1_h):
+            # tab1_h.figure_dict['layout']['template']=None
             with self.assertRaisesRegex(Exception, r'Cannot update a definition that has not been retrieved from the data store.'):
-                fig_h.write_def(mode='update')
-            self.assertTrue(fig_h.write_def())
-            self.assertFalse(fig_h.write_def())
+                tab1_h.write_def(mode='update')
+            self.assertTrue(tab1_h.write_def())
+            self.assertFalse(tab1_h.write_def())
 
-            fig_h = store.get_figure_handlers()[0]
-            self.assertIsInstance(fig_h.figure_dict['layout']['template'], dict)
-            fig_h.figure_dict['layout']['template'] = None
-            fig_h.write_def(mode='update')
-            fig_h = store.get_figure_handlers()[0]
-            self.assertIsNone(fig_h.figure_dict['layout']['template'])
+            tab1_h = store.get_figure_handlers()[0]
+            self.assertEqual(tab1_h.figure_dict['layout'], {})
+            tab1_h.figure_dict['layout']['template'] = None
+            tab1_h.write_def(mode='update')
+            tab1_h = store.get_figure_handlers()[0]
+            self.assertIsNone(tab1_h.figure_dict['layout']['template'])
