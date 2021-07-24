@@ -17,7 +17,7 @@ class TableHandler(_FigureHandler):
                  source_data_name: str,
                  transposed: bool,
                  header_kwargs={'align': 'right'},
-                 cell_kwargs={'align': 'right'},
+                 cells_kwargs={'align': 'right'},
                  decoded_data_def=None,
                  figure_dict=None,
                  keys: Optional[List[str]] = None):
@@ -37,7 +37,7 @@ class TableHandler(_FigureHandler):
         self.decoded_data_def = decoded_data_def
         self.transposed = transposed
         self.header_kwargs = header_kwargs
-        self.cell_kwargs = cell_kwargs
+        self.cells_kwargs = cells_kwargs
         self.keys = keys
 
     # Invalid methods.
@@ -71,13 +71,14 @@ class TableHandler(_FigureHandler):
             columns = [['Time step'] + keys] + \
                 [[_idx] + [self.get_key(_rec, _key) for _key in keys]
                  for _idx, _rec in zip(indices.flat(), records)]
-            cells = {**self.cell_kwargs, 'values': columns}  # TODO: The first column is not styled.
+            # TODO: The first column is not styled.
+            cells = {**self.cells_kwargs, 'values': columns}
             header = None
         else:
             # Each record is a row.
             columns = [indices.tolist()] + \
                 [[self.get_key(_rec, _key) for _rec in records] for _key in keys]
-            cells = {**self.cell_kwargs, 'values': columns}
+            cells = {**self.cells_kwargs, 'values': columns}
             header = {**self.header_kwargs, 'values': columns}
 
         # Build the trace object and add it to the figure.
@@ -101,7 +102,7 @@ class TableHandler(_FigureHandler):
             'figure_dict': self.figure_dict,
             'transposed': self.transposed,
             'header_kwargs': self.header_kwargs,
-            'cell_kwargs': self.cell_kwargs,
+            'cells_kwargs': self.cells_kwargs,
             'keys': self.keys}
         return params
 
