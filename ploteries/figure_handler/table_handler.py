@@ -1,4 +1,5 @@
 from .figure_handler import FigureHandler as _FigureHandler
+from pglib.py import strict_zip
 from numbers import Number
 from pglib import validation as pgval
 import itertools as it
@@ -12,6 +13,8 @@ class TableHandler(_FigureHandler):
     """
     This object creates a table from dictionaries, where the dictionary at time step k fills the k-th row (or column) in the table. It supports a subset of functionality of `Plotly tables <https://plotly.com/python/table/>`, including all header kwargs shared across all header (same for cells) - see the same link for the syntax. Use :class:`~ploteries.figure_handler.figure_handler.FigureHandler` for tables that support all functionality but have fixed, pre-determined size, since Plotly figure objects can render tables.
     """
+
+    time_step_key = 'Time step'
 
     def __init__(self,
                  data_store,
@@ -80,18 +83,24 @@ class TableHandler(_FigureHandler):
         # Build the columns of the table
         if self.transposed:
             # Each record is a column.
-            columns = [['Time step'] + keys] + \
-                [[_idx] + [self.get_key(_rec, _key) for _key in keys]
-                 for _idx, _rec in zip(indices.flat, records)]
+            columns = [
+                {'name': _name, 'id': _name} for _name in
+                it.chain(['Field'], indices)]
             # TODO: The first column is not styled.
+            data = [{
+                **{'Field': _key},
+                **{_idx: _rec[_key] for _idx in indices}
+                for _idx, _rec in strict_zip(indices, records)}]
+
             cells = {**self.cells_kwargs, 'values': columns}
             header = None
         else:
-            # Each record is a row.
-            columns = [indices.tolist()] + \
-                [[self.get_key(_rec, _key) for _rec in records] for _key in keys]
-            cells = {**self.cells_kwargs, 'values': columns}
-            header = {**self.header_kwargs, 'values': ['Time Step']+keys}
+            columns = [{'name': name, 'id': id} for name in [self.time_step_key] + keys]
+            # Var data will be a list of dicts containing one row.
+            data = [{
+                **{self.time_step_key: _idx},
+                **{_key: self.get_key(_rec, _key) for _key in keys}} for
+                _idx, _rec in strict_zip(indices, records)]
 
         # Build the trace object and add it to the figure.
         trace = go.Table(header=header, cells=cells)
@@ -119,6 +128,6 @@ class TableHandler(_FigureHandler):
             'sorting': self.sorting}
         return params
 
-    @property
+    @ property
     def is_indexed(self):
         return False
