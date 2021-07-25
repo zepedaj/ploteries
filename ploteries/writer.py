@@ -6,7 +6,7 @@ from numbers import Number
 from .data_store import DataStore, Ref_
 from .ndarray_data_handlers import UniformNDArrayDataHandler, RaggedNDArrayDataHandler
 from .serializable_data_handler import SerializableDataHandler
-from .figure_handler import FigureHandler
+from .figure_handler import FigureHandler, TableHandler
 from pglib.numpy import ArrayLike
 from typing import Optional, List, Dict, Any
 from pglib.nnets import numtor
@@ -22,7 +22,8 @@ class Writer:
     _table_names = {
         'add_scalars': '__add_scalars__.{figure_name}',
         'add_plots': '__add_plots__.{figure_name}',
-        'add_histograms': '__add_histograms__.{figure_name}'}
+        'add_histograms': '__add_histograms__.{figure_name}',
+        'add_table': '__add_table__.{figure_name}'}
 
     def __init__(self, path):
         self.data_store = path if isinstance(path, DataStore) else DataStore(path)
@@ -311,3 +312,49 @@ class Writer:
             hist = hist/dat.size
 
         return bin_centers, hist
+
+    def add_table(
+            self,
+            figure_name: str,
+            values: dict,
+            global_step: int,
+            transposed: bool = False,
+            header_kwargs={'align': 'right'},
+            cells_kwargs={'align': 'right'},
+            layout_kwargs=None,
+            data_name: Optional[str] = None):
+        """
+        :param figure_name: (See :meth:`add_scalars`).
+        :param values: A dictionary of values. Each key in the dictionary will define a column (row, if transposed=True) in the table, and the corresponding value will contain the row (resp., column) values for the specified global_step.
+        :param header_kwargs, layout_kwargs: (See :class:`~ploteries.figure_handler.table_handler.TableHandler`)
+        :param data_name: (See :meth:`add_scalars`).
+        :param traces_kwargs: (See :meth:`add_scalars`).
+        :param layout_kwargs: (See :meth:`add_scalars`).
+
+        Example:
+
+        ```
+        writer.add_table(
+            'my_table', {'col1': 1.0, 'col2': 2.0}, 10)
+        ```
+        """
+
+        layout_kwargs = layout_kwargs or {}
+        default_trace_kwargs = {'type': 'scatter', 'mode': 'lines'}
+
+        # Get data name.
+        data_name = data_name or self._get_table_name(
+            'add_table', figure_name=figure_name)
+
+        # Write figure def.
+        if figure_name not in self.existing_figures:
+            # Build traces with data store references.
+            tbl_h = TableHandler(self.data_store, figure_name, data_name, transposed,
+                                 header_kwargs=header_kwargs, cells_kwargs=cells_kwargs)
+            tbl_h.write_def()
+            self.existing_figures.add(figure_name)
+
+        # Write data
+        data_handler = self._get_data_handler(
+            data_name, lambda: SerializableDataHandler(self.data_store, name=data_name))
+        data_handler.add_data(global_step, values)

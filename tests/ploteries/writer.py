@@ -69,3 +69,20 @@ class TestWriter(TestCase):
             default_trace_kwargs = {'type': 'scatter', 'mode': 'lines'}
             [_x.update(**default_trace_kwargs) for _x in traces]
             npt.assert_equal(fig.to_dict()['data'], traces)
+
+    def test_add_table(self):
+        with NamedTemporaryFile() as tmp_fo:
+            writer = mdl.Writer(tmp_fo.name)
+            table_name = 'table1'
+            tbl = writer.add_table(table_name, col_data := {'Col 1': 1, 'Col 2': 2}, 0)
+
+            data_name = mdl.Writer._get_table_name('add_table', figure_name=table_name)
+
+            # Verify contents.
+            store = DataStore(tmp_fo.name)
+            self.assertEqual([_x.name for _x in store.get_figure_handlers()], [table_name])
+            self.assertEqual([_x.name for _x in store.get_data_handlers()], [data_name])
+
+            # Verify data.
+            store.flush()
+            self.assertEqual(store[data_name]['data'], [col_data])

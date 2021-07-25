@@ -1,4 +1,6 @@
 from .figure_handler import FigureHandler as _FigureHandler
+from numbers import Number
+from pglib import validation as pgval
 import itertools as it
 from ploteries.data_store import Ref_
 from typing import List, Optional
@@ -15,12 +17,13 @@ class TableHandler(_FigureHandler):
                  data_store,
                  name: str,
                  source_data_name: str,
-                 transposed: bool,
+                 transposed: bool = False,
                  header_kwargs={'align': 'right'},
                  cells_kwargs={'align': 'right'},
                  decoded_data_def=None,
                  figure_dict=None,
-                 keys: Optional[List[str]] = None):
+                 keys: Optional[List[str]] = None,
+                 sorting='descending'):
         """
         :param data_store: Source data store.
         :param name: Name of the FigureHandler instance that will be used in the figure defs table.
@@ -39,6 +42,7 @@ class TableHandler(_FigureHandler):
         self.header_kwargs = header_kwargs
         self.cells_kwargs = cells_kwargs
         self.keys = keys
+        self.sorting = pgval.check_option('sorting', sorting, ['ascending', 'descending'])
 
     # Invalid methods.
     _parse_figure = None
@@ -50,9 +54,13 @@ class TableHandler(_FigureHandler):
         if key not in rec:
             return ''
         else:
-            return str(rec[key])
+            val = rec[key]
+            return val if isinstance(val, Number) else str(val)
 
-    def build_figure(self):
+    def build_figure(self, index=None):
+        #
+        if index is not None:
+            raise Exception('Only index=None is supported.')
         #
         new_figure = deepcopy(self.figure_dict)
 
@@ -60,6 +68,10 @@ class TableHandler(_FigureHandler):
         raw_data = Ref_(self.source_data_name)(self.data_store)
         indices = raw_data['meta']['index']
         records = raw_data['data']
+
+        if self.sorting == 'descending':
+            indices = indices[::-1]
+            records = records[::-1]
 
         # Get all keys
         # https://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-whilst-preserving-order#:~:text=450-,Edit%202020,-As%20of%20CPython
@@ -70,7 +82,7 @@ class TableHandler(_FigureHandler):
             # Each record is a column.
             columns = [['Time step'] + keys] + \
                 [[_idx] + [self.get_key(_rec, _key) for _key in keys]
-                 for _idx, _rec in zip(indices.flat(), records)]
+                 for _idx, _rec in zip(indices.flat, records)]
             # TODO: The first column is not styled.
             cells = {**self.cells_kwargs, 'values': columns}
             header = None
@@ -79,7 +91,7 @@ class TableHandler(_FigureHandler):
             columns = [indices.tolist()] + \
                 [[self.get_key(_rec, _key) for _rec in records] for _key in keys]
             cells = {**self.cells_kwargs, 'values': columns}
-            header = {**self.header_kwargs, 'values': columns}
+            header = {**self.header_kwargs, 'values': ['Time Step']+keys}
 
         # Build the trace object and add it to the figure.
         trace = go.Table(header=header, cells=cells)
@@ -103,7 +115,8 @@ class TableHandler(_FigureHandler):
             'transposed': self.transposed,
             'header_kwargs': self.header_kwargs,
             'cells_kwargs': self.cells_kwargs,
-            'keys': self.keys}
+            'keys': self.keys,
+            'sorting': self.sorting}
         return params
 
     @property

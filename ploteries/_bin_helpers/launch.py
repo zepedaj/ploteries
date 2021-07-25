@@ -207,7 +207,15 @@ def launch(glob_path, debug, host, interval, height, width, port, workers):
                         'xanchor': "right",
                         'x': 1},
                     'modebar': {
-                        'orientation': 'v'}})
+                        'orientation': 'v'}},
+                table_layout_kwargs={
+                    'width': 2*WIDTH,
+                    'margin': go.layout.Margin(**dict(zip('lrbt', [0, 0, 0, 0]), pad=4))},
+                table_graph_kwargs={
+                    'config': {
+                        'displayModeBar': False
+                    }}
+            )
 
     # Create callbacks
     for data_interface_type in set(type(_x) for _x in DATA_INTERFACES.values()):

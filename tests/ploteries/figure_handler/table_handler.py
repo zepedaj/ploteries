@@ -13,7 +13,7 @@ import dash
 
 
 @contextmanager
-def get_store_with_table(transposed=False):
+def get_store_with_table(transposed=False, sorting='ascending'):
     with get_store() as store:
         #
         data1_h = SerializableDataHandler(store, 'table_data')
@@ -21,7 +21,8 @@ def get_store_with_table(transposed=False):
             data1_h.add_data(index, {f'Column {index}': index, f'Column {index+1}': index*2})
 
         #
-        tab1_h = mdl.TableHandler(store, 'table1', 'table_data', transposed=transposed)
+        tab1_h = mdl.TableHandler(store, 'table1', 'table_data',
+                                  transposed=transposed, sorting=sorting)
 
         store.flush()
         yield store, data1_h, tab1_h
@@ -29,18 +30,27 @@ def get_store_with_table(transposed=False):
 
 
 class TestTableHandler(TestCase):
-    def test_create(self):
 
-        with get_store_with_table() as (store, data1_h, tab1_h):
+    def test_create(self):
+        self._test_create(False)
+
+    def test_create_transposed(self):
+        self._test_create(True)
+
+    def _test_create(self, transposed):
+
+        with get_store_with_table(transposed=transposed) as (store, data1_h, tab1_h):
             built_tbl = tab1_h.build_table()
 
             #
             def check_valid(_tbl):
                 as_array = np.array(
                     [
-                        [None if x == '' else int(x) for x in _col]
+                        [None if x == '' else x for x in _col]
                         for _col in _tbl['data'][0]['cells']['values']
                     ])
+                if transposed:
+                    as_array = as_array[1:].T
                 # Check indices.
                 npt.assert_array_equal(as_array[0], [0, 1, 2, 3, 4])
                 # Check entries
@@ -67,6 +77,7 @@ class TestTableHandler(TestCase):
                 'figure_dict': tab1_h.figure_dict,
                 'transposed': tab1_h.transposed,
                 'header_kwargs': tab1_h.header_kwargs,
+                'sorting': 'ascending',
                 'cells_kwargs': tab1_h.cells_kwargs,
                 'keys': tab1_h.keys}
             mdl.TableHandler.decode_params(decoded_params := tab1_h.encode_params())

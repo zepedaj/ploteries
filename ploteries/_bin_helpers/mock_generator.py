@@ -89,6 +89,18 @@ def launch_mock_generator(
                      'iter': [RandomWalk(500) for _ in range(num_traces)]}
                     for _k in range(num_histograms)]
 
+                def table_data():
+                    while True:
+                        yield {f'Col {k}': np.random.randn() for k in range(5)}
+                tables = [
+                    {'name': 'tables/table-1',
+                     'data': table_data(),
+                     'kwargs': {}},
+                    {'name': 'tables/table-2',
+                     'data': table_data(),
+                     'kwargs': {'transposed': True}}
+                ]
+
                 k = 0
                 with tqdm() as pbar:
                     while True:
@@ -114,6 +126,14 @@ def launch_mock_generator(
                                 _histo['name'],
                                 [next(_iter) for _iter in _histo['iter']],
                                 k)
+
+                        # Add tables
+                        for _tbl in tables:
+                            writer.add_table(
+                                _tbl['name'],
+                                next(_tbl['data']),
+                                k,
+                                **_tbl['kwargs'])
 
                         # Sleep
                         sleep(interval)

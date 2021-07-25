@@ -1,20 +1,21 @@
+from collections import namedtuple
+from dash.exceptions import PreventUpdate
+from dash.dependencies import Input, Output, State, MATCH, ALL
+import dash_html_components as html
+import dash_core_components as dcc
+from dash import Dash
+from sqlalchemy import select, func
+import plotly.graph_objects as go
+from ploteries.data_store import Col_
+from pglib.validation import checked_get_single
+from pglib.py import class_name
+from pglib.profiling import time_and_print
+import itertools as it
+import functools
 import numpy as np
 from typing import Callable
-import functools
-import itertools as it
-from pglib.profiling import time_and_print
-from pglib.py import class_name
-from pglib.validation import checked_get_single
-from ploteries.data_store import Col_
-import plotly.graph_objects as go
+from .figure_handler import TableHandler
 #from sqlalchemy.sql import select
-from sqlalchemy import select, func
-from dash import Dash
-import dash_core_components as dcc
-import dash_html_components as html
-from dash.dependencies import Input, Output, State, MATCH, ALL
-from dash.exceptions import PreventUpdate
-from collections import namedtuple
 
 
 PosnTuple = namedtuple('PosnTuple', ('tab', 'group', 'abs_name', 'rel_name'))
@@ -46,11 +47,18 @@ class PloteriesLaunchInterface:
     def __init__(self,
                  data_store,
                  figure_layout_kwargs={},
-                 graph_kwargs={},
-                 slider_kwargs={}):
+                 figure_graph_kwargs={},
+                 table_graph_kwargs={},
+                 slider_kwargs={},
+                 table_layout_kwargs={}):
         self.data_store = data_store
-        self.figure_layout_kwargs = {**figure_layout_kwargs}
-        self.graph_kwargs = {**graph_kwargs}
+        self.figure_layout_kwargs = {
+            **figure_layout_kwargs}
+        self.table_layout_kwargs = {
+            **{_k: {'showgrid': False, 'zeroline': False} for _k in {'xaxis', 'yaxis'}},
+            **table_layout_kwargs}
+        self.figure_graph_kwargs = {**figure_graph_kwargs}
+        self.table_graph_kwargs = {**table_graph_kwargs}
         self.slider_kwargs = {**self._default_slider_kwargs, **slider_kwargs}
 
     # CALLBACKS
@@ -96,6 +104,30 @@ class PloteriesLaunchInterface:
         }
 
     ##
+    def _format_figure(self, figure, figure_handler):
+        layout_kwargs = (
+            self.table_layout_kwargs
+            if isinstance(figure_handler, TableHandler) else
+            self.figure_layout_kwargs)
+        figure = figure or go.Figure(layout_template=None)
+        figure.update_layout(**layout_kwargs)
+
+        return figure
+
+    def _build_graph(self, figure, figure_handler, has_slider):
+        graph_kwargs = (
+            self.table_graph_kwargs
+            if isinstance(figure_handler, TableHandler) else
+            self.figure_graph_kwargs)
+        graph = dcc.Graph(
+            figure=figure,
+            id=self._get_figure_id(
+                figure_name=figure_handler.name,
+                has_slider=has_slider),
+            **graph_kwargs)
+
+        return graph
+
     def _build_empty_html(self, figure_handler):
         """
         Builds figure without any data and accompanying html.
@@ -105,16 +137,8 @@ class PloteriesLaunchInterface:
         has_slider = figure_handler.is_indexed
 
         # Empty figure
-        figure = go.Figure()
-        figure.update_layout(**self.figure_layout_kwargs)
-
-        #
-        graph = dcc.Graph(
-            figure=figure,
-            id=self._get_figure_id(
-                figure_name=figure_handler.name,
-                has_slider=has_slider),
-            ** self.graph_kwargs)
+        figure = self._format_figure(None, figure_handler)
+        graph = self._build_graph(figure, figure_handler, has_slider)
 
         if has_slider:
             slider = dcc.Slider(
@@ -129,9 +153,9 @@ class PloteriesLaunchInterface:
         return out
 
     def _build_formatted_figure_from_name(self, name, index=None):
-        figure = checked_get_single(
-            self.data_store.get_figure_handlers(Col_('name') == name)).build_figure(index=index)
-        figure.update_layout(**self.figure_layout_kwargs)
+        figure = (figure_handler := checked_get_single(
+            self.data_store.get_figure_handlers(Col_('name') == name))).build_figure(index=index)
+        self._format_figure(figure, figure_handler)
         return figure
 
     @classmethod
