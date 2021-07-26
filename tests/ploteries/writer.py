@@ -74,7 +74,7 @@ class TestWriter(TestCase):
         with NamedTemporaryFile() as tmp_fo:
             writer = mdl.Writer(tmp_fo.name)
             table_name = 'table1'
-            tbl = writer.add_table(table_name, col_data := {'Col 1': 1, 'Col 2': 2}, 0)
+            tbl = writer.add_table(table_name, values := {'Col 1': 1, 'Col 2': 2}, 0)
 
             data_name = mdl.Writer._get_table_name('add_table', figure_name=table_name)
 
@@ -85,4 +85,4 @@ class TestWriter(TestCase):
 
             # Verify data.
             store.flush()
-            self.assertEqual(store[data_name]['data'], [col_data])
+            self.assertEqual(store[data_name]['data'], [values])

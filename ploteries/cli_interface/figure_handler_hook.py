@@ -1,39 +1,26 @@
-from collections import namedtuple
-from dash.exceptions import PreventUpdate
-from dash.dependencies import Input, Output, State, MATCH, ALL
-import dash_html_components as html
-import dash_core_components as dcc
-from dash import Dash
-from sqlalchemy import select, func
-import plotly.graph_objects as go
-from ploteries.data_store import Col_
-from pglib.validation import checked_get_single
-from pglib.py import class_name
-from pglib.profiling import time_and_print
-import itertools as it
-import functools
 import numpy as np
-from typing import Callable
-from .figure_handler import TableHandler
-#from sqlalchemy.sql import select
+from typing import Callable, Union, Dict
+import functools
+import itertools as it
+from pglib.profiling import time_and_print
+from pglib.py import class_name
+from pglib.validation import checked_get_single
+from ploteries.data_store import Col_
+import plotly.graph_objects as go
+# from sqlalchemy.sql import select
+from sqlalchemy import select, func
+from dash import Dash
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output, State, MATCH, ALL
+from dash.exceptions import PreventUpdate
+from .abstract_hook import AbstractInterfaceHook
+from ploteries.figure_handler import FigureHandler
 
 
-PosnTuple = namedtuple('PosnTuple', ('tab', 'group', 'abs_name', 'rel_name'))
-"""
-The name of the tab and group where the figure will be placed.
-"""
-
-RenderedFigure = namedtuple('RenderedFigure', ('name', 'posn', 'html'))
-"""
-name:str, Specifies the figures absolute name.
-posn:PosnTuple, Specifies the figure's hierarchical position.
-html:<Dash html obj>  HTML object for the figure.
-"""
-
-
-class PloteriesLaunchInterface:
+class FigureHandlerHook(AbstractInterfaceHook):
     """
-    Implements the interface (methods :meth:`render_empty_figures` and :meth:`create_callbacks`)) required by the 'ploteries launch' CLI to access the data and figures in a data store.
+    Implements the interface (methods :meth:`render_empty_figures` and :meth:`create_callbacks`)) required by the 'ploteries launch' CLI to access the figures in a data store.
     """
 
     # Default element kwargs
@@ -44,91 +31,36 @@ class PloteriesLaunchInterface:
         'updatemode': 'mouseup',
         'step': None}
 
+    handler_class = FigureHandler
+
     def __init__(self,
                  data_store,
                  figure_layout_kwargs={},
-                 figure_graph_kwargs={},
-                 table_graph_kwargs={},
-                 slider_kwargs={},
-                 table_layout_kwargs={}):
+                 graph_kwargs={},
+                 slider_kwargs={}):
         self.data_store = data_store
-        self.figure_layout_kwargs = {
-            **figure_layout_kwargs}
-        self.table_layout_kwargs = {
-            **{_k: {'showgrid': False, 'zeroline': False} for _k in {'xaxis', 'yaxis'}},
-            **table_layout_kwargs}
-        self.figure_graph_kwargs = {**figure_graph_kwargs}
-        self.table_graph_kwargs = {**table_graph_kwargs}
+        self.figure_layout_kwargs = {**figure_layout_kwargs}
+        self.graph_kwargs = {**graph_kwargs}
         self.slider_kwargs = {**self._default_slider_kwargs, **slider_kwargs}
 
     # CALLBACKS
     _slider_output_keys = ('marks', 'min', 'max', 'value', 'disabled')
 
-    def render_empty_figures(self):
-        """
-
-        """
-        return [
-            RenderedFigure(
-                name=_fig_handler.name,
-                posn=self._name_to_posn(_fig_handler.name),
-                html=self._build_empty_html(_fig_handler))
-            for _fig_handler in self.data_store.get_figure_handlers()
-        ]
-
     def _int(self, val):
         return f'{val:,d}'
 
-    def _name_to_posn(self, fig_name):
-        default = None
-        hierarchy = [_x or default for _x in fig_name.split('/', maxsplit=2)] + [default]*3
-        tab, group, rel_name = hierarchy[:3]
-        return PosnTuple(tab=tab, group=group, rel_name=rel_name, abs_name=fig_name)
-
     # Dictionary ids.
+
     @classmethod
     def _get_figure_id(cls, figure_name, has_slider):
-        return {
-            'name': figure_name,
-            'type': cls.encoded_class_name(),
-            'element': 'graph',
-            'has_slider': has_slider,
-        }
+        return cls._get_id(figure_name, element='graph', has_slider=has_slider)
 
     @classmethod
     def _get_slider_id(cls, figure_name):
-        return {
-            'name': figure_name,
-            'type': cls.encoded_class_name(),
-            'element': 'slider'
-        }
+        return cls._get_id(figure_name, element='slider')
 
     ##
-    def _format_figure(self, figure, figure_handler):
-        layout_kwargs = (
-            self.table_layout_kwargs
-            if isinstance(figure_handler, TableHandler) else
-            self.figure_layout_kwargs)
-        figure = figure or go.Figure(layout_template=None)
-        figure.update_layout(**layout_kwargs)
-
-        return figure
-
-    def _build_graph(self, figure, figure_handler, has_slider):
-        graph_kwargs = (
-            self.table_graph_kwargs
-            if isinstance(figure_handler, TableHandler) else
-            self.figure_graph_kwargs)
-        graph = dcc.Graph(
-            figure=figure,
-            id=self._get_figure_id(
-                figure_name=figure_handler.name,
-                has_slider=has_slider),
-            **graph_kwargs)
-
-        return graph
-
-    def _build_empty_html(self, figure_handler):
+    def build_empty_html(self, figure_handler):
         """
         Builds figure without any data and accompanying html.
         """
@@ -137,8 +69,16 @@ class PloteriesLaunchInterface:
         has_slider = figure_handler.is_indexed
 
         # Empty figure
-        figure = self._format_figure(None, figure_handler)
-        graph = self._build_graph(figure, figure_handler, has_slider)
+        figure = go.Figure()
+        figure.update_layout(**self.figure_layout_kwargs)
+
+        #
+        graph = dcc.Graph(
+            figure=figure,
+            id=self._get_figure_id(
+                figure_name=figure_handler.name,
+                has_slider=has_slider),
+            **self.graph_kwargs)
 
         if has_slider:
             slider = dcc.Slider(
@@ -153,9 +93,9 @@ class PloteriesLaunchInterface:
         return out
 
     def _build_formatted_figure_from_name(self, name, index=None):
-        figure = (figure_handler := checked_get_single(
-            self.data_store.get_figure_handlers(Col_('name') == name))).build_figure(index=index)
-        self._format_figure(figure, figure_handler)
+        figure = checked_get_single(
+            self.data_store.get_figure_handlers(Col_('name') == name)).build_figure(index=index)
+        figure.update_layout(**self.figure_layout_kwargs)
         return figure
 
     @classmethod
@@ -166,26 +106,28 @@ class PloteriesLaunchInterface:
     def create_callbacks(
             cls,
             app: Dash,
-            get_interface: Callable[[str], 'PloteriesLaunchInterface'],
-            interface_name_state: State,
-            n_interval_input: Input,
-            global_index_input_value: Input,
-            global_index_dropdown_options: Output):
-        """        
-
-        This method creates the callbacks required to support web valizations. In only needs to be called once for each :class:`PloteriesLaunchInterface` class. It produces three pattern-matching callbacks (corresponding to the arrows below):
-        * n_interval_input -> each slider-less figures
-        * n_interval_input -> each slider -> each with-slider figures        
-
-        :class:`PloteriesLaunchInterface` supports Dash apps where the data store (i.e., the instance of the :class:`PloteriesLaunchInterface`) is changed by the user from the web interface. Each callback will thus first retrieve the relevant :class:`PloteriesLaunchInterface` object by calling the input callable :attr:`get_interface`, which takes an interface name that is in turn received by the callback from the :class:`Input` :attr:`interface_name`.
-
-        : param app: The Dash object where callbacks are added.
-        : param get_interface: Callable that returns an instance of this class. Will be used within callbacks to process requests.
-        : param interface_name: The ``Dropdown.value`` attribute that provides the interface name, e.g., ``State('data-store-dropdown', 'value')``
-        : param n_interval_input: The ``Interval.n_intervals`` atttribute that that will trigger the auto-updates, e.g., ``Input('interval-component', 'n_intervals')``.
-        : param global_index_input_value: The global index value that will trigger on-demand figure updates, e.g., ``Input('global-index-dropdown', 'value')``
-        : param global_index_dropdown_options: Options for global index dropdown menu, e.g., ``Output("global-step-dropdown", "options")``.
+            get_hook: Callable[[str], 'FigureHandlerHook'],
+            callback_args: Dict[str, Union[State, Input, Output]]):
         """
+        Creates three pattern-matching callbacks (corresponding to the arrows below):
+        * n_interval_input -> each slider-less figures
+        * n_interval_input -> each slider -> each with-slider figures
+
+        These callbacks expect the following contents in the :attr:`callback_args` dictionary:
+
+            * n_interval_input (:class:`Input`):  The ``Interval.n_intervals`` atttribute that that will trigger the auto-updates, e.g., ``Input('interval-component', 'n_intervals')``.
+            * global_index_input_value (:class:`Input`):  The global index value that will trigger on-demand figure updates, e.g., ``Input('global-index-dropdown', 'value')``
+            * global_index_dropdown_options (:class:`Output`):  Options for global index dropdown menu, e.g., ``Output("global-step-dropdown", "options")``.
+
+        (See :meth:`.cli_interface.PloteriesLaunchInterface.create_callbacks` and :meth:`.abstract_hook.InterfaceHook.create_callbacks`.)
+
+        """
+
+        #
+        interface_name_state = callback_args['interface_name_state']
+        n_interval_input = callback_args['n_interval_input']
+        global_index_input_value = callback_args['global_index_input_value']
+        global_index_dropdown_options = callback_args['global_index_dropdown_options']
 
         # Figure update on interval tick
         @app.callback(
@@ -200,7 +142,7 @@ class PloteriesLaunchInterface:
         )
         @time_and_print()
         def update_figure_with_no_slider(n_interval, elem_id, interface_name):
-            return get_interface(interface_name)._build_formatted_figure_from_name(elem_id['name'])
+            return get_hook(interface_name)._build_formatted_figure_from_name(elem_id['name'])
 
         # Figure update on slider change
 
@@ -220,7 +162,7 @@ class PloteriesLaunchInterface:
         def update_figure_with_slider(slider_value, slider_id, interface_name):
             if slider_value is None:
                 raise PreventUpdate
-            return get_interface(interface_name)._build_formatted_figure_from_name(
+            return get_hook(interface_name)._build_formatted_figure_from_name(
                 slider_id['name'],
                 index=slider_value)
 
@@ -245,7 +187,7 @@ class PloteriesLaunchInterface:
             if not slider_ids:
                 raise PreventUpdate
             return \
-                get_interface(interface_name)._update_all_sliders_and_global_index_dropdown_options(
+                get_hook(interface_name)._update_all_sliders_and_global_index_dropdown_options(
                     n_intervals, global_index, slider_ids)
 
     def _get_figure_indices(self, fig_handlers):

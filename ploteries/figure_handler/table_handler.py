@@ -12,7 +12,7 @@ from dash_table import DataTable
 
 class TableHandler(_FigureHandler):
     """
-    This object creates a table from dictionaries, where the dictionary at time step k fills the k-th row (or column) in the table. It supports a subset of functionality of `Plotly tables <https://plotly.com/python/table/>`, including all header kwargs shared across all header (same for cells) - see the same link for the syntax. Use :class:`~ploteries.figure_handler.figure_handler.FigureHandler` for tables that support all functionality but have fixed, pre-determined size, since Plotly figure objects can render tables.
+    This object creates a table from dictionaries, where the dictionary at time step k fills the k-th row (or column) in the table. It is based on the `Dash DataTable <https://dash.plotly.com/datatable/reference>`_ class :class:`dash_table.DataTable`. *Note:* use class :class:`~ploteries.figure_handler.figure_handler.FigureHandler` to build `Plotly Tables <https://plotly.com/python/table/>`_ of type :class:`plotly.graphic_objects.Table`.
     """
 
     time_step_key = 'Time step'
@@ -24,18 +24,18 @@ class TableHandler(_FigureHandler):
                  name: str,
                  source_data_name: str,
                  transposed: bool = False,
-                 decoded_data_def=None,
                  data_table_dict=None,
                  keys: Optional[Union[List[str], Dict[str, Any]]] = None,
                  columns_kwargs: Dict[str, dict] = {},
-                 sorting='descending'):
+                 sorting='descending',
+                 decoded_data_def=None):
         """
         :param data_store: Source data store.
         :param name: Name of the FigureHandler instance that will be used in the figure defs table.
         :param source_data_name: Data name of relevant data records from the data store.
         :param transposed: Whether to display the table in transposed form (where each record will appear as a column for the k-th time step).
         :param keys: If specified, will only display these columns as rows or columns.
-        :param column_kwargs: Dictionary mapping some or all record keys to extra kwargs to add to the 'columns' argument to DataTable (see 'columns' arg in `DataTable reference <https://dash.plotly.com/datatable/reference>`_).
+        :param column_kwargs: Dictionary mapping some or all record keys to extra kwargs to add to the :attr:`columns` argument to :class:`dash_table.DataTable` (see `DataTable reference <https://dash.plotly.com/datatable/reference>`_).
         :param data_table_dict: A dictionary specifying a :class:`dash.dcc.DataTable` object that will be used as the template to build the data table.
         """
         self.data_store = data_store

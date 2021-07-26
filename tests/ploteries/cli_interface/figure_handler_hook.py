@@ -1,28 +1,30 @@
 from unittest import TestCase
+from plotly import graph_objects as go
+import dash_core_components as dcc
 import numpy.testing as npt
 from dash.dependencies import Input, Output, State, ALL
 import dash
-from .figure_handler import get_store_with_fig
-from ploteries import _cli_interface as mdl
+from ..figure_handler import get_store_with_fig
+from ploteries.cli_interface import figure_handler_hook as mdl
 from ploteries.data_store import Col_
 
 
-class TestPloteriesLaunchInterface(TestCase):
+class TestFigureHandlerHook(TestCase):
 
-    def test_render_empty_figures(self):
+    def test_build_empty_html(self):
 
         with get_store_with_fig() as (store, arr1_h, arr2_h, fig_h):
             built_fig = fig_h.build_figure()
 
             # Write the definition to the store
             fig_h.write_def()
-            pli = mdl.PloteriesLaunchInterface(
+            pli = mdl.FigureHandlerHook(
                 store)
 
             #
-            empty_figs = pli.render_empty_figures()
-            self.assertEqual(len(empty_figs), 1)
-            self.assertEqual(empty_figs[0].name, 'fig1')
+            empty_fig = pli.build_empty_html(fig_h)
+            self.assertIsInstance(empty_fig.children[0].children[1], dcc.Graph)
+            self.assertIsInstance(empty_fig.children[0].children[1].figure, go.Figure)
 
             # Compare traces from pli to traces from figure handler.
             fig_from_handle_traces = store.get_figure_handlers(
@@ -39,14 +41,15 @@ class TestPloteriesLaunchInterface(TestCase):
         app = dash.Dash()
         with get_store_with_fig() as (store, arr1_h, arr2_h, fig_h):
             #
-            pli = mdl.PloteriesLaunchInterface(store)
-            mdl.PloteriesLaunchInterface.create_callbacks(
+            pli = mdl.FigureHandlerHook(store)
+            mdl.FigureHandlerHook.create_callbacks(
                 app,
                 lambda: pli,
-                interface_name_state=State('data-store-dropdown', 'value'),
-                n_interval_input=Input('interval-component', 'n_intervals'),
-                global_index_input_value=Input('global-index-dropdown', 'value'),
-                global_index_dropdown_options=Output("global-step-dropdown", "options"))
+                callback_args=dict(
+                    interface_name_state=State('data-store-dropdown', 'value'),
+                    n_interval_input=Input('interval-component', 'n_intervals'),
+                    global_index_input_value=Input('global-index-dropdown', 'value'),
+                    global_index_dropdown_options=Output("global-step-dropdown", "options")))
 
     def test_update_all_sliders_and_global_index_dropdown_options_callback(self):
 
@@ -54,12 +57,12 @@ class TestPloteriesLaunchInterface(TestCase):
 
             fig_h.write_def()
 
-            output = mdl.PloteriesLaunchInterface(
+            output = mdl.FigureHandlerHook(
                 store)._update_all_sliders_and_global_index_dropdown_options(
                     n_intervals=0,
                     global_index=(global_index := 3),
                     slider_ids=[
-                        mdl.PloteriesLaunchInterface._get_slider_id('fig1')])
+                        mdl.FigureHandlerHook._get_slider_id('fig1')])
 
             # 'marks', 'min', 'max', 'value', 'disabled'
             self.assertEqual(

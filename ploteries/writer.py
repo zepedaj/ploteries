@@ -8,7 +8,8 @@ from .ndarray_data_handlers import UniformNDArrayDataHandler, RaggedNDArrayDataH
 from .serializable_data_handler import SerializableDataHandler
 from .figure_handler import FigureHandler, TableHandler
 from pglib.numpy import ArrayLike
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
+from dash_table import DataTable
 from pglib.nnets import numtor
 
 
@@ -318,18 +319,14 @@ class Writer:
             figure_name: str,
             values: dict,
             global_step: int,
-            transposed: bool = False,
-            header_kwargs={'align': 'right'},
-            cells_kwargs={'align': 'right'},
-            layout_kwargs=None,
-            data_name: Optional[str] = None):
+            data_name: Optional[str] = None,
+            **kwargs):
         """
         :param figure_name: (See :meth:`add_scalars`).
         :param values: A dictionary of values. Each key in the dictionary will define a column (row, if transposed=True) in the table, and the corresponding value will contain the row (resp., column) values for the specified global_step.
         :param header_kwargs, layout_kwargs: (See :class:`~ploteries.figure_handler.table_handler.TableHandler`)
         :param data_name: (See :meth:`add_scalars`).
-        :param traces_kwargs: (See :meth:`add_scalars`).
-        :param layout_kwargs: (See :meth:`add_scalars`).
+        :param **kwargs: Extra arguments for class : class: `ploteries.figure_handlers.TableHandler`.
 
         Example:
 
@@ -339,9 +336,6 @@ class Writer:
         ```
         """
 
-        layout_kwargs = layout_kwargs or {}
-        default_trace_kwargs = {'type': 'scatter', 'mode': 'lines'}
-
         # Get data name.
         data_name = data_name or self._get_table_name(
             'add_table', figure_name=figure_name)
@@ -349,8 +343,9 @@ class Writer:
         # Write figure def.
         if figure_name not in self.existing_figures:
             # Build traces with data store references.
-            tbl_h = TableHandler(self.data_store, figure_name, data_name, transposed,
-                                 header_kwargs=header_kwargs, cells_kwargs=cells_kwargs)
+            tbl_h = TableHandler(
+                self.data_store, figure_name, data_name, **kwargs)
+
             tbl_h.write_def()
             self.existing_figures.add(figure_name)
 

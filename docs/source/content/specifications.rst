@@ -1,3 +1,6 @@
+Specifications
+==============
+
 Ploteries is a plotting library inspired from tensorboard that aims to be provide greater flexibility, extensibility, and separation of storage and visualization. It provides an extensive suite of visualizations. Ploteries is written entirely in python (based on plotly/Dash), and hence supports easier extensibility by the python community.
 
 Similarly to Tensorboard, Ploteries supports

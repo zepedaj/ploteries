@@ -3,7 +3,7 @@ import glob
 from pglib.profiling import time_and_print
 #
 import climax as clx
-from ploteries._cli_interface import PloteriesLaunchInterface
+from ploteries.cli_interface import PloteriesLaunchInterface, FigureHandlerHook, TableHandlerHook
 from ploteries.data_store import DataStore
 # from ploteries2._ploteries2_helper import get_train_args
 import dash
@@ -124,7 +124,10 @@ def update_figure_tabs(data_store_name):
     # Ordered, unique tabs
     tabs = list(OrderedDict.fromkeys([_fig.posn.tab for _fig in empty_figs]))
     # Ordered, unique groups
-    groups = list(OrderedDict.fromkeys([_fig.posn.group for _fig in empty_figs]))
+    groups = {_tab: list(
+        OrderedDict.fromkeys([
+            _fig.posn.group for _fig in empty_figs if _fig.posn.tab == _tab]))
+        for _tab in tabs}
 
     out_tabs = [
         dcc.Tab(
@@ -135,7 +138,7 @@ def update_figure_tabs(data_store_name):
                     [_fig.html
                      for _fig in empty_figs
                      if _fig.posn.group == group and _fig.posn.tab == tab])], open=True)
-                for group in groups])
+                for group in groups[tab]])
         for tab in tabs]
 
     return out_tabs
@@ -168,7 +171,7 @@ def create_toolbar_callbacks():
 @clx.option('--port',
             help='Port number.', default='8000')
 @clx.option('--workers',
-            help='Number of workers (ignored in debug mode).', default=3)
+            help='Number of workers (ignored in debug mode).', default=(cpu_count() * 2) + 1)
 @clx.option(
     '--height', help=f'Figure height (default={DEFAULT_WIDTH*DEFAULT_HEIGHT_TO_WIDTH})', type=int,
     default=DEFAULT_WIDTH * DEFAULT_HEIGHT_TO_WIDTH)
@@ -196,36 +199,32 @@ def launch(glob_path, debug, host, interval, height, width, port, workers):
         else:
             DATA_INTERFACES[_path] = PloteriesLaunchInterface(
                 data_store,
-                figure_layout_kwargs={
-                    'height': HEIGHT,
-                    'width': WIDTH,
-                    'margin': go.layout.Margin(**dict(zip('lrbt', [0, 30, 0, 0]), pad=4)),
-                    'legend': {
-                        'orientation': "h",
-                        'yanchor': "bottom",
-                        'y': 1.02,
-                        'xanchor': "right",
-                        'x': 1},
-                    'modebar': {
-                        'orientation': 'v'}},
-                table_layout_kwargs={
-                    'width': 2*WIDTH,
-                    'margin': go.layout.Margin(**dict(zip('lrbt', [0, 0, 0, 0]), pad=4))},
-                table_graph_kwargs={
-                    'config': {
-                        'displayModeBar': False
-                    }}
-            )
+                hooks=[
+                    FigureHandlerHook(
+                        data_store,
+                        figure_layout_kwargs={
+                            'height': HEIGHT,
+                            'width': WIDTH,
+                            'margin': go.layout.Margin(**dict(zip('lrbt', [0, 30, 0, 0]), pad=4)),
+                            'legend': {
+                                'orientation': "h",
+                                'yanchor': "bottom",
+                                'y': 1.02,
+                                'xanchor': "right",
+                                'x': 1},
+                            'modebar': {
+                                'orientation': 'v'}})])
 
     # Create callbacks
     for data_interface_type in set(type(_x) for _x in DATA_INTERFACES.values()):
         data_interface_type.create_callbacks(
             APP,
             lambda data_store_name: DATA_INTERFACES[data_store_name],
-            State('data-store-dropdown', 'value'),
-            Input('interval-component', 'n_intervals'),
-            Input('global-index-dropdown', 'value'),
-            Output("global-index-dropdown", "options"),
+            callback_args=dict(
+                interface_name_state=State('data-store-dropdown', 'value'),
+                n_interval_input=Input('interval-component', 'n_intervals'),
+                global_index_input_value=Input('global-index-dropdown', 'value'),
+                global_index_dropdown_options=Output("global-index-dropdown", "options"),)
         )
     create_toolbar_callbacks()
 
