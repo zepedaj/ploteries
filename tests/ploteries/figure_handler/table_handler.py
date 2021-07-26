@@ -46,11 +46,12 @@ class TestTableHandler(TestCase):
             def check_valid(_tbl):
                 as_array = np.array(
                     [
-                        [None if x == '' else x for x in _col]
-                        for _col in _tbl['data'][0]['cells']['values']
-                    ])
+                        [None if x == '' else x for x in _row.values()]
+                        for _row in _tbl.data
+                    ]).T
                 if transposed:
                     as_array = as_array[1:].T
+
                 # Check indices.
                 npt.assert_array_equal(as_array[0], [0, 1, 2, 3, 4])
                 # Check entries
@@ -67,19 +68,12 @@ class TestTableHandler(TestCase):
             # Compare figures.
             built_tbl_loaded = tab1_h_loaded.build_table()
             self.assertEqual(
-                built_tbl_json := built_tbl.to_json(),
-                built_tbl_loaded.to_json())
+                built_tbl_json := built_tbl.to_plotly_json(),
+                built_tbl_loaded.to_plotly_json())
 
     def test_encode_decode_params(self):
         with get_store_with_table() as (store, data1_h, tab1_h):
-            orig_params = {
-                'source_data_name': tab1_h.source_data_name,
-                'figure_dict': tab1_h.figure_dict,
-                'transposed': tab1_h.transposed,
-                'header_kwargs': tab1_h.header_kwargs,
-                'sorting': 'ascending',
-                'cells_kwargs': tab1_h.cells_kwargs,
-                'keys': tab1_h.keys}
+            orig_params = {key: getattr(tab1_h, key) for key in tab1_h._state_keys}
             mdl.TableHandler.decode_params(decoded_params := tab1_h.encode_params())
             self.assertDictEqual(orig_params, decoded_params)
 
@@ -92,8 +86,8 @@ class TestTableHandler(TestCase):
             self.assertFalse(tab1_h.write_def())
 
             tab1_h = store.get_figure_handlers()[0]
-            self.assertEqual(tab1_h.figure_dict['layout'], {})
-            tab1_h.figure_dict['layout']['template'] = None
+            self.assertEqual(tab1_h.data_table_dict['props'], {})
+            tab1_h.data_table_dict['props'] = None
             tab1_h.write_def(mode='update')
             tab1_h = store.get_figure_handlers()[0]
-            self.assertIsNone(tab1_h.figure_dict['layout']['template'])
+            self.assertIsNone(tab1_h.data_table_dict['props'])
