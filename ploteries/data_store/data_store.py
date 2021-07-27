@@ -10,7 +10,7 @@ from contextlib import contextmanager
 from pglib.sqlalchemy import begin_connection
 from sqlalchemy.sql.elements import BinaryExpression
 from sqlalchemy.sql import column
-from typing import Union, List
+from typing import Union, List, Tuple
 from pglib.slice_sequence import SSQ_ as _SSQ_
 
 Col_ = column
@@ -67,10 +67,23 @@ _Serializer.default_extension_types.append(Ref_)
 
 
 class DataStore:
+    """
+    Stores figure definitions, data series definitions and data series records. Each of these is stored in one of three tables. The data series records table in particular contains heterogenoeous data records for all data series types. Exposes various facilities including
+
+    * an :meth:`insert_data_record` method that supports asynchronous data record insert and
+    * a :meth:`__getitem__` method that makes it possible to retrieve all records or a subset thereof from one or more data series that are joined on the time step using familiar bracket syntax (e.g., ``data_store['data_series_0']`` ).
+    * The :meth:`__getitem__` method also makes it possible to employ :class:`Ref_` objects embedded in figure definitions that retrieve data from the data store when building the figure.
+
+    .. todo:: Add an example below.
+
+    .. ipython::
+
+        In [304]: print('Hello world')
+        Hello world
+    """
+
     def __init__(self, path, read_only=False, max_queue_size=1000):
         """
-        Stores heterogenous data in a single data records table. Data inserts can be made using a threaded insert cache to achieve the disk throughput bound (via :meth:`insert_data_record`).
-
         :param path: Database path.
         :param read_only: Use database in read-only mode.
         :param max_queue_size: Max size of insert cache queue.
@@ -127,13 +140,15 @@ class DataStore:
         * ``get_data_handlers(data_store.data_defs_table.c.name=='arr1')`` returns the data handler of name 'arr1',
         * ``get_data_handlers(Col_('type')==UniformNDArrayDataHandler)`` returns all data handlers of that type. (NOT WORKING!)
 
+        .. todo:: Type constraints are not working (see last bullet above).
+
         """
         return self._get_handlers(
             self.data_defs_table, *column_constraints, connection=connection)
 
     def get_figure_handlers(self, *column_constraints: BinaryExpression, connection=None):
         """
-        Gets the figure handlers satisfying the specified binary constraints. See :method:`get_data_handlers` for an example.
+        Gets the figure handlers satisfying the specified binary constraints. See :meth:`get_data_handlers` for an example.
         """
 
         return self._get_handlers(
@@ -141,7 +156,7 @@ class DataStore:
 
     def insert_data_record(self, data_record: Union[dict, List[dict]]):
         """
-        Using this method will automatically batch inserts in a new thread to increase disk-write efficiency (:class:`~pglib.sqlalchemy.threaded_insert_cache.ThreadedInsertCache` used internally). Call :meth:`flush` to ensure all records have been written to the database and to wait for the insert thread to join.
+        Using this method will automatically batch inserts in a new thread to increase disk-write efficiency (:class:`~pglib.sqlalchemy.threaded_insert_cache.ThreadedInsertCache` used internally). Call :meth:`flush` to ensure all records inserted before the call have been written to the database.
 
         :param data_record: Record dictionary or list of record dictionaries.
         """
@@ -226,22 +241,33 @@ class DataStore:
 
         return idx, multi_series
 
-    def __getitem__(self, idx: Union[str, tuple, dict]):
+    def __getitem__(self, idx: Union[str, Tuple[str], dict]):
         """
-        Load the data in a table or table join. Can load all the data or a single record. Joins are carried out on fields index and writer_id. Returns a dictionary in one of two formats. When data series names are provided as a tuple of strings, the format is:
-        ```
-        {'meta': <ndarray, shape=(num_records,), dtype=[('index', '<i4'), ('writer_id', '<i4')]>,
-         'series': {
-            <series name> : {
-                     'created': <ndarray, shape=(num_records,), dtype='datetime64[us]'>,
-                     'data': <data handler dependent content>}}}
-        ```
-        When a single data series name is provided as a string, the the nested 'data' and 'created' fields are provided at the root level:
-        ```
-        {'meta': <ndarray, shape=(num_records,), dtype=[('index', '<i4'), ('writer_id', '<i4')]>,
-         'created': <ndarray, shape=(num_records,), dtype='datetime64[us]'>,
-         'data': <data handler dependent content>}
-        ```
+        Load the data in a table or table join. This method can load all the data or a single record. Joins are carried out on data records table fields :attr:`index` and :attr:`writer_id`. 
+
+        The returned output is a dictionary in one of two formats: When data series names are provided as a tuple of strings, the format is
+
+        .. code-block::
+
+            {'meta': numpy.ndarray(shape=num_records,
+                                   dtype=[('index', '<i4'), ('writer_id', '<i4')]),
+             'series': {
+                 'series_name_1': {
+                     'created': numpy.ndarray(shape=num_records,
+                                              dtype='datetime64[us]'),
+                     'data': (data handler dependent content of length num_records)},
+                 'series_name_2': ...}
+             }
+
+        When a single data series name is provided as a string, the nested :attr:`data` and :attr:`created` fields are provided at the root level:
+
+        .. code-block::
+
+            {'meta': numpy.ndarray(shape=num_records,
+                                   dtype=[('index', '<i4'), ('writer_id', '<i4')]),
+             'created': numpy.ndarray(shape=num_records, dtype='datetime64[us]'),
+             'data': (data handler dependent content of length num_records)
+             }
 
         :param idx: Data name or tuple of data names (to specify a join). Alternatively, pass the data name (tuple) as field 'data' in a dictionary that can further contain field 'criterion' to specify any further criterion.
 
