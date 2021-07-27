@@ -8,17 +8,16 @@ from typing import TYPE_CHECKING
 
 class AbstractInterfaceHook(abc.ABC):
 
-    @property
-    @classmethod
-    @abc.abstractmethod
-    def handler_class(self):
-        """
-        The handler type stored in the figure_defs table, as a class-level property
-        """
-        pass
+    handler_class = None
+    """
+    The handler type stored in the figure_defs table, as a class-level property.
+    """
 
     @classmethod
     def encoded_class_name(cls):
+        """
+        Replaces '.' characters with '|' characters in class paths to make them compatible with Dash element ids.
+        """
         return class_name(cls).replace('.', '|')
 
     @abc.abstractmethod

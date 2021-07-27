@@ -87,6 +87,7 @@ class TableHandler(_FigureHandler):
         # Build the columns of the table
         if self.transposed:
             # Each record is a column.
+            indices = indices.tolist()
             columns = [
                 {'name': _name, 'id': _name} for _name in
                 it.chain(['Field'], indices)]

@@ -101,8 +101,6 @@ def launch_mock_generator(
                      'kwargs': {'transposed': True}}
                 ]
 
-                tables = []
-
                 k = 0
                 with tqdm() as pbar:
                     while True:

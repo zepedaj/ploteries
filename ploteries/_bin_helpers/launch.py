@@ -213,7 +213,10 @@ def launch(glob_path, debug, host, interval, height, width, port, workers):
                                 'xanchor': "right",
                                 'x': 1},
                             'modebar': {
-                                'orientation': 'v'}})])
+                                'orientation': 'v'}}),
+                    TableHandlerHook(
+                        data_store)
+                ])
 
     # Create callbacks
     for data_interface_type in set(type(_x) for _x in DATA_INTERFACES.values()):

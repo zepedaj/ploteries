@@ -20,7 +20,8 @@ from ploteries.figure_handler import FigureHandler
 
 class FigureHandlerHook(AbstractInterfaceHook):
     """
-    Implements the interface (methods :meth:`render_empty_figures` and :meth:`create_callbacks`)) required by the 'ploteries launch' CLI to access the figures in a data store.
+    Implements the interface (methods :meth:`render_empty_figures` and :meth:`create_callbacks`)) required by the 'ploteries launch' CLI to access the 
+figures in a data store.
     """
 
     # Default element kwargs
@@ -110,14 +111,15 @@ class FigureHandlerHook(AbstractInterfaceHook):
             callback_args: Dict[str, Union[State, Input, Output]]):
         """
         Creates three pattern-matching callbacks (corresponding to the arrows below):
-        * n_interval_input -> each slider-less figures
-        * n_interval_input -> each slider -> each with-slider figures
 
-        These callbacks expect the following contents in the :attr:`callback_args` dictionary:
+          * n_interval_input -> each slider-less figures
+          * n_interval_input -> each slider -> each with-slider figures
 
-            * n_interval_input (:class:`Input`):  The ``Interval.n_intervals`` atttribute that that will trigger the auto-updates, e.g., ``Input('interval-component', 'n_intervals')``.
-            * global_index_input_value (:class:`Input`):  The global index value that will trigger on-demand figure updates, e.g., ``Input('global-index-dropdown', 'value')``
-            * global_index_dropdown_options (:class:`Output`):  Options for global index dropdown menu, e.g., ``Output("global-step-dropdown", "options")``.
+        These callbacks expect the following contents in the :attr:`callback_args` dictionary (besides :attr:`interface_name_state`, see :meth:`~ploteries.cli_interface.cli_interface.PloteriesLaunchInterface.create_callbacks`):
+
+          * :attr:`n_interval_input` (:class:`Input`):  The ``Interval.n_intervals`` atttribute that that will trigger the auto-updates, e.g., ``Input('interval-component', 'n_intervals')``.
+          * :attr:`global_index_input_value` (:class:`Input`):  The global index value that will trigger on-demand figure updates, e.g., ``Input('global-index-dropdown', 'value')``
+          * :attr:`global_index_dropdown_options` (:class:`Output`):  Options for global index dropdown menu, e.g., ``Output("global-step-dropdown", "options")``.
 
         (See :meth:`.cli_interface.PloteriesLaunchInterface.create_callbacks` and :meth:`.abstract_hook.InterfaceHook.create_callbacks`.)
 

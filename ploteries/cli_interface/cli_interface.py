@@ -95,5 +95,5 @@ class PloteriesLaunchInterface:
         """
 
         for hook in cls.hook_classes:
-            hook.create_callbacks(app, lambda path: get_interface(
+            hook.create_callbacks(app, lambda path, hook=hook: get_interface(
                 path).hooks[hook.handler_class], callback_args)
