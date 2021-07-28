@@ -114,7 +114,6 @@ class TableHandler(_FigureHandler):
                 it.chain(*(_rec.keys() for _rec in records))))
 
         # Build the columns of the table
-        print('*******************', self.name, self.transposed)
         if self.transposed:
             # Each record is a column.
             indices = indices.tolist()

@@ -47,7 +47,10 @@ class TableHandlerHook(AbstractInterfaceHook):
         table = DataTable()
         self._apply_data_table_kwargs(table)
 
-        return html.Div(table, id=self._get_table_id(figure_handler.name))
+        return html.Div(
+            [html.Div(figure_handler.name),
+             html.Div(table, id=self._get_table_id(figure_handler.name))],
+            style={'display': 'inline-block', 'margin': '1em'})
 
     def _apply_data_table_kwargs(self, table):
         [setattr(table, key, val) for key, val in self.data_table_kwargs.items()]

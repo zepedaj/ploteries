@@ -2,22 +2,9 @@
 Interface to `ploteries launch` CLI.
 """
 
-import numpy as np
 from typing import Callable, Dict, Union
-import functools
-import itertools as it
-from pglib.profiling import time_and_print
-from pglib.py import class_name
-from pglib.validation import checked_get_single
-from ploteries.data_store import Col_
-import plotly.graph_objects as go
-# from sqlalchemy.sql import select
-from sqlalchemy import select, func
 from dash import Dash
-import dash_core_components as dcc
-import dash_html_components as html
-from dash.dependencies import Input, Output, State, MATCH, ALL
-from dash.exceptions import PreventUpdate
+from dash.dependencies import Input, Output, State
 from collections import namedtuple
 from .figure_handler_hook import FigureHandlerHook
 from .table_handler_hook import TableHandlerHook
@@ -41,7 +28,7 @@ class PloteriesLaunchInterface:
     Implements the interface (methods :meth:`render_empty_figures` and :meth:`create_callbacks`)) required by the 'ploteries launch' CLI to access the data and figures in a data store.
     """
 
-    hook_classes = set()
+    hook_classes = [FigureHandlerHook, TableHandlerHook]
 
     # Default element kwargs
     def __init__(self,
@@ -51,8 +38,10 @@ class PloteriesLaunchInterface:
         if not len(set(map(type, hooks))) == len(hooks):
             raise Exception(
                 'Can pass at most one hook of each type to avoid defining callbacks multiple times.')
+        for hook_type in map(type, hooks):
+            if hook_type not in self.hook_classes:
+                raise ValueError(f'Unsupported hook type {hook_type}.')
         self.hooks = {type(_hook).handler_class: _hook for _hook in hooks}
-        [self.hook_classes.add(type(_hook)) for _hook in hooks]
 
     # CALLBACKS
     _slider_output_keys = ('marks', 'min', 'max', 'value', 'disabled')
@@ -75,7 +64,7 @@ class PloteriesLaunchInterface:
         tab, group, rel_name = hierarchy[: 3]
         return PosnTuple(tab=tab, group=group, rel_name=rel_name, abs_name=fig_name)
 
-    @ classmethod
+    @classmethod
     def create_callbacks(
             cls,
             app: Dash,

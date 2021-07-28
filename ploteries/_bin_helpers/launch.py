@@ -1,4 +1,6 @@
 from .main import main, path_arg
+from threading import Lock
+from dash.dash import no_update
 import glob
 from pglib.profiling import time_and_print
 #
@@ -29,7 +31,6 @@ global GRAPH_KWARGS
 GRAPH_KWARGS = {}  # {'config': {'displayModeBar': True}}
 global FIGURE_LAYOUT
 
-
 DEFAULT_WIDTH = 550
 DEFAULT_HEIGHT_TO_WIDTH = 2/3
 CONTROL_WIDGET_STYLE = {'float': 'left', 'margin': '0em 1em 0em 1em'}
@@ -38,6 +39,69 @@ CONTROL_WIDGET_STYLE = {'float': 'left', 'margin': '0em 1em 0em 1em'}
 # suppress_callback_exceptions=True)
 APP = dash.Dash(__name__,  external_stylesheets=external_stylesheets,
                 suppress_callback_exceptions=True)
+
+
+# Search all paths for ploteries databases and open them.
+class DataInterfaces:
+    def __init__(self, glob_path):
+        self.lock = Lock()
+        self.glob_path = glob_path
+        self.data_interfaces = OrderedDict()
+        self.failed_paths = set()
+
+        self.keys = self.data_interfaces.keys
+        self.values = self.data_interfaces.values
+
+    def __getitem__(self, idx):
+        try:
+            return self.data_interfaces[idx]
+        except KeyError:
+            # The update might have happened in a different process,
+            # attempt updating in the current process.
+            self.update(verbose=False)
+            return self.data_interfaces[idx]
+
+    def __bool__(self):
+        return bool(self.data_interfaces)
+
+    def update(self, verbose=True):
+        """
+        Add any new paths that were created.
+        """
+        with self.lock:
+            for _path in sorted(glob.glob(self.glob_path, recursive=True)):
+                if (
+                        _path not in self.data_interfaces and
+                        _path not in self.failed_paths):
+                    try:
+                        data_store = DataStore(_path, read_only=True)
+                    except Exception:
+                        self.failed_paths.add(_path)
+                        if verbose:
+                            LOGGER.error('Error loading {_path}.')
+                    else:
+                        if verbose:
+                            print(f'Loaded {_path}')
+                        self.data_interfaces[_path] = PloteriesLaunchInterface(
+                            data_store,
+                            hooks=[
+                                FigureHandlerHook(
+                                    data_store,
+                                    figure_layout_kwargs={
+                                        'height': HEIGHT,
+                                        'width': WIDTH,
+                                        'margin': go.layout.Margin(**dict(zip('lrbt', [0, 30, 0, 0]), pad=4)),
+                                        'legend': {
+                                            'orientation': "h",
+                                            'yanchor': "bottom",
+                                            'y': 1.02,
+                                            'xanchor': "right",
+                                            'x': 1},
+                                        'modebar': {
+                                            'orientation': 'v'}}),
+                                TableHandlerHook(
+                                    data_store)
+                            ])
 
 # Layout creation
 
@@ -58,9 +122,8 @@ def create_layout(update_interval):
                          dcc.Dropdown(
                              id='data-store-dropdown',
                              persistence=True,
-                             options=[{'label': _x, 'value': _x}
-                                      for _x in DATA_INTERFACES.keys()],
-                             value=(next(iter(DATA_INTERFACES.keys())) if DATA_INTERFACES else None))],
+                             clearable=False,
+                             options=[{'label': '1', 'value': '1'}])],
                         style=dict(**{'min-width': '40em'}, **CONTROL_WIDGET_STYLE)),
                     html.Label(
                         ['Global step:',
@@ -101,12 +164,40 @@ def create_layout(update_interval):
     Output('global-index-dropdown-container', 'children'),
     Input('data-store-dropdown', 'value')
 )
+@time_and_print()
 def create_global_index_dropdown_with_persistence(data_store_name):
     if data_store_name is None:
         raise PreventUpdate
     return dcc.Dropdown(
         id='global-index-dropdown',
         persistence=data_store_name)
+
+
+def create_discover_callback():
+    @APP.callback(
+        Output('data-store-dropdown', 'value'),
+        Output('data-store-dropdown', 'options'),
+        Input('interval-component', 'n_intervals'),
+        State('data-store-dropdown', 'value'),
+        State('data-store-dropdown', 'options'),
+    )
+    @time_and_print()
+    def update_data_store_dropdown_options(n_intervals, data_store_name, data_store_options):
+
+        DATA_INTERFACES.update(verbose=False)
+        new_paths = DATA_INTERFACES.keys()
+
+        if set(new_paths) == set(_x['value'] for _x in data_store_options):
+            options = no_update
+        else:
+            options = [{'label': _x, 'value': _x}
+                       for _x in new_paths]
+        value = (
+            no_update if (data_store_name in DATA_INTERFACES.keys()) else
+            (next(iter(DATA_INTERFACES.keys())) if DATA_INTERFACES else None)
+        )
+
+        return value, options
 
 
 @APP.callback(
@@ -178,58 +269,36 @@ def create_toolbar_callbacks():
 @clx.option(
     '--width', help=f'Figure width (default={DEFAULT_WIDTH}),', type=int,
     default=DEFAULT_WIDTH)
-def launch(glob_path, debug, host, interval, height, width, port, workers):
+@clx.option(
+    '--discover', help='Search for new files matching glob pattern every interval seconds.',
+    choices=['on', 'off'], default='on')
+def launch(glob_path, debug, host, interval, height, width, port, workers, discover):
     """
     Launch a ploteries visualization server.
     """
     #
-    global DATA_INTERFACES, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH
+    global DATA_INTERFACES, GLOB_PATH, HEIGHT, WIDTH, LARGE_HEIGHT, LARGE_WIDTH
+    GLOB_PATH = glob_path
     HEIGHT = height
     WIDTH = width
     LARGE_HEIGHT = 2*HEIGHT
     LARGE_WIDTH = 2*WIDTH
 
-    DATA_INTERFACES = OrderedDict()
-    for _path in sorted(glob.glob(glob_path, recursive=True)):
-        try:
-            data_store = DataStore(_path, read_only=True)
-            print(f'Loaded {_path}')
-        except Exception:
-            LOGGER.error('Error loading {_path}.')
-        else:
-            DATA_INTERFACES[_path] = PloteriesLaunchInterface(
-                data_store,
-                hooks=[
-                    FigureHandlerHook(
-                        data_store,
-                        figure_layout_kwargs={
-                            'height': HEIGHT,
-                            'width': WIDTH,
-                            'margin': go.layout.Margin(**dict(zip('lrbt', [0, 30, 0, 0]), pad=4)),
-                            'legend': {
-                                'orientation': "h",
-                                'yanchor': "bottom",
-                                'y': 1.02,
-                                'xanchor': "right",
-                                'x': 1},
-                            'modebar': {
-                                'orientation': 'v'}}),
-                    TableHandlerHook(
-                        data_store)
-                ])
-
-    # Create callbacks
-    for data_interface_type in set(type(_x) for _x in DATA_INTERFACES.values()):
-        data_interface_type.create_callbacks(
-            APP,
-            lambda data_store_name: DATA_INTERFACES[data_store_name],
-            callback_args=dict(
-                interface_name_state=State('data-store-dropdown', 'value'),
-                n_interval_input=Input('interval-component', 'n_intervals'),
-                global_index_input_value=Input('global-index-dropdown', 'value'),
-                global_index_dropdown_options=Output("global-index-dropdown", "options"),)
-        )
+    DATA_INTERFACES = DataInterfaces(glob_path)
+    PloteriesLaunchInterface.create_callbacks(
+        APP,
+        lambda data_store_name: DATA_INTERFACES[data_store_name],
+        callback_args=dict(
+            interface_name_state=State('data-store-dropdown', 'value'),
+            n_interval_input=Input('interval-component', 'n_intervals'),
+            global_index_input_value=Input('global-index-dropdown', 'value'),
+            global_index_dropdown_options=Output("global-index-dropdown", "options"),)
+    )
     create_toolbar_callbacks()
+    if discover == 'on':
+        create_discover_callback()
+    else:
+        DATA_INTERFACES.update()
 
     APP.layout = lambda: create_layout(update_interval=interval)
 
