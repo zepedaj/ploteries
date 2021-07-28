@@ -21,7 +21,7 @@ def get_store_with_table(transposed=False, sorting='ascending'):
             data1_h.add_data(index, {f'Column {index}': index, f'Column {index+1}': index*2})
 
         #
-        tab1_h = mdl.TableHandler(store, 'table1', 'table_data',
+        tab1_h = mdl.TableHandler(store, 'table1', ('table_data', SSQ_()),
                                   transposed=transposed, sorting=sorting)
 
         store.flush()
@@ -86,8 +86,8 @@ class TestTableHandler(TestCase):
             self.assertFalse(tab1_h.write_def())
 
             tab1_h = store.get_figure_handlers()[0]
-            self.assertEqual(tab1_h.data_table_dict['props'], {})
-            tab1_h.data_table_dict['props'] = None
+            self.assertEqual(tab1_h.data_table_template['props'], {})
+            tab1_h.data_table_template['props'] = None
             tab1_h.write_def(mode='update')
             tab1_h = store.get_figure_handlers()[0]
-            self.assertIsNone(tab1_h.data_table_dict['props'])
+            self.assertIsNone(tab1_h.data_table_template['props'])

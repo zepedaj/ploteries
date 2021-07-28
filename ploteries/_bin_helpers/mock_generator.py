@@ -34,7 +34,7 @@ class RandomWalk:
             help='Store the data store in this path (default uses a temporary path).')
 @clx.option('--interval', type=float, default=0.5,
             help='Number of seconds to wait before starting the next write operation.')
-@clx.option('--length', type=float, default=int(1e4),
+@clx.option('--length', type=float, default=int(1e5),
             help='Number of timesteps - limits the total disk size of the generated data store.')
 @clx.option('--num-traces', type=int, default=3,
             help='Number of traces in each figure.')
@@ -102,8 +102,10 @@ def launch_mock_generator(
                 ]
 
                 k = 0
-                with tqdm() as pbar:
+                with tqdm(total=length) as pbar:
                     while True:
+                        if k >= length:
+                            break
                         k += 1
 
                         # Add scalars

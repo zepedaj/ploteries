@@ -324,7 +324,6 @@ class Writer:
         """
         :param figure_name: (See :meth:`add_scalars`).
         :param values: A dictionary of values. Each key in the dictionary will define a column (row, if transposed=True) in the table, and the corresponding value will contain the row (resp., column) values for the specified global_step.
-        :param header_kwargs, layout_kwargs: (See :class:`~ploteries.figure_handler.table_handler.TableHandler`)
         :param data_name: (See :meth:`add_scalars`).
         :param **kwargs: Extra arguments for class : class: `ploteries.figure_handlers.TableHandler`.
 
@@ -344,7 +343,7 @@ class Writer:
         if figure_name not in self.existing_figures:
             # Build traces with data store references.
             tbl_h = TableHandler(
-                self.data_store, figure_name, data_name, **kwargs)
+                self.data_store, figure_name, (data_name, []), **kwargs)
 
             tbl_h.write_def()
             self.existing_figures.add(figure_name)
