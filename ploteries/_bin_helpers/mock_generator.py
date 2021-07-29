@@ -1,4 +1,5 @@
 from .main import main, path_arg
+import time
 from tqdm import tqdm
 import climax as clx
 from time import sleep
@@ -34,7 +35,7 @@ class RandomWalk:
             help='Store the data store in this path (default uses a temporary path).')
 @clx.option('--interval', type=float, default=0.5,
             help='Number of seconds to wait before starting the next write operation.')
-@clx.option('--length', type=float, default=int(1e5),
+@clx.option('--length', type=float, default=int(5e4),
             help='Number of timesteps - limits the total disk size of the generated data store.')
 @clx.option('--num-traces', type=int, default=3,
             help='Number of traces in each figure.')
@@ -143,6 +144,9 @@ def launch_mock_generator(
             finally:
                 # Wait for the writer thread to finish to avoid error messages.
                 writer.flush()
+
+            while True:
+                time.sleep(0.1)
 
     except KeyboardInterrupt:
         pass

@@ -38,7 +38,7 @@ class TableHandler(_FigureHandler):
                  transposed: bool = False,
                  data_table_template=None,
                  columns_kwargs: Dict[str, dict] = {},
-                 sorting='descending',
+                 sorting='ascending',
                  decoded_data_def=None):
         """
         :param data_store: Source data store.
@@ -82,7 +82,7 @@ class TableHandler(_FigureHandler):
             val = rec[key]
             return val if isinstance(val, Number) else str(val)
 
-    def build_table(self):
+    def build_table(self, slice_obj=slice(None, None, None)):
 
         # Retrieve a join of all data series.
         data_series_names = (
@@ -92,8 +92,8 @@ class TableHandler(_FigureHandler):
         raw_data = self.data_store[data_series_names]
 
         # Extract and sort data
-        indices = raw_data['meta']['index']
-        data_series = {_ds_name: _ds_contents['data']
+        indices = raw_data['meta']['index'][slice_obj]
+        data_series = {_ds_name: _ds_contents['data'][slice_obj]
                        for _ds_name, _ds_contents in raw_data['series'].items()}
         if self.sorting == 'descending':
             indices = indices[::-1]

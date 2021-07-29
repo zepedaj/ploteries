@@ -37,6 +37,10 @@ class TableHandlerHook(AbstractInterfaceHook):
     def _get_table_id(cls, figure_name):
         return cls._get_id(figure_name, element='data_table')
 
+    @classmethod
+    def _get_input_id(cls, figure_name):
+        return cls._get_id(figure_name, element='input')
+
     ##
     def build_empty_html(self, figure_handler):
         """
@@ -48,16 +52,23 @@ class TableHandlerHook(AbstractInterfaceHook):
         self._apply_data_table_kwargs(table)
 
         return html.Div(
-            [html.Div(figure_handler.name),
+            [html.Div(
+                [figure_handler.name, html.Span(
+                    dcc.Input(
+                        id=self._get_input_id(figure_handler.name),
+                        type="text", placeholder="", debounce=True,
+                        value=':-20:-1', persistence=True,
+                        size=14,
+                        style={'marginLeft': '3em', 'textAlign': 'center'}))]),
              html.Div(table, id=self._get_table_id(figure_handler.name))],
             style={'display': 'inline-block', 'margin': '1em'})
 
     def _apply_data_table_kwargs(self, table):
         [setattr(table, key, val) for key, val in self.data_table_kwargs.items()]
 
-    def _build_formatted_figure_from_name(self, name):
-        table = checked_get_single(
-            self.data_store.get_figure_handlers(Col_('name') == name)).build_table()
+    def _build_formatted_figure_from_name(self, name, slice_obj):
+        table = checked_get_single(self.data_store.get_figure_handlers(
+            Col_('name') == name)).build_table(slice_obj=slice_obj)
         self._apply_data_table_kwargs(table)
         return table
 
@@ -94,11 +105,16 @@ class TableHandlerHook(AbstractInterfaceHook):
                 cls._get_table_id(figure_name=MATCH),
                 'children'),
             n_interval_input,
+            Input(cls._get_input_id(figure_name=MATCH), 'value'),
             State(
                 cls._get_table_id(figure_name=MATCH),
                 'id'),
             interface_name_state
         )
         @time_and_print()
-        def update_table(n_interval, elem_id, interface_name):
-            return get_hook(interface_name)._build_formatted_figure_from_name(elem_id['name'])
+        def update_table(n_interval, input_slice, elem_id, interface_name):
+            slice_obj = slice(
+                *list(map(lambda _x: int(_x) if _x else None, input_slice.split(':'))))
+            return get_hook(interface_name)._build_formatted_figure_from_name(
+                elem_id['name'],
+                slice_obj)
