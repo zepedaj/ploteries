@@ -33,7 +33,8 @@ class PloteriesLaunchInterface:
     # Default element kwargs
     def __init__(self,
                  data_store,
-                 hooks):
+                 hooks=None):
+        hooks = hooks or [cls(data_store) for cls in self.hook_classes]
         self.data_store = data_store
         if not len(set(map(type, hooks))) == len(hooks):
             raise Exception(
