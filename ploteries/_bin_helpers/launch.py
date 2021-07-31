@@ -1,4 +1,5 @@
 from .main import main, path_arg
+import os.path as osp
 from threading import Lock
 from dash.dash import no_update
 import glob
@@ -45,7 +46,8 @@ APP = dash.Dash(__name__,  external_stylesheets=external_stylesheets,
 class DataInterfaces:
     def __init__(self, glob_path):
         self.lock = Lock()
-        self.glob_path = glob_path
+        self.orig_glob_path = glob_path
+        self.glob_path = osp.join(glob_path, '**/*.pltr') if osp.isdir(glob_path) else glob_path
         self.data_interfaces = OrderedDict()
         self.failed_paths = set()
 
@@ -262,7 +264,7 @@ def create_toolbar_callbacks():
 @clx.option('--port',
             help='Port number.', default='8000')
 @clx.option('--workers',
-            help='Number of workers (ignored in debug mode).', default=(cpu_count() * 2) + 1)
+            help='Number of workers (ignored in debug mode).', default=3)
 @clx.option(
     '--height', help=f'Figure height (default={DEFAULT_WIDTH*DEFAULT_HEIGHT_TO_WIDTH})', type=int,
     default=DEFAULT_WIDTH * DEFAULT_HEIGHT_TO_WIDTH)
