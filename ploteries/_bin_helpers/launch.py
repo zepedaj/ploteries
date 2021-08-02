@@ -40,6 +40,7 @@ CONTROL_WIDGET_STYLE = {'float': 'left', 'margin': '0em 1em 0em 1em'}
 # suppress_callback_exceptions=True)
 APP = dash.Dash(__name__,  external_stylesheets=external_stylesheets,
                 suppress_callback_exceptions=True)
+app_callback = APP.callback
 
 
 # Search all paths for ploteries databases and open them.
@@ -53,6 +54,15 @@ class DataInterfaces:
 
         self.keys = self.data_interfaces.keys
         self.values = self.data_interfaces.values
+
+    def options(self):
+        return [{'label': _x, 'value': _x} for _x in DATA_INTERFACES.keys()]
+
+    def default_value(self):
+        try:
+            return next(iter(self.keys()))
+        except StopIteration:
+            return None
 
     def __getitem__(self, idx):
         try:
@@ -123,9 +133,10 @@ def create_layout(update_interval):
                         ['Data store:',
                          dcc.Dropdown(
                              id='data-store-dropdown',
-                             persistence=True,
+                             persistence=osp.abspath(DATA_INTERFACES.glob_path),
                              clearable=False,
-                             options=[{'label': '1', 'value': '1'}])],
+                             options=DATA_INTERFACES.options(),
+                             value=DATA_INTERFACES.default_value())],
                         style=dict(**{'min-width': '40em'}, **CONTROL_WIDGET_STYLE)),
                     html.Label(
                         ['Global step:',
@@ -162,29 +173,25 @@ def create_layout(update_interval):
     return layout
 
 
-@APP.callback(
+@app_callback(
     Output('global-index-dropdown-container', 'children'),
     Input('data-store-dropdown', 'value')
 )
-@time_and_print()
 def create_global_index_dropdown_with_persistence(data_store_name):
     if data_store_name is None:
         raise PreventUpdate
     return dcc.Dropdown(
         id='global-index-dropdown',
-        persistence=data_store_name)
+        persistence=osp.abspath(data_store_name))
 
 
 def create_discover_callback():
-    @APP.callback(
-        Output('data-store-dropdown', 'value'),
+    @app_callback(
         Output('data-store-dropdown', 'options'),
         Input('interval-component', 'n_intervals'),
-        State('data-store-dropdown', 'value'),
         State('data-store-dropdown', 'options'),
     )
-    @time_and_print()
-    def update_data_store_dropdown_options(n_intervals, data_store_name, data_store_options):
+    def update_data_store_dropdown_options(n_intervals, data_store_options):
 
         DATA_INTERFACES.update(verbose=False)
         new_paths = DATA_INTERFACES.keys()
@@ -192,21 +199,15 @@ def create_discover_callback():
         if set(new_paths) == set(_x['value'] for _x in data_store_options):
             options = no_update
         else:
-            options = [{'label': _x, 'value': _x}
-                       for _x in new_paths]
-        value = (
-            no_update if (data_store_name in DATA_INTERFACES.keys()) else
-            (next(iter(DATA_INTERFACES.keys())) if DATA_INTERFACES else None)
-        )
+            options = DATA_INTERFACES.options()
 
-        return value, options
+        return options
 
 
-@APP.callback(
+@app_callback(
     Output('figure-tabs', 'children'),
-    Input('data-store-dropdown', 'value'),
+    Input('data-store-dropdown', 'value')
 )
-@time_and_print()
 def update_figure_tabs(data_store_name):
 
     if data_store_name is None:
@@ -243,7 +244,7 @@ def create_toolbar_callbacks():
         enabled = bool(enabled)
         return not enabled, 'Auto update '+['disabled', 'enabled'][enabled]
     _g = globals()
-    _g['auto_update_switch'] = APP.callback(
+    _g['auto_update_switch'] = app_callback(
         [Output('interval-component', 'disabled'),
          Output('auto-update-switch', 'label')],
         [Input('auto-update-switch', 'value')]
@@ -288,7 +289,7 @@ def launch(glob_path, debug, host, interval, height, width, port, workers, disco
 
     DATA_INTERFACES = DataInterfaces(glob_path)
     PloteriesLaunchInterface.create_callbacks(
-        APP,
+        app_callback,
         lambda data_store_name: DATA_INTERFACES[data_store_name],
         callback_args=dict(
             interface_name_state=State('data-store-dropdown', 'value'),
@@ -299,9 +300,8 @@ def launch(glob_path, debug, host, interval, height, width, port, workers, disco
     create_toolbar_callbacks()
     if discover == 'on':
         create_discover_callback()
-    else:
-        DATA_INTERFACES.update()
 
+    DATA_INTERFACES.update(verbose=False)
     APP.layout = lambda: create_layout(update_interval=interval)
 
     if debug:

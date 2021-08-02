@@ -3,7 +3,7 @@ from pglib.py import class_name
 from dash import Dash
 from dash.dependencies import Input, Output, State
 import abc
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 
 class AbstractInterfaceHook(abc.ABC):
@@ -27,13 +27,13 @@ class AbstractInterfaceHook(abc.ABC):
     @abc.abstractmethod
     def create_callbacks(
             cls,
-            app: Dash,
+            app_callback: Callable,
             get_hook: Callable[[str], 'AbstractInterfaceHook'],
             callback_args: Dict[str, Union[State, Input, Output]]):
         """
         This method is called from :class:`~.cli_interface.PloteriesLaunchInterface.create_callbacks` to create callbacks for this hook.
 
-        : param app: The Dash object where callbacks are added.
+        : param app_callback: Method :meth:`dash.Dash.callback` used to decorate callbacks, from the global :attr:`APP` object.
         : param get_hook: Callable that returns an instance of this class. Will be used within callbacks to process requests.
         : param callback_args: Dictionary of callback States, Inputs and Outputs.
         """

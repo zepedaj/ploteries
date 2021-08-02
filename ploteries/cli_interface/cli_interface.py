@@ -68,7 +68,7 @@ class PloteriesLaunchInterface:
     @classmethod
     def create_callbacks(
             cls,
-            app: Dash,
+            app_callback: Callable,
             get_interface: Callable[[str], 'PloteriesLaunchInterface'],
             callback_args: Dict[str, Union[State, Input, Output]]
     ):
@@ -77,7 +77,7 @@ class PloteriesLaunchInterface:
 
         :class:`PloteriesLaunchInterface` supports Dash apps where the data store (i.e., the instance of the :class:`PloteriesLaunchInterface`) is changed by the user from the web interface. Each callback will thus first retrieve the relevant :class:`PloteriesLaunchInterface` object by calling the input callable :attr:`get_interface`, which takes an interface name that is in turn received by the callback from the :class:`Input` :attr:`interface_name`.
 
-        : param app: The Dash object where callbacks are added.
+        : param app_callback: Method :meth:`dash.Dash.callback` used to decorate callbacks, from the global :attr:`APP` object.
         : param get_interface: Callable that returns an instance of this class. Will be used within hook callbacks to process requests.
         : param callback_args: Dictionary of callback States, Inputs and Outputs required by all dependent hooks. Besides the arguments required by dependent hooks, it must also contain
 
@@ -85,5 +85,5 @@ class PloteriesLaunchInterface:
         """
 
         for hook in cls.hook_classes:
-            hook.create_callbacks(app, lambda path, hook=hook: get_interface(
+            hook.create_callbacks(app_callback, lambda path, hook=hook: get_interface(
                 path).hooks[hook.handler_class], callback_args)

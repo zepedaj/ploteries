@@ -3,7 +3,6 @@ from dash_table import DataTable
 from typing import Callable, Union, Dict
 import functools
 import itertools as it
-from pglib.profiling import time_and_print
 from pglib.py import class_name
 from pglib.validation import checked_get_single
 from ploteries.data_store import Col_
@@ -79,7 +78,7 @@ class TableHandlerHook(AbstractInterfaceHook):
     @classmethod
     def create_callbacks(
             cls,
-            app: Dash,
+            app_callback: Callable,
             get_hook: Callable[[str], 'TableHandlerHook'],
             callback_args: Dict[str, Union[State, Input, Output]]):
         """
@@ -100,7 +99,7 @@ class TableHandlerHook(AbstractInterfaceHook):
         n_interval_input = callback_args['n_interval_input']
 
         # Figure update on interval tick
-        @app.callback(
+        @app_callback(
             Output(
                 cls._get_table_id(figure_name=MATCH),
                 'children'),
@@ -111,7 +110,6 @@ class TableHandlerHook(AbstractInterfaceHook):
                 'id'),
             interface_name_state
         )
-        @time_and_print()
         def update_table(n_interval, input_slice, elem_id, interface_name):
             slice_obj = slice(
                 *list(map(lambda _x: int(_x) if _x else None, input_slice.split(':'))))

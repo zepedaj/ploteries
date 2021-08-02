@@ -2,7 +2,6 @@ import numpy as np
 from typing import Callable, Union, Dict
 import functools
 import itertools as it
-from pglib.profiling import time_and_print
 from pglib.py import class_name
 from pglib.validation import checked_get_single
 from ploteries.data_store import Col_
@@ -106,7 +105,7 @@ figures in a data store.
     @classmethod
     def create_callbacks(
             cls,
-            app: Dash,
+            app_callback: Callable,
             get_hook: Callable[[str], 'FigureHandlerHook'],
             callback_args: Dict[str, Union[State, Input, Output]]):
         """
@@ -132,7 +131,7 @@ figures in a data store.
         global_index_dropdown_options = callback_args['global_index_dropdown_options']
 
         # Figure update on interval tick
-        @app.callback(
+        @app_callback(
             Output(
                 cls._get_figure_id(figure_name=MATCH, has_slider=False),
                 'figure'),
@@ -142,13 +141,12 @@ figures in a data store.
                 'id'),
             interface_name_state
         )
-        @time_and_print()
         def update_figure_with_no_slider(n_interval, elem_id, interface_name):
             return get_hook(interface_name)._build_formatted_figure_from_name(elem_id['name'])
 
         # Figure update on slider change
 
-        @app.callback(
+        @app_callback(
             Output(
                 cls._get_figure_id(figure_name=MATCH, has_slider=True),
                 'figure'),
@@ -160,7 +158,6 @@ figures in a data store.
                 'id'),
             interface_name_state
         )
-        @time_and_print()
         def update_figure_with_slider(slider_value, slider_id, interface_name):
             if slider_value is None:
                 raise PreventUpdate
@@ -170,7 +167,7 @@ figures in a data store.
 
         # Update all sliders and global index dropdown options on interval tick
 
-        @app.callback(
+        @app_callback(
             # Outputs
             ([Output(
                 cls._get_slider_id(ALL), _x)
@@ -183,7 +180,6 @@ figures in a data store.
                 cls._get_slider_id(ALL),
                 'id'),
             interface_name_state)
-        @time_and_print()
         def update_all_sliders_and_global_index_dropdown_options(
                 n_intervals, global_index, slider_ids, interface_name):
             if not slider_ids:
