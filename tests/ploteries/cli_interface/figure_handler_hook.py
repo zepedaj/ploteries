@@ -43,7 +43,7 @@ class TestFigureHandlerHook(TestCase):
             #
             pli = mdl.FigureHandlerHook(store)
             mdl.FigureHandlerHook.create_callbacks(
-                app,
+                app.callback,
                 lambda: pli,
                 callback_args=dict(
                     interface_name_state=State('data-store-dropdown', 'value'),
