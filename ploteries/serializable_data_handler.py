@@ -1,5 +1,5 @@
 from .ndarray_data_handlers import RaggedNDArrayDataHandler as _RaggedNDArrayDataHandler
-from pglib.serializer import Serializer as _Serializer
+from xerializer import Serializer as _Serializer
 
 
 class SerializableDataHandler(_RaggedNDArrayDataHandler):

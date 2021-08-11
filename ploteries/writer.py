@@ -158,7 +158,7 @@ class Writer:
             data_name: Optional[str] = None):
         """
         :param figure_name: (See :meth:`add_scalars`).
-        :param values: The values for each scalar trace as a dictionary, e.g., ``[{'x': [0,2,4], 'y': [0,2,4]}, {'x': [0,2,4], 'y': [0,4,16]}]``. Dictionaries can contain lists, strings numpy ndarrays and generally anything compatible with :class:`~pglib.serializer.Serializer`. These dictionaries will be udpated with the corresponding value of traces_kwargs, if any. Note that the content of values will change with the global step and is saved in the data records table, but the content of traces_kwargs will remain constant and stored with the figure definition.
+        :param values: The values for each scalar trace as a dictionary, e.g., ``[{'x': [0,2,4], 'y': [0,2,4]}, {'x': [0,2,4], 'y': [0,4,16]}]``. Dictionaries can contain lists, strings numpy ndarrays and generally anything compatible with :class:`~xerializer.Serializer`. These dictionaries will be udpated with the corresponding value of traces_kwargs, if any. Note that the content of values will change with the global step and is saved in the data records table, but the content of traces_kwargs will remain constant and stored with the figure definition.
         :param data_name: (See :meth:`add_scalars`).
         :param traces_kwargs: (See :meth:`add_scalars`).
         :param layout_kwargs: (See :meth:`add_scalars`).
@@ -186,7 +186,7 @@ class Writer:
         if figure_name not in self.existing_figures:
             # Build traces with data store references.
             traces = [
-                {_key: Ref_(data_name, index='latest')['data'][0][k][_key]
+                {_key: Ref_({'data': data_name, 'index': 'latest'})['data'][0][k][_key]
                  for _key in values[k]}
                 for k in range(len(values))]
             self._write_figure(figure_name, traces, traces_kwargs,
@@ -253,8 +253,8 @@ class Writer:
         if figure_name not in self.existing_figures:
             # Build traces with data store references.
             traces = [
-                {'x': Ref_(data_name, index='latest')['data'][0]['bin_centers'],
-                 'y': Ref_(data_name, index='latest')['data'][0][fld_(_k)]}
+                {'x': Ref_({'data': data_name, 'index': 'latest'})['data'][0]['bin_centers'],
+                 'y': Ref_({'data': data_name, 'index': 'latest'})['data'][0][fld_(_k)]}
                 for _k in range(len(values))]
             self._write_figure(figure_name, traces, traces_kwargs,
                                default_trace_kwargs, layout_kwargs)

@@ -59,6 +59,7 @@ class TableHandler(_FigureHandler):
                 _ds_name, _ssq = data_mappings
                 self.data_mappings = (_ds_name, SSQ_.produce(_ssq))
         except Exception:
+            print('**************', data_mappings)
             raise Exception('Invalid format for arg data_mappings.')
 
         self.data_table_template = (

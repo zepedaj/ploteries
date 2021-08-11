@@ -4,14 +4,15 @@ from sqlalchemy import (func, Table, Column, Integer, String, DateTime, select,
 import numpy as np
 import itertools as it
 from pglib.validation import checked_get_single
-from pglib.sqlalchemy import ClassType, SerializableType, ThreadedInsertCache
-from pglib.serializer import Serializer as _Serializer
+from pglib.sqlalchemy import ClassType, create_serializable_type, ThreadedInsertCache
 from contextlib import contextmanager
 from pglib.sqlalchemy import begin_connection
 from sqlalchemy.sql.elements import BinaryExpression
 from sqlalchemy.sql import column
 from typing import Union, List, Tuple
 from pglib.slice_sequence import SSQ_ as _SSQ_
+from xerializer.abstract_type_serializer import Serializable
+from . import _legacy_type_deserializers  # noqa - Registers type deserializers
 
 Col_ = column
 """
@@ -19,51 +20,57 @@ Convenience alias to :class:`sqlalchemy.sql.column`. See documentation for :meth
 """
 
 
-class Ref_(_SSQ_):
+class Ref_(_SSQ_, Serializable):
     """
     Extension to :class:`~pglib.slice_sequence.SliceSequence` that is used to define serializable references to data store content.
     """
 
-    def __init__(self, data, index=None):
+    def __init__(self, index):
         """
         :params data, index: Same params taken by dictionary form input to :meth:`DataStore.__getitem__`.
         """
         super().__init__()
-        idx, multi_series = DataStore.format_getitem_idx({'data': data, 'index': index})
+        index, multi_series = DataStore.format_getitem_idx(index)
         if not multi_series:
-            idx['data'] = idx['data'][0]
-        self.slice_sequence.append(idx)
+            index['data'] = index['data'][0]
+        self.slice_sequence.append(index)
 
     @property
     def query_params(self):
         return self.slice_sequence[0]
 
     @classmethod
-    def call_multi(cls, data_store: 'DataStore', *refs_: 'Ref_', _output_all=False):
+    def call_multi(cls, data_store: 'DataStore', *refs_: 'Ref_', _test_output=False):
         """
         Applies the multiple Ref_ slice sequences to the data store individually, but avoids redundant queries that are repeated across refs_.
         """
-        sources = [
-            Ref_.produce(_ref.slice_sequence[:1])
-            for _ref in refs_]
+
+        # Get the source data without repeating queries.
+        source_data_pairs = []
+        num_retrievals = 0
+        for _ref in refs_:
+            new_source = Ref_.produce(_ref.slice_sequence[:1])
+            try:
+                data = next(filter(
+                    lambda _x: _x[0] == new_source, source_data_pairs))[1]
+            except StopIteration:
+                num_retrievals += 1
+                data = new_source(data_store)
+            source_data_pairs.append((new_source, data))
+
+        # Apply remainder of slice sequence.
         remainders = [
             Ref_.produce(_ref.slice_sequence[1:])
             for _ref in refs_]
-        source_to_data = {_source: _source(data_store) for _source in set(sources)}
 
-        output = [_remainder(source_to_data[_source])
-                  for _source, _remainder in zip(sources, remainders)]
+        output = [_remainder(_source_data)
+                  for (_source_ref, _source_data), _remainder in
+                  zip(source_data_pairs, remainders)]
 
-        if _output_all:
-            return {'sources': sources,
-                    'remainders': remainders,
-                    'source_to_data': source_to_data,
-                    'output': output}
+        if _test_output:
+            return source_data_pairs, num_retrievals, remainders, output
         else:
             return output
-
-
-_Serializer.default_extension_types.append(Ref_)
 
 
 class DataStore:
@@ -199,7 +206,7 @@ class DataStore:
             Column('id', Integer, primary_key=True),
             Column('name', String, unique=True),
             Column('handler', ClassType, nullable=False),
-            Column('params', SerializableType, nullable=True),
+            Column('params', create_serializable_type(), nullable=True),
             extend_existing=True)
 
         # Specifies figure creation from stored data.
@@ -208,7 +215,7 @@ class DataStore:
             Column('id', Integer, primary_key=True),
             Column('name', String, unique=True),
             Column('handler', ClassType, nullable=False),
-            Column('params', SerializableType),
+            Column('params', create_serializable_type()),
             extend_existing=True)
 
         self._metadata.create_all()

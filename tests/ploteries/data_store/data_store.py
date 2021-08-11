@@ -51,12 +51,12 @@ def get_store_with_data(num_uniform=[3, 5, 2], num_ragged=[11, 6, 4, 9]):
 
 class TestRef_(TestCase):
 
-    @benchmark(False)
-    def test_serialization(self):
-        ref_ = mdl.Ref_('series1')['abc'][1]['def'][3]
-        serialized = ref_.serialize()
-        des_ref_ = mdl.Ref_.deserialize(serialized)
-        self.assertEqual(ref_, des_ref_)
+    # @benchmark(False)
+    # def test_serialization(self):
+    #     ref_ = mdl.Ref_('series1')['abc'][1]['def'][3]
+    #     serialized = ref_.serialize()
+    #     des_ref_ = mdl.Ref_.deserialize(serialized)
+    #     self.assertEqual(ref_, des_ref_)
 
     def test_copy(self):
         ssq = mdl.Ref_('series1')['abc'][{'abc': 0, 'def': 1}][0][::2][3:100][{'xyz': 2}]
@@ -64,10 +64,10 @@ class TestRef_(TestCase):
         ssq2.slice_sequence[2]['abc'] = 1
         self.assertNotEqual(ssq, ssq2)
 
-    @benchmark(False)
-    def test_hash(self):
-        ssq = mdl.Ref_('series1')['abc'][{'abc': 0, 'def': 1}][0][::2][3:100][{'xyz': 2}]
-        self.assertEqual({ssq: 0, ssq: 1}, {ssq: 1})
+    # @benchmark(False)
+    # def test_hash(self):
+    #     ssq = mdl.Ref_('series1')['abc'][{'abc': 0, 'def': 1}][0][::2][3:100][{'xyz': 2}]
+    #     self.assertEqual({ssq: 0, ssq: 1}, {ssq: 1})
 
 
 class TestDataStore(TestCase):
@@ -173,6 +173,14 @@ class TestDataStore(TestCase):
                         npt.assert_array_equal(
                             _orig_data['arrays'][index][None, ...],
                             retrieved['series'][_series_name]['data'])
+
+                # Test call_multi
+                ref0 = mdl.Ref_({'data': series_names, 'index': index})
+                source_data_pairs, num_retrievals, remainders, output = mdl.Ref_.call_multi(
+                    store, *[ref0]*3, _test_output=True)
+                self.assertEqual(num_retrievals, 1)
+                ref0_data = ref0(store)
+                [npt.assert_equal(_x, ref0_data) for _x in output]
 
                 # # Retrieve non-existing record.
                 # retrieved = store[{'data': series_names, 'index': joined_length}]

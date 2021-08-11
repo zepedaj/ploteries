@@ -5,10 +5,14 @@ from numpy.lib import recfunctions as recfns
 from typing import Optional
 from .base_handlers import DataHandler
 from .data_store import DataStore
-from pglib.serializer import Serializer as _Serializer, AbstractTypeSerializer
+from xerializer import Serializable as _Serializable
+from xerializer.numpy_plugins import DtypeSerializer
 
 
-class NDArraySpec(AbstractTypeSerializer):
+class NDArraySpec(_Serializable):
+    # Using sanitize=False ensures endianness is preserved in header when storing
+    # arrays as bytes in the records table.
+    _dtype_serializer = DtypeSerializer(sanitize=False)
 
     def __init__(self, dtype, shape):
         self.dtype = recfns.repack_fields(np.empty(0, dtype=dtype)).dtype
@@ -28,18 +32,27 @@ class NDArraySpec(AbstractTypeSerializer):
     def __eq__(self, obj):
         return (self.dtype == obj.dtype) and (self.shape == obj.shape)
 
+    def as_serializable(self):
+        return {'dtype': self._dtype_serializer.as_serializable(self.dtype)['value'],
+                'shape': list(self.shape) if isinstance(self.shape, tuple) else self.shape}
+
+    # # New form of from_serializable
+    # @classmethod
+    # def from_serializable(cls, dtype, shape):
+    #     return cls(dtype=cls._dtype_serializer.from_serializable(dtype),
+    #                shape=shape)
+
+    # # Legacy-compatible form
     @classmethod
-    def _as_serializable(self, obj):
-        return {'dtype': obj.dtype,
-                'shape': obj.shape}
-
-    @classmethod
-    def _from_serializable(cls, kwargs):
-        return cls(**kwargs)
-
-
-# Register NDArraySpec serialization with pglib.serializer.Serializer
-_Serializer.default_extension_types.append(NDArraySpec)
+    def from_serializable(cls, **kwargs):
+        in_keys = kwargs.keys()
+        if set(in_keys) == {'dtype', 'shape'}:
+            return cls(dtype=cls._dtype_serializer.from_serializable(kwargs['dtype']),
+                       shape=kwargs['shape'])
+        elif set(in_keys) == {'__value__'}:
+            return cls(**kwargs['__value__'])
+        else:
+            raise Exception('Invalid case.')
 
 
 class UniformNDArrayDataHandler(DataHandler):
