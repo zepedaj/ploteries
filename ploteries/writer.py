@@ -8,9 +8,9 @@ from .ndarray_data_handlers import UniformNDArrayDataHandler, RaggedNDArrayDataH
 from .serializable_data_handler import SerializableDataHandler
 from .figure_handler import FigureHandler, TableHandler
 from pglib.numpy import ArrayLike
-from typing import Optional, List, Dict, Any, Union
-from dash_table import DataTable
+from typing import Optional, List, Dict, Any
 from pglib.nnets import numtor
+import os.path as osp
 
 
 class Writer:
@@ -27,6 +27,11 @@ class Writer:
         'add_table': '__add_table__.{figure_name}'}
 
     def __init__(self, path):
+        """
+        :param path: Data store directory or file path. If a directory is specified, ``'data_store.pltr'`` will be appended.
+        """
+        if osp.isdir(path):
+            path = osp.join(path, 'ploteries.pltr')
         self.data_store = path if isinstance(path, DataStore) else DataStore(path)
 
         # Keep a cache of existing figures and data handlers
