@@ -11,6 +11,20 @@ from numbers import Number
 from pglib.py import strict_zip
 from .figure_handler import FigureHandler as _FigureHandler
 from dash_table import DataTable
+import re
+
+
+def markdown_escape(val, level=0):
+    if isinstance(val, str):
+        return re.sub(r'([\[\]\(\)\\`\*_\{\}<>#+-\.!|])', r'\\\1', val)
+    elif isinstance(val, dict):
+        tab = '\t'
+        return ('\n'*(level > 0) +
+                '\n'.join(
+                    [f"{tab*level}* **{markdown_escape(_key, level+1)}**: {markdown_escape(_value,level+1)}"
+                     for _key, _value in val.items()]))
+    else:
+        return val
 
 
 class TableHandler(_FigureHandler):
@@ -81,7 +95,8 @@ class TableHandler(_FigureHandler):
             return ''
         else:
             val = rec[key]
-            return val if isinstance(val, Number) else str(val)
+
+            return val  # if isinstance(val, Number) else markdown_escape(str(val))
 
     def build_table(self, slice_obj=slice(None, None, None)):
 
@@ -119,21 +134,23 @@ class TableHandler(_FigureHandler):
             # Each record is a column.
             indices = indices.tolist()
             columns = [
-                {'name': _name, 'id': _name} for _name in
+                {'name': _name, 'id': _name, 'presentation': 'markdown'} for _name in
                 it.chain(['Field'], indices)]
             data = (
-                [{**{'Field': self.time_step_key},
+                [{**{'Field': f'**{markdown_escape(self.time_step_key)}**'},
                   **{_idx: _idx for _idx in indices}}] +
-                [{**{'Field': _key},
-                  **{_idx: self._get_key(_rec, _key) for _idx, _rec in strict_zip(
+                [{**{'Field': f'**{markdown_escape(_key)}**'},
+                  **{_idx: markdown_escape(self._get_key(_rec, _key)) for _idx, _rec in strict_zip(
                       indices, records)}} for _key in keys])
 
         else:
-            columns = [{'name': name, 'id': name} for name in [self.time_step_key] + keys]
+            columns = [
+                {'name': name, 'id': name, 'presentation': 'markdown'}
+                for name in [self.time_step_key] + keys]
             # Var data will be a list of dicts containing one row.
             data = [{
                 **{self.time_step_key: _idx},
-                **{_key: self._get_key(_rec, _key) for _key in keys}} for
+                **{_key: markdown_escape(self._get_key(_rec, _key)) for _key in keys}} for
                 _idx, _rec in strict_zip(indices, records)]
 
         # Apply column styling.
