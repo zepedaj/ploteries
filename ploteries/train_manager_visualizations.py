@@ -1,4 +1,4 @@
-from pglib.nnets.torch.train.viz import Viz as _Viz, ScalarViz as _ScalarViz, \
+from torch_train_manager.viz import Viz as _Viz, ScalarViz as _ScalarViz, \
     ScalarAccumViz as _ScalarAccumViz, AccumViz as _AccumViz, default_viz_fxn
 from pglib.nnets import numtor as nt
 import numpy as np
