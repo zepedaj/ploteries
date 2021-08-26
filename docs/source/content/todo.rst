@@ -26,3 +26,7 @@ To-Do's
     * Rename 'data' to 'series'.
 
     * Use css styling to transpose DataTable produced by TableHandler to make the header row disappear and make the first column have the same style as the header row for the non-transposed table.
+
+    * Replace DataTable by HTML table to support copy-paste operations.
+
+    * Add better code display -- potentially make the diff a link to a different page, might want to use https://diff2html.xyz/.
