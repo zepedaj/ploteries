@@ -30,3 +30,5 @@ To-Do's
     * Replace DataTable by HTML table to support copy-paste operations.
 
     * Add better code display -- potentially make the diff a link to a different page, might want to use https://diff2html.xyz/.
+
+    * Better support for copying text in dropdown menus and tables (tables might be solved by using an html table instead of a Dash DataTable).
