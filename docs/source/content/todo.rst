@@ -3,6 +3,8 @@ To-Do's
 
  .. todo::
 
+    * Add average visualization to scalar displays.
+
     * "Data store" dropdoown persistence broken after data store file discovery functionality was added.
 
     * Make tabs sticky on top, make them narrower and collapsible
