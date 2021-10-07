@@ -12,7 +12,6 @@ from sqlalchemy.sql import column
 from typing import Union, List, Tuple
 from pglib.slice_sequence import SSQ_ as _SSQ_
 from xerializer.abstract_type_serializer import Serializable
-from . import _legacy_type_deserializers  # noqa - Registers type deserializers
 
 Col_ = column
 """

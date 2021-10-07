@@ -1,6 +1,17 @@
 from xerializer.abstract_type_serializer import TypeSerializer
+from xerializer import default_signature, create_signature_aliases
 from numpy.lib.format import descr_to_dtype
 import base64
+from importlib import import_module
+
+for legacy_signature in [
+        'ploteries.ndarray_data_handlers.NDArraySpec'
+]:
+    module_name, class_name = legacy_signature.rsplit('.', 1)
+    module = import_module(module_name)
+    create_signature_aliases(
+        default_signature(getattr(module, class_name)),
+        legacy_signature)
 
 
 class LegacyTypeSerializer(TypeSerializer):
