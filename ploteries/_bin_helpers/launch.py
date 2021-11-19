@@ -252,8 +252,11 @@ def create_toolbar_callbacks():
 
 
 @main.command()
-@clx.option('glob_path',
-            help='Data store path. Will be interpreted with a call to recursive glob (see https://docs.python.org/3/library/glob.html).')
+@clx.option('--path',
+            dest='glob_path', default=(default_path := '**/*.pltr'),
+            help=f'Data store path. Will be interpreted with a call to recursive glob (see '
+            f'https://docs.python.org/3/library/glob.html). The default is `{default_path}`.',
+            )
 @clx.option('--interval',
             help='Seconds between automatic update of all plots.',
             type=float,
