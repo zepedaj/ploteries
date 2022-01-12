@@ -266,7 +266,7 @@ def create_toolbar_callbacks():
 @clx.option('--host',
             help='Host name.', default='0.0.0.0')
 @clx.option('--port',
-            help='Port number.', default='8000')
+            help='Port number.', default='7000')
 @clx.option('--workers',
             help='Number of workers (ignored in debug mode).', default=3)
 @clx.option(
