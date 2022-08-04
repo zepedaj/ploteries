@@ -10,19 +10,21 @@ from pglib import validation as pgval
 from numbers import Number
 from pglib.py import strict_zip
 from .figure_handler import FigureHandler as _FigureHandler
-from dash_table import DataTable
+from dash.dash_table import DataTable
 import re
 
 
 def markdown_escape(val, level=0):
     if isinstance(val, str):
-        return re.sub(r'([\[\]\(\)\\`\*_\{\}<>#+-\.!|])', r'\\\1', val)
+        return re.sub(r"([\[\]\(\)\\`\*_\{\}<>#+-\.!|])", r"\\\1", val)
     elif isinstance(val, dict):
-        tab = '\t'
-        return ('\n'*(level > 0) +
-                '\n'.join(
-                    [f"{tab*level}* **{markdown_escape(_key, level+1)}**: {markdown_escape(_value,level+1)}"
-                     for _key, _value in val.items()]))
+        tab = "\t"
+        return "\n" * (level > 0) + "\n".join(
+            [
+                f"{tab*level}* **{markdown_escape(_key, level+1)}**: {markdown_escape(_value,level+1)}"
+                for _key, _value in val.items()
+            ]
+        )
     else:
         return val
 
@@ -41,19 +43,26 @@ class TableHandler(_FigureHandler):
         In [305]:
     """
 
-    time_step_key = 'Time step'
-    _state_keys = ['data_mappings',  'data_table_template',
-                   'transposed', 'columns_kwargs', 'sorting']
+    time_step_key = "Time step"
+    _state_keys = [
+        "data_mappings",
+        "data_table_template",
+        "transposed",
+        "columns_kwargs",
+        "sorting",
+    ]
 
-    def __init__(self,
-                 data_store,
-                 name: str,
-                 data_mappings: Union[Tuple[str, SSQ_], Dict[str, Tuple[str, SSQ_]]],
-                 transposed: bool = False,
-                 data_table_template=None,
-                 columns_kwargs: Dict[str, dict] = {},
-                 sorting='ascending',
-                 decoded_data_def=None):
+    def __init__(
+        self,
+        data_store,
+        name: str,
+        data_mappings: Union[Tuple[str, SSQ_], Dict[str, Tuple[str, SSQ_]]],
+        transposed: bool = False,
+        data_table_template=None,
+        columns_kwargs: Dict[str, dict] = {},
+        sorting="ascending",
+        decoded_data_def=None,
+    ):
         """
         :param data_store: Source data store.
         :param name: Name of the FigureHandler instance that will be used in the figure defs table.
@@ -67,24 +76,28 @@ class TableHandler(_FigureHandler):
         self.name = name
         try:
             if isinstance(data_mappings, dict):
-                self.data_mappings = {col_id: (_ds_name, SSQ_.produce(_ssq))
-                                      for col_id, (_ds_name, _ssq) in data_mappings}
+                self.data_mappings = {
+                    col_id: (_ds_name, SSQ_.produce(_ssq))
+                    for col_id, (_ds_name, _ssq) in data_mappings
+                }
             else:
                 _ds_name, _ssq = data_mappings
                 self.data_mappings = (_ds_name, SSQ_.produce(_ssq))
         except Exception:
-            print('**************', data_mappings)
-            raise Exception('Invalid format for arg data_mappings.')
+            print("**************", data_mappings)
+            raise Exception("Invalid format for arg data_mappings.")
 
         self.data_table_template = (
-            (data_table_template.to_plotly_json()
-             if isinstance(data_table_template, DataTable)
-             else data_table_template)
-            or DataTable().to_plotly_json())
+            data_table_template.to_plotly_json()
+            if isinstance(data_table_template, DataTable)
+            else data_table_template
+        ) or DataTable().to_plotly_json()
         self.decoded_data_def = decoded_data_def
         self.transposed = transposed
         self.columns_kwargs = columns_kwargs
-        self.sorting = pgval.check_option('sorting', sorting, ['ascending', 'descending'])
+        self.sorting = pgval.check_option(
+            "sorting", sorting, ["ascending", "descending"]
+        )
 
     # Invalid methods.
     _parse_figure = None
@@ -92,7 +105,7 @@ class TableHandler(_FigureHandler):
 
     def _get_key(self, rec, key):
         if key not in rec:
-            return ''
+            return ""
         else:
             val = rec[key]
 
@@ -103,15 +116,18 @@ class TableHandler(_FigureHandler):
         # Retrieve a join of all data series.
         data_series_names = (
             list(set(_x[0] for _x in self.data_mappings.values()))
-            if isinstance(self.data_mappings, dict) else
-            [self.data_mappings[0]])
+            if isinstance(self.data_mappings, dict)
+            else [self.data_mappings[0]]
+        )
         raw_data = self.data_store[data_series_names]
 
         # Extract and sort data
-        indices = raw_data['meta']['index'][slice_obj]
-        data_series = {_ds_name: _ds_contents['data'][slice_obj]
-                       for _ds_name, _ds_contents in raw_data['series'].items()}
-        if self.sorting == 'descending':
+        indices = raw_data["meta"]["index"][slice_obj]
+        data_series = {
+            _ds_name: _ds_contents["data"][slice_obj]
+            for _ds_name, _ds_contents in raw_data["series"].items()
+        }
+        if self.sorting == "descending":
             indices = indices[::-1]
             data_series = {_key: _data[::-1] for _key, _data in data_series.items()}
 
@@ -119,48 +135,76 @@ class TableHandler(_FigureHandler):
         if isinstance(self.data_mappings, dict):
             keys = list(self.data_mappings.keys())
             records = [
-                {_key: _ref(data_series[_ds_name][_k]) for _key, (_ds_name, _ref)
-                 in self.data_mappings.items()}
-                for _k in range(len(indices))]
+                {
+                    _key: _ref(data_series[_ds_name][_k])
+                    for _key, (_ds_name, _ref) in self.data_mappings.items()
+                }
+                for _k in range(len(indices))
+            ]
         else:
             data_series_name, ref = self.data_mappings
-            records = [ref(_rec) for _rec in checked_get_single(data_series, data_series_name)]
+            records = [
+                ref(_rec) for _rec in checked_get_single(data_series, data_series_name)
+            ]
             # https://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-whilst-preserving-order#:~:text=450-,Edit%202020,-As%20of%20CPython
-            keys = list(OrderedDict.fromkeys(
-                it.chain(*(_rec.keys() for _rec in records))))
+            keys = list(
+                OrderedDict.fromkeys(it.chain(*(_rec.keys() for _rec in records)))
+            )
 
         # Build the columns of the table
         if self.transposed:
             # Each record is a column.
             indices = indices.tolist()
             columns = [
-                {'name': _name, 'id': _name, 'presentation': 'markdown'} for _name in
-                it.chain(['Field'], indices)]
-            data = (
-                [{**{'Field': f'**{markdown_escape(self.time_step_key)}**'},
-                  **{_idx: _idx for _idx in indices}}] +
-                [{**{'Field': f'**{markdown_escape(_key)}**'},
-                  **{_idx: markdown_escape(self._get_key(_rec, _key)) for _idx, _rec in strict_zip(
-                      indices, records)}} for _key in keys])
+                {"name": _name, "id": _name, "presentation": "markdown"}
+                for _name in it.chain(["Field"], indices)
+            ]
+            data = [
+                {
+                    **{"Field": f"**{markdown_escape(self.time_step_key)}**"},
+                    **{_idx: _idx for _idx in indices},
+                }
+            ] + [
+                {
+                    **{"Field": f"**{markdown_escape(_key)}**"},
+                    **{
+                        _idx: markdown_escape(self._get_key(_rec, _key))
+                        for _idx, _rec in strict_zip(indices, records)
+                    },
+                }
+                for _key in keys
+            ]
 
         else:
             columns = [
-                {'name': name, 'id': name, 'presentation': 'markdown'}
-                for name in [self.time_step_key] + keys]
+                {"name": name, "id": name, "presentation": "markdown"}
+                for name in [self.time_step_key] + keys
+            ]
             # Var data will be a list of dicts containing one row.
-            data = [{
-                **{self.time_step_key: _idx},
-                **{_key: markdown_escape(self._get_key(_rec, _key)) for _key in keys}} for
-                _idx, _rec in strict_zip(indices, records)]
+            data = [
+                {
+                    **{self.time_step_key: _idx},
+                    **{
+                        _key: markdown_escape(self._get_key(_rec, _key))
+                        for _key in keys
+                    },
+                }
+                for _idx, _rec in strict_zip(indices, records)
+            ]
 
         # Apply column styling.
-        [_col.update(self.column_kwargs.get(_col['id'], {})) for _col in self.columns_kwargs]
+        [
+            _col.update(self.column_kwargs.get(_col["id"], {}))
+            for _col in self.columns_kwargs
+        ]
 
         # Build the DataTable object.
-        data_table = DataTable(**{
-            **self.data_table_template['props'],
-            **{'columns': columns, 'data': data}
-        })
+        data_table = DataTable(
+            **{
+                **self.data_table_template["props"],
+                **{"columns": columns, "data": data},
+            }
+        )
 
         return data_table
 
@@ -174,6 +218,6 @@ class TableHandler(_FigureHandler):
         params = {key: getattr(self, key) for key in self._state_keys}
         return params
 
-    @ property
+    @property
     def is_indexed(self):
         return False
