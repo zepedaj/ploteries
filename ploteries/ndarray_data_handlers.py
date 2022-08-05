@@ -27,14 +27,16 @@ class NDArraySpec(_Serializable):
         elif isinstance(val, cls):
             return val
         else:
-            raise TypeError(f'Cannot produce NDArraySpec from {type(val)}.')
+            raise TypeError(f"Cannot produce NDArraySpec from {type(val)}.")
 
     def __eq__(self, obj):
         return (self.dtype == obj.dtype) and (self.shape == obj.shape)
 
     def as_serializable(self):
-        return {'dtype': self._dtype_serializer.as_serializable(self.dtype)['value'],
-                'shape': list(self.shape) if isinstance(self.shape, tuple) else self.shape}
+        return {
+            "dtype": self._dtype_serializer.as_serializable(self.dtype)["value"],
+            "shape": list(self.shape) if isinstance(self.shape, tuple) else self.shape,
+        }
 
     # # New form of from_serializable
     # @classmethod
@@ -46,13 +48,15 @@ class NDArraySpec(_Serializable):
     @classmethod
     def from_serializable(cls, **kwargs):
         in_keys = kwargs.keys()
-        if set(in_keys) == {'dtype', 'shape'}:
-            return cls(dtype=cls._dtype_serializer.from_serializable(kwargs['dtype']),
-                       shape=kwargs['shape'])
-        elif set(in_keys) == {'__value__'}:
-            return cls(**kwargs['__value__'])
+        if set(in_keys) == {"dtype", "shape"}:
+            return cls(
+                dtype=cls._dtype_serializer.from_serializable(kwargs["dtype"]),
+                shape=kwargs["shape"],
+            )
+        elif set(in_keys) == {"__value__"}:
+            return cls(**kwargs["__value__"])
         else:
-            raise Exception('Invalid case.')
+            raise Exception("Invalid case.")
 
 
 class UniformNDArrayDataHandler(DataHandler):
@@ -83,14 +87,17 @@ class UniformNDArrayDataHandler(DataHandler):
     ```
 
     """
+
     data_store = None
     decoded_data_def = None
 
-    def __init__(self,
-                 data_store: DataStore,
-                 name: str,
-                 ndarray_spec: Optional[NDArraySpec] = None,
-                 _decoded_data_def=None):
+    def __init__(
+        self,
+        data_store: DataStore,
+        name: str,
+        ndarray_spec: Optional[NDArraySpec] = None,
+        _decoded_data_def=None,
+    ):
         """
         :param data_store: :class:`ploteries.data_store.DataStore` object.
         :param name: Data name.
@@ -100,8 +107,8 @@ class UniformNDArrayDataHandler(DataHandler):
         self.data_store = data_store
         self._init_name = name
         self._init_ndarray_spec = (
-            None if ndarray_spec is None else
-            NDArraySpec.produce(ndarray_spec))
+            None if ndarray_spec is None else NDArraySpec.produce(ndarray_spec)
+        )
         self.decoded_data_def = _decoded_data_def
 
     @property
@@ -114,13 +121,14 @@ class UniformNDArrayDataHandler(DataHandler):
         The dtype and shape of data in each record.
         """
         if self.decoded_data_def is not None:
-            return self.decoded_data_def.params['ndarray_spec']
+            return self.decoded_data_def.params["ndarray_spec"]
         elif self._init_ndarray_spec is not None:
             return self._init_ndarray_spec
         else:
             raise ValueError(
-                f'The type/shape of data records is not known yet for data handler {self.name}. '
-                f'Add data to the table or specify the data type/shape at initialization.')
+                f"The type/shape of data records is not known yet for data handler {self.name}. "
+                f"Add data to the table or specify the data type/shape at initialization."
+            )
 
     @classmethod
     def from_def_record(cls, data_store, data_def_record):
@@ -128,27 +136,32 @@ class UniformNDArrayDataHandler(DataHandler):
         return obj
 
     def encode_params(self, ndarray_spec=None):
-        return {'ndarray_spec': ndarray_spec or self.ndarray_spec}
+        return {"ndarray_spec": ndarray_spec or self.ndarray_spec}
 
     @property
     def row_num_bytes(self):
         """
         Number of bytes in each record.
         """
-        return int(np.prod(self.ndarray_spec.shape)*self.ndarray_spec.dtype.itemsize)
+        return int(np.prod(self.ndarray_spec.shape) * self.ndarray_spec.dtype.itemsize)
 
     def add_data(self, index: int, arr: ArrayLike, connection=None):
         #
         explicit_ndarray_spec = (
-            None if (
-                self._init_ndarray_spec is None and self.decoded_data_def is None) else
-            self.ndarray_spec)
+            None
+            if (self._init_ndarray_spec is None and self.decoded_data_def is None)
+            else self.ndarray_spec
+        )
 
         # Required for support of scalars and lists. Note that the data-type can be provided at object
         # instantiation time, or it can be inferred.
         if not isinstance(arr, np.ndarray):
             arr = np.require(
-                arr, dtype=None if not explicit_ndarray_spec else explicit_ndarray_spec.dtype)
+                arr,
+                dtype=None
+                if not explicit_ndarray_spec
+                else explicit_ndarray_spec.dtype,
+            )
             arr_shape = arr.shape
             if not arr_shape:
                 arr = arr.view()
@@ -159,26 +172,33 @@ class UniformNDArrayDataHandler(DataHandler):
 
         # Check input ndarray spec against initialization ndarray spec.
         input_ndarray_spec = NDArraySpec(arr.dtype, arr_shape)
-        if (self._init_ndarray_spec and input_ndarray_spec != self._init_ndarray_spec):
+        if self._init_ndarray_spec and input_ndarray_spec != self._init_ndarray_spec:
             raise TypeError(
                 f"The input ndarray spec {input_ndarray_spec} does not match the value "
-                f"{self._init_ndarray_spec} provided at initialization.")
+                f"{self._init_ndarray_spec} provided at initialization."
+            )
 
         # Write data def if it does not exist.
         with self.lock:
             if self.decoded_data_def is None:
-                with self.data_store.begin_connection(connection=connection) as connection:
-                    self.write_def(connection=connection, extra_params={
-                                   'ndarray_spec': input_ndarray_spec})
+                with self.data_store.begin_connection(
+                    connection=connection
+                ) as connection:
+                    self.write_def(
+                        connection=connection,
+                        extra_params={"ndarray_spec": input_ndarray_spec},
+                    )
                     self.decoded_data_def = self.load_decode_def(
-                        self.data_store, self.name, connection=connection)
+                        self.data_store, self.name, connection=connection
+                    )
 
         # Check the input ndarray spec against the stored ndarray spec.
-        decoded_ndarray_spec = self.decoded_data_def['params']['ndarray_spec']
-        if (self.decoded_data_def and input_ndarray_spec != decoded_ndarray_spec):
+        decoded_ndarray_spec = self.decoded_data_def["params"]["ndarray_spec"]
+        if self.decoded_data_def and input_ndarray_spec != decoded_ndarray_spec:
             raise TypeError(
                 f"The input ndarray spec {input_ndarray_spec} does not match the value "
-                f"{decoded_ndarray_spec} in data store table {self.name}.")
+                f"{decoded_ndarray_spec} in data store table {self.name}."
+            )
 
         # Add data.
         super().add_data(index, arr, connection=connection)
@@ -186,7 +206,9 @@ class UniformNDArrayDataHandler(DataHandler):
     def encode_record_bytes(self, arr):
 
         # Convert data, build records
-        packed_arr = np.require(arr, dtype=self.ndarray_spec.dtype, requirements='C').view('u1')
+        packed_arr = np.require(
+            arr, dtype=self.ndarray_spec.dtype, requirements="C"
+        ).view("u1")
         packed_arr.shape = packed_arr.size
 
         return packed_arr.data
@@ -198,21 +220,23 @@ class UniformNDArrayDataHandler(DataHandler):
 
         # Pre alloc output
         out_ndarray = np.empty(
-            (len(records_data), *self.ndarray_spec.shape),
-            dtype=self.ndarray_spec.dtype)
-        out_buffer = out_ndarray.view(dtype='u1')
+            (len(records_data), *self.ndarray_spec.shape), dtype=self.ndarray_spec.dtype
+        )
+        out_buffer = out_ndarray.view(dtype="u1")
         out_buffer.shape = np.prod(out_buffer.shape)
         row_itemsize = self.row_num_bytes
 
         if records_data:
             for k, row_bytes in enumerate(records_data):
-                out_buffer[k*row_itemsize:(k+1)*row_itemsize] = bytearray(row_bytes)
+                out_buffer[k * row_itemsize : (k + 1) * row_itemsize] = bytearray(
+                    row_bytes
+                )
 
             # Sanity checks.
-            if k != len(records_data)-1:
-                raise Exception('Could not load the expected number of rows!')
-            if (k+1)*row_itemsize != out_buffer.size:
-                raise Exception('Did not load the expected number of bytes!')
+            if k != len(records_data) - 1:
+                raise Exception("Could not load the expected number of rows!")
+            if (k + 1) * row_itemsize != out_buffer.size:
+                raise Exception("Did not load the expected number of bytes!")
 
         return out_ndarray
 
@@ -234,19 +258,24 @@ class RaggedNDArrayDataHandler(DataHandler):
         if _decoded_data_def is None:
             self.name = name
             with self.data_store.begin_connection(connection=connection) as connection:
-                if not (loaded_def := self.load_decode_def(
-                        self.data_store, self.name, connection=connection)):
+                if not (
+                    loaded_def := self.load_decode_def(
+                        self.data_store, self.name, connection=connection
+                    )
+                ):
                     self.write_def(connection=connection)
                     loaded_def = self.load_decode_def(
-                        self.data_store, self.name, connection=connection)
+                        self.data_store, self.name, connection=connection
+                    )
                 if not loaded_def:
-                    raise Exception('Unexpected error.')
+                    raise Exception("Unexpected error.")
             self.decoded_data_def = loaded_def
         else:
             if name is not None and _decoded_data_def.name != name:
                 raise Exception(
-                    f'Param name={name} does to not match _decoded_data_def.name={_decoded_data_def.name}! '
-                    'You can use None for param name or _decoded_data_def.')
+                    f"Param name={name} does to not match _decoded_data_def.name={_decoded_data_def.name}! "
+                    "You can use None for param name or _decoded_data_def."
+                )
             else:
                 self.name = _decoded_data_def.name
                 self.decoded_data_def = _decoded_data_def

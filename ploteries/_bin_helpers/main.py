@@ -7,6 +7,6 @@ def main():
 
 
 @clx.parent()
-@clx.argument('path', help='Ploteries data store file path.')
+@clx.argument("path", help="Ploteries data store file path.")
 def path_arg():
     pass

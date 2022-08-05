@@ -13,16 +13,23 @@ import dash
 
 
 @contextmanager
-def get_store_with_table(transposed=False, sorting='ascending'):
+def get_store_with_table(transposed=False, sorting="ascending"):
     with get_store() as store:
         #
-        data1_h = SerializableDataHandler(store, 'table_data')
+        data1_h = SerializableDataHandler(store, "table_data")
         for index in range(5):
-            data1_h.add_data(index, {f'Column {index}': index, f'Column {index+1}': index*2})
+            data1_h.add_data(
+                index, {f"Column {index}": index, f"Column {index+1}": index * 2}
+            )
 
         #
-        tab1_h = mdl.TableHandler(store, 'table1', ('table_data', SSQ_()),
-                                  transposed=transposed, sorting=sorting)
+        tab1_h = mdl.TableHandler(
+            store,
+            "table1",
+            ("table_data", SSQ_()),
+            transposed=transposed,
+            sorting=sorting,
+        )
 
         store.flush()
         yield store, data1_h, tab1_h
@@ -30,7 +37,6 @@ def get_store_with_table(transposed=False, sorting='ascending'):
 
 
 class TestTableHandler(TestCase):
-
     def test_create(self):
         self._test_create(False)
 
@@ -46,9 +52,10 @@ class TestTableHandler(TestCase):
             def check_valid(_tbl):
                 as_array = np.array(
                     [
-                        [None if x == '' else x for x in _row.values()]
+                        [None if x == "" else x for x in _row.values()]
                         for _row in _tbl.data
-                    ]).T
+                    ]
+                ).T
                 if transposed:
                     as_array = as_array[1:].T
 
@@ -69,7 +76,8 @@ class TestTableHandler(TestCase):
             built_tbl_loaded = tab1_h_loaded.build_table()
             self.assertEqual(
                 built_tbl_json := built_tbl.to_plotly_json(),
-                built_tbl_loaded.to_plotly_json())
+                built_tbl_loaded.to_plotly_json(),
+            )
 
     def test_encode_decode_params(self):
         with get_store_with_table() as (store, data1_h, tab1_h):
@@ -80,14 +88,17 @@ class TestTableHandler(TestCase):
     def test_update(self):
         with get_store_with_table() as (store, data1_h, tab1_h):
             # tab1_h.figure_dict['layout']['template']=None
-            with self.assertRaisesRegex(Exception, r'Cannot update a definition that has not been retrieved from the data store.'):
-                tab1_h.write_def(mode='update')
+            with self.assertRaisesRegex(
+                Exception,
+                r"Cannot update a definition that has not been retrieved from the data store.",
+            ):
+                tab1_h.write_def(mode="update")
             self.assertTrue(tab1_h.write_def())
             self.assertFalse(tab1_h.write_def())
 
             tab1_h = store.get_figure_handlers()[0]
-            self.assertEqual(tab1_h.data_table_template['props'], {})
-            tab1_h.data_table_template['props'] = None
-            tab1_h.write_def(mode='update')
+            self.assertEqual(tab1_h.data_table_template["props"], {})
+            tab1_h.data_table_template["props"] = None
+            tab1_h.write_def(mode="update")
             tab1_h = store.get_figure_handlers()[0]
-            self.assertIsNone(tab1_h.data_table_template['props'])
+            self.assertIsNone(tab1_h.data_table_template["props"])

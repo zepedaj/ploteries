@@ -18,18 +18,20 @@ class AbstractInterfaceHook(abc.ABC):
         """
         Replaces '.' characters with '|' characters in class paths to make them compatible with Dash element ids.
         """
-        return class_name(cls).replace('.', '|')
+        return class_name(cls).replace(".", "|")
 
     @abc.abstractmethod
-    def build_empty_html(self, figure_handler): pass
+    def build_empty_html(self, figure_handler):
+        pass
 
     @classmethod
     @abc.abstractmethod
     def create_callbacks(
-            cls,
-            app_callback: Callable,
-            get_hook: Callable[[str], 'AbstractInterfaceHook'],
-            callback_args: Dict[str, Union[State, Input, Output]]):
+        cls,
+        app_callback: Callable,
+        get_hook: Callable[[str], "AbstractInterfaceHook"],
+        callback_args: Dict[str, Union[State, Input, Output]],
+    ):
         """
         This method is called from :class:`~.cli_interface.PloteriesLaunchInterface.create_callbacks` to create callbacks for this hook.
 
@@ -40,8 +42,4 @@ class AbstractInterfaceHook(abc.ABC):
 
     @classmethod
     def _get_id(cls, figure_name, **kwargs):
-        return {
-            'name': figure_name,
-            'type': cls.encoded_class_name(),
-            **kwargs
-        }
+        return {"name": figure_name, "type": cls.encoded_class_name(), **kwargs}

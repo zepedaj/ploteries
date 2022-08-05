@@ -6,7 +6,6 @@ from ..figure_handler import get_store_with_fig
 
 
 class TestFunctions(TestCase):
-
     def test_call_methods(self):
         with get_store_with_fig() as (store, arr1_h, arr2_h, fig_h):
             #

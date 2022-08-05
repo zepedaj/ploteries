@@ -10,12 +10,12 @@ from .figure_handler_hook import FigureHandlerHook
 from .table_handler_hook import TableHandlerHook
 
 
-PosnTuple = namedtuple('PosnTuple', ('tab', 'group', 'abs_name', 'rel_name'))
+PosnTuple = namedtuple("PosnTuple", ("tab", "group", "abs_name", "rel_name"))
 """
 The name of the tab and group where the figure will be placed.
 """
 
-RenderedFigure = namedtuple('RenderedFigure', ('name', 'posn', 'html'))
+RenderedFigure = namedtuple("RenderedFigure", ("name", "posn", "html"))
 """
 name:str, Specifies the figures absolute name.
 posn:PosnTuple, Specifies the figure's hierarchical position.
@@ -31,21 +31,20 @@ class PloteriesLaunchInterface:
     hook_classes = [FigureHandlerHook, TableHandlerHook]
 
     # Default element kwargs
-    def __init__(self,
-                 data_store,
-                 hooks=None):
+    def __init__(self, data_store, hooks=None):
         hooks = hooks or [cls(data_store) for cls in self.hook_classes]
         self.data_store = data_store
         if not len(set(map(type, hooks))) == len(hooks):
             raise Exception(
-                'Can pass at most one hook of each type to avoid defining callbacks multiple times.')
+                "Can pass at most one hook of each type to avoid defining callbacks multiple times."
+            )
         for hook_type in map(type, hooks):
             if hook_type not in self.hook_classes:
-                raise ValueError(f'Unsupported hook type {hook_type}.')
+                raise ValueError(f"Unsupported hook type {hook_type}.")
         self.hooks = {type(_hook).handler_class: _hook for _hook in hooks}
 
     # CALLBACKS
-    _slider_output_keys = ('marks', 'min', 'max', 'value', 'disabled')
+    _slider_output_keys = ("marks", "min", "max", "value", "disabled")
 
     def render_empty_figures(self):
         """
@@ -55,22 +54,25 @@ class PloteriesLaunchInterface:
             RenderedFigure(
                 name=_fig_handler.name,
                 posn=self._name_to_posn(_fig_handler.name),
-                html=self.hooks[type(_fig_handler)].build_empty_html(_fig_handler))
+                html=self.hooks[type(_fig_handler)].build_empty_html(_fig_handler),
+            )
             for _fig_handler in self.data_store.get_figure_handlers()
         ]
 
     def _name_to_posn(self, fig_name):
         default = None
-        hierarchy = [_x or default for _x in fig_name.split('/', maxsplit=2)] + [default]*3
-        tab, group, rel_name = hierarchy[: 3]
+        hierarchy = [_x or default for _x in fig_name.split("/", maxsplit=2)] + [
+            default
+        ] * 3
+        tab, group, rel_name = hierarchy[:3]
         return PosnTuple(tab=tab, group=group, rel_name=rel_name, abs_name=fig_name)
 
     @classmethod
     def create_callbacks(
-            cls,
-            app_callback: Callable,
-            get_interface: Callable[[str], 'PloteriesLaunchInterface'],
-            callback_args: Dict[str, Union[State, Input, Output]]
+        cls,
+        app_callback: Callable,
+        get_interface: Callable[[str], "PloteriesLaunchInterface"],
+        callback_args: Dict[str, Union[State, Input, Output]],
     ):
         """
         This method creates the callbacks required to support web visualizations. It should only be called once to avoid multiply defining callbacks.
@@ -85,5 +87,8 @@ class PloteriesLaunchInterface:
         """
 
         for hook in cls.hook_classes:
-            hook.create_callbacks(app_callback, lambda path, hook=hook: get_interface(
-                path).hooks[hook.handler_class], callback_args)
+            hook.create_callbacks(
+                app_callback,
+                lambda path, hook=hook: get_interface(path).hooks[hook.handler_class],
+                callback_args,
+            )

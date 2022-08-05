@@ -29,11 +29,11 @@ def list(path):
     store = DataStore(path)
 
     # Data handlers.
-    print('Data handlers')
+    print("Data handlers")
     for _h in store.get_data_handlers():
         print(_h.decoded_data_def)
 
     # Figure handlers.
-    print('Figure handlers.')
+    print("Figure handlers.")
     for _h in store.get_figure_handlers():
         print(_h.decoded_data_def)

@@ -1,6 +1,18 @@
-from sqlalchemy import (func, Table, Column, Integer, String, DateTime, select,
-                        ForeignKey, LargeBinary, create_engine, MetaData, and_,
-                        UniqueConstraint)
+from sqlalchemy import (
+    func,
+    Table,
+    Column,
+    Integer,
+    String,
+    DateTime,
+    select,
+    ForeignKey,
+    LargeBinary,
+    create_engine,
+    MetaData,
+    and_,
+    UniqueConstraint,
+)
 import numpy as np
 import itertools as it
 from pglib.validation import checked_get_single
@@ -31,7 +43,7 @@ class Ref_(_SSQ_, Serializable):
         super().__init__()
         index, multi_series = DataStore.format_getitem_idx(index)
         if not multi_series:
-            index['data'] = index['data'][0]
+            index["data"] = index["data"][0]
         self.slice_sequence.append(index)
 
     @property
@@ -39,7 +51,7 @@ class Ref_(_SSQ_, Serializable):
         return self.slice_sequence[0]
 
     @classmethod
-    def call_multi(cls, data_store: 'DataStore', *refs_: 'Ref_', _test_output=False):
+    def call_multi(cls, data_store: "DataStore", *refs_: "Ref_", _test_output=False):
         """
         Applies the multiple Ref_ slice sequences to the data store individually, but avoids redundant queries that are repeated across refs_.
         """
@@ -50,21 +62,23 @@ class Ref_(_SSQ_, Serializable):
         for _ref in refs_:
             new_source = Ref_.produce(_ref.slice_sequence[:1])
             try:
-                data = next(filter(
-                    lambda _x: _x[0] == new_source, source_data_pairs))[1]
+                data = next(filter(lambda _x: _x[0] == new_source, source_data_pairs))[
+                    1
+                ]
             except StopIteration:
                 num_retrievals += 1
                 data = new_source(data_store)
             source_data_pairs.append((new_source, data))
 
         # Apply remainder of slice sequence.
-        remainders = [
-            Ref_.produce(_ref.slice_sequence[1:])
-            for _ref in refs_]
+        remainders = [Ref_.produce(_ref.slice_sequence[1:]) for _ref in refs_]
 
-        output = [_remainder(_source_data)
-                  for (_source_ref, _source_data), _remainder in
-                  zip(source_data_pairs, remainders)]
+        output = [
+            _remainder(_source_data)
+            for (_source_ref, _source_data), _remainder in zip(
+                source_data_pairs, remainders
+            )
+        ]
 
         if _test_output:
             return source_data_pairs, num_retrievals, remainders, output
@@ -96,13 +110,13 @@ class DataStore:
         """
         #
         if read_only:
-            with open(path, 'r'):
+            with open(path, "r"):
                 pass
             self.writer_id = None
             self.threaded_insert_cache = None
         #
         self.path = path
-        self.engine = create_engine(f'sqlite:///{path}')
+        self.engine = create_engine(f"sqlite:///{path}")
         self._metadata = MetaData(bind=self.engine)
 
         #
@@ -113,24 +127,33 @@ class DataStore:
         if not read_only:
             with self.engine.connect() as conn:
                 self.writer_id = conn.execute(
-                    self._metadata.tables['writers'].insert()).inserted_primary_key.id
+                    self._metadata.tables["writers"].insert()
+                ).inserted_primary_key.id
             #
             self.threaded_insert_cache = ThreadedInsertCache(
-                self.data_records_table, self.engine, max_queue_size)
+                self.data_records_table, self.engine, max_queue_size
+            )
 
     @contextmanager
     def begin_connection(self, connection=None):
         with begin_connection(self.engine, connection) as connection:
             yield connection
 
-    def _get_handlers(self, defs_table, *column_constraints: BinaryExpression, connection=None):
+    def _get_handlers(
+        self, defs_table, *column_constraints: BinaryExpression, connection=None
+    ):
         """
         Helper for :meth:`get_data_handlers` and :meth:`get_figure_handlers`
         """
         with self.begin_connection(connection) as connection:
-            handlers = list((
-                _rec.handler.from_def_record(self, _rec) for _rec in
-                connection.execute(select(defs_table).where(*column_constraints))))
+            handlers = list(
+                (
+                    _rec.handler.from_def_record(self, _rec)
+                    for _rec in connection.execute(
+                        select(defs_table).where(*column_constraints)
+                    )
+                )
+            )
         return handlers
 
     def get_data_handlers(self, *column_constraints: BinaryExpression, connection=None):
@@ -150,15 +173,19 @@ class DataStore:
 
         """
         return self._get_handlers(
-            self.data_defs_table, *column_constraints, connection=connection)
+            self.data_defs_table, *column_constraints, connection=connection
+        )
 
-    def get_figure_handlers(self, *column_constraints: BinaryExpression, connection=None):
+    def get_figure_handlers(
+        self, *column_constraints: BinaryExpression, connection=None
+    ):
         """
         Gets the figure handlers satisfying the specified binary constraints. See :meth:`get_data_handlers` for an example.
         """
 
         return self._get_handlers(
-            self.figure_defs_table, *column_constraints, connection=connection)
+            self.figure_defs_table, *column_constraints, connection=connection
+        )
 
     def insert_data_record(self, data_record: Union[dict, List[dict]]):
         """
@@ -168,7 +195,8 @@ class DataStore:
         """
         if self.threaded_insert_cache is None:
             raise Exception(
-                'Attempting to insert into a data store that was opened in read-only mode.')
+                "Attempting to insert into a data store that was opened in read-only mode."
+            )
         else:
             self.threaded_insert_cache.insert(data_record)
 
@@ -182,40 +210,50 @@ class DataStore:
         """
 
         self.data_records_table = Table(
-            'data_records', self._metadata,
-            Column('id', Integer, primary_key=True),
-            Column('index', Integer, nullable=False),
-            Column('created', DateTime, server_default=func.now(), nullable=False),
-            Column('writer_id', ForeignKey('writers.id'), nullable=False),
-            Column('data_def_id', ForeignKey('data_defs.id'), nullable=False),
-            Column('bytes', LargeBinary),
-            UniqueConstraint('index', 'writer_id', 'data_def_id', name='uix_index_writer_data_def'),
-            extend_existing=True)
+            "data_records",
+            self._metadata,
+            Column("id", Integer, primary_key=True),
+            Column("index", Integer, nullable=False),
+            Column("created", DateTime, server_default=func.now(), nullable=False),
+            Column("writer_id", ForeignKey("writers.id"), nullable=False),
+            Column("data_def_id", ForeignKey("data_defs.id"), nullable=False),
+            Column("bytes", LargeBinary),
+            UniqueConstraint(
+                "index", "writer_id", "data_def_id", name="uix_index_writer_data_def"
+            ),
+            extend_existing=True,
+        )
 
         # Distinguishes between writing form different DataStore instances.
         self.writers_table = Table(
-            'writers', self._metadata,
-            Column('id', Integer, primary_key=True),
-            Column('created', DateTime, server_default=func.now(), nullable=False),
-            extend_existing=True)
+            "writers",
+            self._metadata,
+            Column("id", Integer, primary_key=True),
+            Column("created", DateTime, server_default=func.now(), nullable=False),
+            extend_existing=True,
+        )
 
         # Specifies how to retrieve and decode data bytes from the data_records table
         self.data_defs_table = Table(
-            'data_defs', self._metadata,
-            Column('id', Integer, primary_key=True),
-            Column('name', String, unique=True),
-            Column('handler', ClassType, nullable=False),
-            Column('params', create_serializable_type(), nullable=True),
-            extend_existing=True)
+            "data_defs",
+            self._metadata,
+            Column("id", Integer, primary_key=True),
+            Column("name", String, unique=True),
+            Column("handler", ClassType, nullable=False),
+            Column("params", create_serializable_type(), nullable=True),
+            extend_existing=True,
+        )
 
         # Specifies figure creation from stored data.
         self.figure_defs_table = Table(
-            'figure_defs', self._metadata,
-            Column('id', Integer, primary_key=True),
-            Column('name', String, unique=True),
-            Column('handler', ClassType, nullable=False),
-            Column('params', create_serializable_type()),
-            extend_existing=True)
+            "figure_defs",
+            self._metadata,
+            Column("id", Integer, primary_key=True),
+            Column("name", String, unique=True),
+            Column("handler", ClassType, nullable=False),
+            Column("params", create_serializable_type()),
+            extend_existing=True,
+        )
 
         self._metadata.create_all()
 
@@ -224,32 +262,28 @@ class DataStore:
         multi_series = True
         if isinstance(idx, str):
             multi_series = False
-            idx = {'data': [idx]}
+            idx = {"data": [idx]}
         elif isinstance(idx, (list, tuple)):
-            idx = {'data': idx}
-        elif (isinstance(idx, dict) and isinstance(idx['data'], str)):
+            idx = {"data": idx}
+        elif isinstance(idx, dict) and isinstance(idx["data"], str):
             idx = dict(idx)
             multi_series = False
-            idx['data'] = [idx['data']]
+            idx["data"] = [idx["data"]]
         elif not isinstance(idx, dict):
-            raise TypeError(f'Invalid input type {type(idx)}.')
-        idx = {
-            'connection': None,
-            'criterion': [],
-            'index': None,
-            **idx}
-        if idx['index'] not in ('latest', None) and not isinstance(idx['index'], int):
+            raise TypeError(f"Invalid input type {type(idx)}.")
+        idx = {"connection": None, "criterion": [], "index": None, **idx}
+        if idx["index"] not in ("latest", None) and not isinstance(idx["index"], int):
             raise ValueError(f"Invalid value for index = {idx['index']}.")
 
         # Remove redundant data names and sort.
         # Sorting helps call_multi avoid repeated queries.
-        idx['data'] = sorted(set(idx['data']))
+        idx["data"] = sorted(set(idx["data"]))
 
         return idx, multi_series
 
     def __getitem__(self, idx: Union[str, Tuple[str], dict]):
         """
-        Load the data in a table or table join. This method can load all the data or a single record. Joins are carried out on data records table fields :attr:`index` and :attr:`writer_id`. 
+        Load the data in a table or table join. This method can load all the data or a single record. Joins are carried out on data records table fields :attr:`index` and :attr:`writer_id`.
 
         The returned output is a dictionary in one of two formats: When data series names are provided as a tuple of strings, the format is
 
@@ -281,88 +315,108 @@ class DataStore:
         * 'index': If set to 'latest', will return a record with the highest index (there might be more than one, of which one of those with the highest worker_id is taken). Otherwise, needs to be an index value. Ignored if ``None`` (the default).
         * 'connection': Connection object from previously-started context if any. ``None`` by default.
         * 'criterion': List of extra criterion to apply to the data_records_table query. Empty list ``[]`` by default.
-       """
+        """
 
         # Add default values to idx.
         idx, multi_series = self.format_getitem_idx(idx)
 
         # Build aliases and load data handlers.
-        data_records_aliases = [{
-            'name': name,
-            'handler': (handler := checked_get_single(
-                self.get_data_handlers(Col_('name') == name))),
-            'alias': select(self.data_records_table).where(
-                self.data_records_table.c.data_def_id == handler.decoded_data_def.id).alias(name)}
-            for name in idx['data']]
+        data_records_aliases = [
+            {
+                "name": name,
+                "handler": (
+                    handler := checked_get_single(
+                        self.get_data_handlers(Col_("name") == name)
+                    )
+                ),
+                "alias": select(self.data_records_table)
+                .where(
+                    self.data_records_table.c.data_def_id == handler.decoded_data_def.id
+                )
+                .alias(name),
+            }
+            for name in idx["data"]
+        ]
 
         # Build query
-        _last_table = data_records_aliases[0]['alias']
+        _last_table = data_records_aliases[0]["alias"]
         joined_tables = _last_table
-        for _table_to_join in (_x['alias'] for _x in data_records_aliases[1:]):
+        for _table_to_join in (_x["alias"] for _x in data_records_aliases[1:]):
             joined_tables = joined_tables.join(
-                _table_to_join, (and_(_last_table.c.index == _table_to_join.c.index,
-                                      _last_table.c.writer_id == _table_to_join.c.writer_id)))
+                _table_to_join,
+                (
+                    and_(
+                        _last_table.c.index == _table_to_join.c.index,
+                        _last_table.c.writer_id == _table_to_join.c.writer_id,
+                    )
+                ),
+            )
 
         qry = select(
             # Meta
-            *[getattr(_last_table.c, col).label(f'{col}')
-              for col in ['index', 'writer_id']],
+            *[
+                getattr(_last_table.c, col).label(f"{col}")
+                for col in ["index", "writer_id"]
+            ],
             # Series
-            *it.chain(*[
-                [getattr(_al['alias'].c, col).label(f"{_al['name']}.{col}")
-                 for col in ['created', 'bytes']]
-                for _al in data_records_aliases])).select_from(joined_tables)
+            *it.chain(
+                *[
+                    [
+                        getattr(_al["alias"].c, col).label(f"{_al['name']}.{col}")
+                        for col in ["created", "bytes"]
+                    ]
+                    for _al in data_records_aliases
+                ]
+            ),
+        ).select_from(joined_tables)
 
         #
-        if idx['index'] is not None:
+        if idx["index"] is not None:
             # Get a single record.
-            if idx['index'] == 'latest':
+            if idx["index"] == "latest":
                 # Get the record with most recent index.
-                qry = qry.order_by(Col_('index').desc()).limit(1)
+                qry = qry.order_by(Col_("index").desc()).limit(1)
             else:
                 # Get the record with the provided index.
-                qry = qry.where(_last_table.c.index == idx['index'])
+                qry = qry.where(_last_table.c.index == idx["index"])
         else:
             # Get all records in sorted order.
-            qry = qry.order_by(Col_('index').asc(),
-                               Col_('writer_id').asc())
+            qry = qry.order_by(Col_("index").asc(), Col_("writer_id").asc())
 
         # Execute query.
-        with self.begin_connection(connection=idx['connection']) as connection:
+        with self.begin_connection(connection=idx["connection"]) as connection:
             records = connection.execute(qry).fetchall()
 
         # Format record meta data.
-        meta = np.empty(len(records),
-                        dtype=[('index', 'i'),
-                               ('writer_id', 'i')])
-        meta['index'] = [_rec.index for _rec in records]
-        meta['writer_id'] = [_rec.writer_id for _rec in records]
+        meta = np.empty(len(records), dtype=[("index", "i"), ("writer_id", "i")])
+        meta["index"] = [_rec.index for _rec in records]
+        meta["writer_id"] = [_rec.writer_id for _rec in records]
 
         # Format record created time and bytes.
         series = {}
         for _al in data_records_aliases:
-            name = _al['name']
+            name = _al["name"]
             #
-            _content = {'created': np.empty(len(records), dtype='datetime64[us]')}
-            _content['created'][:] = [
-                _rec[f'{name}.created'] for _rec in records]
+            _content = {"created": np.empty(len(records), dtype="datetime64[us]")}
+            _content["created"][:] = [_rec[f"{name}.created"] for _rec in records]
             #
-            _content['data'] = _al['handler'].merge_records_data([
-                _al['handler'].decode_record_bytes(_rec[f'{name}.bytes']) for _rec in records])
+            _content["data"] = _al["handler"].merge_records_data(
+                [
+                    _al["handler"].decode_record_bytes(_rec[f"{name}.bytes"])
+                    for _rec in records
+                ]
+            )
             #
             series[name] = _content
 
         if multi_series:
             # {'meta': meta, 'series': {<series name>: <series data>, ...}
-            out = {
-                'meta': meta,
-                'series': series
-            }
+            out = {"meta": meta, "series": series}
         else:
             # {'meta': meta, 'data': <series data>, 'created': <created time>}
             out = {
-                'meta': meta,
-                **series[idx['data'][0]]  # Adds fields 'created', 'data'
+                "meta": meta,
+                **series[idx["data"][0]],  # Adds fields 'created', 'data'
             }
 
         return out

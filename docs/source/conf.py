@@ -17,12 +17,12 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'ploteries'
-copyright = '2021, Joaquin Zepeda'
-author = 'Joaquin Zepeda'
+project = "ploteries"
+copyright = "2021, Joaquin Zepeda"
+author = "Joaquin Zepeda"
 
 # The full version, including alpha/beta/rc tags
-release = '0.1 beta'
+release = "0.1 beta"
 
 
 # -- General configuration ---------------------------------------------------
@@ -31,16 +31,16 @@ release = '0.1 beta'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.todo',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.mathjax',
-    'IPython.sphinxext.ipython_console_highlighting',
-    'IPython.sphinxext.ipython_directive'
+    "sphinx.ext.autodoc",
+    "sphinx.ext.todo",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.mathjax",
+    "IPython.sphinxext.ipython_console_highlighting",
+    "IPython.sphinxext.ipython_directive",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -53,12 +53,12 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = "alabaster"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 
 # -- Options for todo extension ----------------------------------------------
@@ -68,11 +68,11 @@ todo_include_todos = True
 
 # -- Extension configuration -------------------------------------------------
 #
-autoclass_content = 'both'
+autoclass_content = "both"
 autodoc_default_options = {
-    'member-order': 'bysource',
-    'members': True,
-    'special-members': '__call__,__getitem__,__len__',
-    'ignore-module-all': True
+    "member-order": "bysource",
+    "members": True,
+    "special-members": "__call__,__getitem__,__len__",
+    "ignore-module-all": True,
 }
 autosummary_generate = True

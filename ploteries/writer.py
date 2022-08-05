@@ -15,23 +15,24 @@ import os.path as osp
 
 class Writer:
     """
-    All :meth:`add_*` methods build a list of trace dictionaries by combining corresponding dictionaries derived from the argument iterable :attr:`values` and the list of dictionaries in the argument :attr:`traces_kwargs`. The :attr:`values` iterable is expected to change from one time index to the next and its contents are stored for each time index in the data records table using a name tag derived from the :meth:`add_*` methods's name or specified using argument :attr:`data_name`. The :attr:`traces_kwargs`, however, will be saved along with :attr:`layout_kwargs` in a figure template that is stored in the figure definitions table. Note that this figure template is only built the first time the :attr:`add_*` method is called, and that arguments :attr:`traces_kwargs` and :attr:`layout_kwargs` are ignored in subsequent calls.
+        All :meth:`add_*` methods build a list of trace dictionaries by combining corresponding dictionaries derived from the argument iterable :attr:`values` and the list of dictionaries in the argument :attr:`traces_kwargs`. The :attr:`values` iterable is expected to change from one time index to the next and its contents are stored for each time index in the data records table using a name tag derived from the :meth:`add_*` methods's name or specified using argument :attr:`data_name`. The :attr:`traces_kwargs`, however, will be saved along with :attr:`layout_kwargs` in a figure template that is stored in the figure definitions table. Note that this figure template is only built the first time the :attr:`add_*` method is called, and that arguments :attr:`traces_kwargs` and :attr:`layout_kwargs` are ignored in subsequent calls.
 
-`    .. todo:: We need to 1) check that figure-definition values are compatible with the existing figure; 2) add mode="overwrite" functionality. It might be best to make each add_* function a class deriving from a BaseAdder class.
+    `    .. todo:: We need to 1) check that figure-definition values are compatible with the existing figure; 2) add mode="overwrite" functionality. It might be best to make each add_* function a class deriving from a BaseAdder class.
     """
 
     _table_names = {
-        'add_scalars': '__add_scalars__.{figure_name}',
-        'add_plots': '__add_plots__.{figure_name}',
-        'add_histograms': '__add_histograms__.{figure_name}',
-        'add_table': '__add_table__.{figure_name}'}
+        "add_scalars": "__add_scalars__.{figure_name}",
+        "add_plots": "__add_plots__.{figure_name}",
+        "add_histograms": "__add_histograms__.{figure_name}",
+        "add_table": "__add_table__.{figure_name}",
+    }
 
     def __init__(self, path):
         """
         :param path: Data store directory or file path. If a directory is specified, ``'data_store.pltr'`` will be appended.
         """
         if osp.isdir(path):
-            path = osp.join(path, 'ploteries.pltr')
+            path = osp.join(path, "ploteries.pltr")
         self.data_store = path if isinstance(path, DataStore) else DataStore(path)
 
         # Keep a cache of existing figures and data handlers
@@ -51,12 +52,14 @@ class Writer:
             self.existing_data_handlers[data_name] = (data_handler := func())
         return data_handler
 
-    def _write_figure(self,
-                      figure_name,
-                      value_refs_as_traces: List[Dict[str, Ref_]],
-                      traces_kwargs: List[Dict[str, Any]],
-                      default_trace_kwargs: Dict[str, Any],
-                      layout_kwargs: Dict[str, Any]):
+    def _write_figure(
+        self,
+        figure_name,
+        value_refs_as_traces: List[Dict[str, Ref_]],
+        traces_kwargs: List[Dict[str, Any]],
+        default_trace_kwargs: Dict[str, Any],
+        layout_kwargs: Dict[str, Any],
+    ):
         """
         Checks that the lengths of value_refs_as_traces and number of traces_kwargs match. Writes the figure to the figure definitions table if the figure does not yet exist. Returns ``True`` if the figure was written and ``False`` otherwise. Trace keyword args will be built by combining corresponding dictionaries in value_refs_as_traces and traces_kwargs, and applying to each the dictionary in default_trace_kwargs. Key collisions are resolved in the following highest-to-lowest priority order: ``value_refs_as_traces``, ``traces_kwargs``, ``default_trace_kwargs``.
 
@@ -68,15 +71,16 @@ class Writer:
             # Check traces_kwargs input
             if traces_kwargs and len(traces_kwargs) != len(value_refs_as_traces):
                 raise ValueError(
-                    f'Param traces_kwargs has {len(traces_kwargs)} values, '
-                    f'but expected 0 or {len(value_refs_as_traces)}.')
-            traces_kwargs = traces_kwargs or [{}]*len(value_refs_as_traces)
+                    f"Param traces_kwargs has {len(traces_kwargs)} values, "
+                    f"but expected 0 or {len(value_refs_as_traces)}."
+                )
+            traces_kwargs = traces_kwargs or [{}] * len(value_refs_as_traces)
 
             # Add trace kwargs
             value_refs_as_traces = [
                 {**_trace_kwargs, **_trace}
-                for _trace, _trace_kwargs
-                in zip(value_refs_as_traces, traces_kwargs)]
+                for _trace, _trace_kwargs in zip(value_refs_as_traces, traces_kwargs)
+            ]
 
             # Create figure handler.
             fig_handler = FigureHandler.from_traces(
@@ -84,7 +88,8 @@ class Writer:
                 name=figure_name,
                 traces=value_refs_as_traces,
                 default_trace_kwargs=default_trace_kwargs,
-                layout_kwargs=layout_kwargs)
+                layout_kwargs=layout_kwargs,
+            )
 
             # Write figure (if it does not exist).
             figure_written = fig_handler.write_def()
@@ -100,13 +105,14 @@ class Writer:
         return self.add_scalars(*arg, **kwargs)
 
     def add_scalars(
-            self,
-            figure_name: str,
-            values: ArrayLike,
-            global_step: int,
-            traces_kwargs: Optional[List[Dict]] = None,
-            layout_kwargs=None,
-            data_name: Optional[str] = None):
+        self,
+        figure_name: str,
+        values: ArrayLike,
+        global_step: int,
+        traces_kwargs: Optional[List[Dict]] = None,
+        layout_kwargs=None,
+        data_name: Optional[str] = None,
+    ):
         """
         :param figure_name: The figure name. If specified in format '<tab>/<group>/...' , the tab and group entries will determine the position of the figure in the page.
         :param values: The values for each scalar trace as an array-like.
@@ -126,41 +132,51 @@ class Writer:
         ```
         """
         layout_kwargs = layout_kwargs or {}
-        default_trace_kwargs = {'type': 'scatter', 'mode': 'lines'}
+        default_trace_kwargs = {"type": "scatter", "mode": "lines"}
 
         # Get data name.
         data_name = data_name or self._get_table_name(
-            'add_scalars', figure_name=figure_name)
+            "add_scalars", figure_name=figure_name
+        )
 
         # Check values input
         values = numtor.asnumpy(values)
         values = values[None] if values.ndim == 0 else values
         if values.ndim != 1 or not isinstance(values[0], Number):
             raise ValueError(
-                f'Expected a 1-dim array-like object of numbers, but obtained an '
-                f'array of shape {values.shape} with {values.dtype} entries.')
+                f"Expected a 1-dim array-like object of numbers, but obtained an "
+                f"array of shape {values.shape} with {values.dtype} entries."
+            )
 
         # Write figure def
         if figure_name not in self.existing_figures:
             traces = [
-                {'x': Ref_(data_name)['meta']['index'],
-                 'y': Ref_(data_name)['data'][:, k]} for k in range(len(values))]
-            self._write_figure(figure_name, traces, traces_kwargs,
-                               default_trace_kwargs, layout_kwargs)
+                {
+                    "x": Ref_(data_name)["meta"]["index"],
+                    "y": Ref_(data_name)["data"][:, k],
+                }
+                for k in range(len(values))
+            ]
+            self._write_figure(
+                figure_name, traces, traces_kwargs, default_trace_kwargs, layout_kwargs
+            )
 
         # Write data.
         data_handler = self._get_data_handler(
-            data_name, lambda: UniformNDArrayDataHandler(self.data_store, name=data_name))
+            data_name,
+            lambda: UniformNDArrayDataHandler(self.data_store, name=data_name),
+        )
         data_handler.add_data(global_step, values)
 
     def add_plots(
-            self,
-            figure_name: str,
-            values: ArrayLike,
-            global_step: int,
-            traces_kwargs: Optional[List[Dict]] = None,
-            layout_kwargs=None,
-            data_name: Optional[str] = None):
+        self,
+        figure_name: str,
+        values: ArrayLike,
+        global_step: int,
+        traces_kwargs: Optional[List[Dict]] = None,
+        layout_kwargs=None,
+        data_name: Optional[str] = None,
+    ):
         """
         :param figure_name: (See :meth:`add_scalars`).
         :param values: The values for each scalar trace as a dictionary, e.g., ``[{'x': [0,2,4], 'y': [0,2,4]}, {'x': [0,2,4], 'y': [0,4,16]}]``. Dictionaries can contain lists, strings numpy ndarrays and generally anything compatible with :class:`~xerializer.Serializer`. These dictionaries will be udpated with the corresponding value of traces_kwargs, if any. Note that the content of values will change with the global step and is saved in the data records table, but the content of traces_kwargs will remain constant and stored with the figure definition.
@@ -181,37 +197,45 @@ class Writer:
         """
 
         layout_kwargs = layout_kwargs or {}
-        default_trace_kwargs = {'type': 'scatter', 'mode': 'lines'}
+        default_trace_kwargs = {"type": "scatter", "mode": "lines"}
 
         # Get data name.
         data_name = data_name or self._get_table_name(
-            'add_plots', figure_name=figure_name)
+            "add_plots", figure_name=figure_name
+        )
 
         # Write figure def.
         if figure_name not in self.existing_figures:
             # Build traces with data store references.
             traces = [
-                {_key: Ref_({'data': data_name, 'index': 'latest'})['data'][0][k][_key]
-                 for _key in values[k]}
-                for k in range(len(values))]
-            self._write_figure(figure_name, traces, traces_kwargs,
-                               default_trace_kwargs, layout_kwargs)
+                {
+                    _key: Ref_({"data": data_name, "index": "latest"})["data"][0][k][
+                        _key
+                    ]
+                    for _key in values[k]
+                }
+                for k in range(len(values))
+            ]
+            self._write_figure(
+                figure_name, traces, traces_kwargs, default_trace_kwargs, layout_kwargs
+            )
 
         # Write data
         data_handler = self._get_data_handler(
-            data_name, lambda: SerializableDataHandler(self.data_store, name=data_name))
+            data_name, lambda: SerializableDataHandler(self.data_store, name=data_name)
+        )
         data_handler.add_data(global_step, values)
 
     def add_histograms(
-            self,
-            figure_name: str,
-            values: ArrayLike,
-            global_step: int,
-            traces_kwargs: Optional[List[Dict]] = None,
-            layout_kwargs=None,
-            data_name: Optional[str] = None,
-            compute_histogram: bool = True,
-            histogram_kwargs: dict = None
+        self,
+        figure_name: str,
+        values: ArrayLike,
+        global_step: int,
+        traces_kwargs: Optional[List[Dict]] = None,
+        layout_kwargs=None,
+        data_name: Optional[str] = None,
+        compute_histogram: bool = True,
+        histogram_kwargs: dict = None,
     ):
         """
         :param figure_name: (See :meth:`add_scalars`).
@@ -231,10 +255,11 @@ class Writer:
 
         layout_kwargs = layout_kwargs or {}
         histogram_kwargs = histogram_kwargs or {}
-        default_trace_kwargs = {'type': 'bar',
-                                # 'marker_line_width': 1.5,
-                                # 'opacity': 0.7
-                                }
+        default_trace_kwargs = {
+            "type": "bar",
+            # 'marker_line_width': 1.5,
+            # 'opacity': 0.7
+        }
         layout_kwargs = {
             # **{'bargap': 0.01, 'bargroupgap': 0.05, 'barmode': 'group'},
             **layout_kwargs
@@ -242,51 +267,69 @@ class Writer:
 
         # Get data name.
         data_name = data_name or self._get_table_name(
-            'add_histograms', figure_name=figure_name)
+            "add_histograms", figure_name=figure_name
+        )
 
         # Check values
         values = [numtor.asnumpy(_x).reshape(-1) for _x in values]
-        if not compute_histogram and 'bin_centers' not in histogram_kwargs:
+        if not compute_histogram and "bin_centers" not in histogram_kwargs:
             raise Exception(
                 "When compute_histogram=False, histogram_kwargs needs to contain a key "
-                "'bin_centers' with the bin centers.")
+                "'bin_centers' with the bin centers."
+            )
 
         def fld_(k):
-            return f'field_{k}'
+            return f"field_{k}"
 
         # Write figure def.
         if figure_name not in self.existing_figures:
             # Build traces with data store references.
             traces = [
-                {'x': Ref_({'data': data_name, 'index': 'latest'})['data'][0]['bin_centers'],
-                 'y': Ref_({'data': data_name, 'index': 'latest'})['data'][0][fld_(_k)]}
-                for _k in range(len(values))]
-            self._write_figure(figure_name, traces, traces_kwargs,
-                               default_trace_kwargs, layout_kwargs)
+                {
+                    "x": Ref_({"data": data_name, "index": "latest"})["data"][0][
+                        "bin_centers"
+                    ],
+                    "y": Ref_({"data": data_name, "index": "latest"})["data"][0][
+                        fld_(_k)
+                    ],
+                }
+                for _k in range(len(values))
+            ]
+            self._write_figure(
+                figure_name, traces, traces_kwargs, default_trace_kwargs, layout_kwargs
+            )
 
         # Compute histogram.
-        if 'bin_centers' not in histogram_kwargs:
-            histogram_kwargs['bin_centers'] = self.compute_histogram(np.concatenate(values))[0]
+        if "bin_centers" not in histogram_kwargs:
+            histogram_kwargs["bin_centers"] = self.compute_histogram(
+                np.concatenate(values)
+            )[0]
         if compute_histogram:
-            values = [np.array(self.compute_histogram(_v, **histogram_kwargs))[1] for _v in values]
+            values = [
+                np.array(self.compute_histogram(_v, **histogram_kwargs))[1]
+                for _v in values
+            ]
 
         # Assemble data to write
-        bin_centers = histogram_kwargs['bin_centers']
+        bin_centers = histogram_kwargs["bin_centers"]
         values_array = np.empty(
             len(bin_centers),
             dtype=(
-                [('bin_centers', bin_centers.dtype)] +
-                [(fld_(_k), _val.dtype) for _k, _val in enumerate(values)]))
-        values_array['bin_centers'] = bin_centers
+                [("bin_centers", bin_centers.dtype)]
+                + [(fld_(_k), _val.dtype) for _k, _val in enumerate(values)]
+            ),
+        )
+        values_array["bin_centers"] = bin_centers
         for _k, _val in enumerate(values):
-            values_array[f'field_{_k}'][:] = _val
+            values_array[f"field_{_k}"][:] = _val
 
         # Write data
         data_handler = self._get_data_handler(
-            data_name, lambda: RaggedNDArrayDataHandler(self.data_store, name=data_name))
+            data_name, lambda: RaggedNDArrayDataHandler(self.data_store, name=data_name)
+        )
         data_handler.add_data(global_step, values_array)
 
-    @ staticmethod
+    @staticmethod
     def compute_histogram(dat, bins=20, bin_centers=None, normalize=True):
         """
         :param dat: Array-like from which the histogram will be computed.
@@ -301,31 +344,33 @@ class Writer:
         # Infer bin edges
         if bin_centers is not None:
             bins = np.block(
-                [-np.inf, np.convolve(bin_centers, [0.5, 0.5], mode='valid'), np.inf])
+                [-np.inf, np.convolve(bin_centers, [0.5, 0.5], mode="valid"), np.inf]
+            )
 
         # Build histogram
         hist, edges = np.histogram(dat, bins=bins)
 
         # Infer bin centers
         if bin_centers is None:
-            bin_centers = np.convolve(edges, [0.5, 0.5], mode='valid')
+            bin_centers = np.convolve(edges, [0.5, 0.5], mode="valid")
             for k in [0, -1]:
                 if not np.isfinite(bin_centers[k]):
                     bin_centers[k] = edges[k]
 
         # Normalize histogram
         if normalize:
-            hist = hist/dat.size
+            hist = hist / dat.size
 
         return bin_centers, hist
 
     def add_table(
-            self,
-            figure_name: str,
-            values: dict,
-            global_step: int,
-            data_name: Optional[str] = None,
-            **kwargs):
+        self,
+        figure_name: str,
+        values: dict,
+        global_step: int,
+        data_name: Optional[str] = None,
+        **kwargs,
+    ):
         """
         :param figure_name: (See :meth:`add_scalars`).
         :param values: A dictionary of values. Each key in the dictionary will define a column (row, if transposed=True) in the table, and the corresponding value will contain the row (resp., column) values for the specified global_step.
@@ -342,18 +387,21 @@ class Writer:
 
         # Get data name.
         data_name = data_name or self._get_table_name(
-            'add_table', figure_name=figure_name)
+            "add_table", figure_name=figure_name
+        )
 
         # Write figure def.
         if figure_name not in self.existing_figures:
             # Build traces with data store references.
             tbl_h = TableHandler(
-                self.data_store, figure_name, (data_name, []), **kwargs)
+                self.data_store, figure_name, (data_name, []), **kwargs
+            )
 
             tbl_h.write_def()
             self.existing_figures.add(figure_name)
 
         # Write data
         data_handler = self._get_data_handler(
-            data_name, lambda: SerializableDataHandler(self.data_store, name=data_name))
+            data_name, lambda: SerializableDataHandler(self.data_store, name=data_name)
+        )
         data_handler.add_data(global_step, values)

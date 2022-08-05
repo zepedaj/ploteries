@@ -7,6 +7,7 @@ from pglib.py import class_name
 from pglib.validation import checked_get_single
 from ploteries.data_store import Col_
 import plotly.graph_objects as go
+
 # from sqlalchemy.sql import select
 from sqlalchemy import select, func
 from dash import Dash
@@ -25,20 +26,18 @@ class TableHandlerHook(AbstractInterfaceHook):
 
     handler_class = TableHandler
 
-    def __init__(self,
-                 data_store,
-                 data_table_kwargs={}):
+    def __init__(self, data_store, data_table_kwargs={}):
         self.data_store = data_store
         self.data_table_kwargs = data_table_kwargs
 
     # Dictionary ids.
     @classmethod
     def _get_table_id(cls, figure_name):
-        return cls._get_id(figure_name, element='data_table')
+        return cls._get_id(figure_name, element="data_table")
 
     @classmethod
     def _get_input_id(cls, figure_name):
-        return cls._get_id(figure_name, element='input')
+        return cls._get_id(figure_name, element="input")
 
     ##
     def build_empty_html(self, figure_handler):
@@ -51,36 +50,50 @@ class TableHandlerHook(AbstractInterfaceHook):
         self._apply_data_table_kwargs(table)
 
         return html.Div(
-            [html.Div(
-                [figure_handler.name, html.Span(
-                    dcc.Input(
-                        id=self._get_input_id(figure_handler.name),
-                        type="text", placeholder="", debounce=True,
-                        value=':-20:-1', persistence=True,
-                        size=14,
-                        style={'marginLeft': '3em', 'textAlign': 'center'}))]),
-             html.Div(table, id=self._get_table_id(figure_handler.name))],
-            style={'display': 'inline-block', 'margin': '1em'})
+            [
+                html.Div(
+                    [
+                        figure_handler.name,
+                        html.Span(
+                            dcc.Input(
+                                id=self._get_input_id(figure_handler.name),
+                                type="text",
+                                placeholder="",
+                                debounce=True,
+                                value=":-20:-1",
+                                persistence=True,
+                                size=14,
+                                style={"marginLeft": "3em", "textAlign": "center"},
+                            )
+                        ),
+                    ]
+                ),
+                html.Div(table, id=self._get_table_id(figure_handler.name)),
+            ],
+            style={"display": "inline-block", "margin": "1em"},
+        )
 
     def _apply_data_table_kwargs(self, table):
         [setattr(table, key, val) for key, val in self.data_table_kwargs.items()]
 
     def _build_formatted_figure_from_name(self, name, slice_obj):
-        table = checked_get_single(self.data_store.get_figure_handlers(
-            Col_('name') == name)).build_table(slice_obj=slice_obj)
+        table = checked_get_single(
+            self.data_store.get_figure_handlers(Col_("name") == name)
+        ).build_table(slice_obj=slice_obj)
         self._apply_data_table_kwargs(table)
         return table
 
     @classmethod
     def encoded_class_name(cls):
-        return class_name(cls).replace('.', '|')
+        return class_name(cls).replace(".", "|")
 
     @classmethod
     def create_callbacks(
-            cls,
-            app_callback: Callable,
-            get_hook: Callable[[str], 'TableHandlerHook'],
-            callback_args: Dict[str, Union[State, Input, Output]]):
+        cls,
+        app_callback: Callable,
+        get_hook: Callable[[str], "TableHandlerHook"],
+        callback_args: Dict[str, Union[State, Input, Output]],
+    ):
         """
         Creates the pattern-matching callbacks below (arrow):
 
@@ -95,24 +108,21 @@ class TableHandlerHook(AbstractInterfaceHook):
         """
 
         #
-        interface_name_state = callback_args['interface_name_state']
-        n_interval_input = callback_args['n_interval_input']
+        interface_name_state = callback_args["interface_name_state"]
+        n_interval_input = callback_args["n_interval_input"]
 
         # Figure update on interval tick
         @app_callback(
-            Output(
-                cls._get_table_id(figure_name=MATCH),
-                'children'),
+            Output(cls._get_table_id(figure_name=MATCH), "children"),
             n_interval_input,
-            Input(cls._get_input_id(figure_name=MATCH), 'value'),
-            State(
-                cls._get_table_id(figure_name=MATCH),
-                'id'),
-            interface_name_state
+            Input(cls._get_input_id(figure_name=MATCH), "value"),
+            State(cls._get_table_id(figure_name=MATCH), "id"),
+            interface_name_state,
         )
         def update_table(n_interval, input_slice, elem_id, interface_name):
             slice_obj = slice(
-                *list(map(lambda _x: int(_x) if _x else None, input_slice.split(':'))))
+                *list(map(lambda _x: int(_x) if _x else None, input_slice.split(":")))
+            )
             return get_hook(interface_name)._build_formatted_figure_from_name(
-                elem_id['name'],
-                slice_obj)
+                elem_id["name"], slice_obj
+            )
