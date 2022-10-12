@@ -388,7 +388,7 @@ class DataStore:
             records = connection.execute(qry).fetchall()
 
         # Format record meta data.
-        meta = np.empty(len(records), dtype=[("index", "i"), ("writer_id", "i")])
+        meta = np.empty(len(records), dtype=[("index", "i8"), ("writer_id", "i8")])
         meta["index"] = [_rec.index for _rec in records]
         meta["writer_id"] = [_rec.writer_id for _rec in records]
 
