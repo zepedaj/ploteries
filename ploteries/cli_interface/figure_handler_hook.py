@@ -220,7 +220,7 @@ class FigureHandlerHook(AbstractInterfaceHook):
                 select([func.count()]).select_from(self.data_store.data_records_table)
             ).one()[0]
             indices = np.empty(
-                max_possible_indices, dtype=[("index", "i"), ("data_def_id", "i")]
+                max_possible_indices, dtype=[("index", "i8"), ("data_def_id", "i")]
             )
             _k = -1
             for _k, _row in enumerate(indices_as_rows):

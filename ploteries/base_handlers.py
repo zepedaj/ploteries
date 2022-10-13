@@ -203,7 +203,7 @@ class DataHandler(Handler):
     def _format_records(self, records):
         meta = np.empty(
             len(records),
-            dtype=[("index", "i"), ("created", "datetime64[us]"), ("writer_id", "i")],
+            dtype=[("index", "i8"), ("created", "datetime64[us]"), ("writer_id", "i")],
         )
         meta["index"] = [_rec.index for _rec in records]
         meta["created"] = [_rec.created for _rec in records]
