@@ -34,3 +34,21 @@ To-Do's
     * Add better code display -- potentially make the diff a link to a different page, might want to use https://diff2html.xyz/.
 
     * Better support for copying text in dropdown menus and tables (tables might be solved by using an html table instead of a Dash DataTable).
+
+    * Fix the following Dash warnings::
+
+        The dash_core_components package is deprecated. Please replace
+        `import dash_core_components as dcc` with `from dash import dcc`
+          import dash_core_components as dcc
+        /home/zjoaquin/git/jazs-git/ploteries/ploteries/cli_interface/figure_handler_hook.py:14: UserWarning:
+        The dash_html_components package is deprecated. Please replace
+        `import dash_html_components as html` with `from dash import html`
+          import dash_html_components as html
+        /home/zjoaquin/git/jazs-git/ploteries/ploteries/cli_interface/table_handler_hook.py:2: UserWarning:
+        The dash_table package is deprecated. Please replace
+        `import dash_table` with `from dash import dash_table`
+
+        Also, if you're using any of the table format helpers (e.g. Group), replace
+        `from dash_table.Format import Group` with
+        `from dash.dash_table.Format import Group`
+          from dash_table import DataTable
