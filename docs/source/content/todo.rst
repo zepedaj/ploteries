@@ -52,3 +52,7 @@ To-Do's
         `from dash_table.Format import Group` with
         `from dash.dash_table.Format import Group`
           from dash_table import DataTable
+
+    * Add a marker that indicates the last point in the trace. This is important particularly when there is a single point in the trace. Using a marker for every point is too dense, as sometimes there are a lot of points. Can also add a point that indicates the global step.
+
+    * Ploteries should continue to display transparently if a file was deleted and re-created. Right now, it display `Error loading layout`.
