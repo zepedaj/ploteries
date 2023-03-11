@@ -18,6 +18,14 @@ class GenericScalarsManagerAccumViz(_ScalarAccumViz):
             name, self.get(), k_sample, traces_kwargs=self.viz.traces_kwargs
         )
 
+    def get(self):
+        if self.val is None and (
+            traces_kwargs := getattr(self.viz, "traces_kwargs", None)
+        ):
+            return [np.nan] * len(traces_kwargs)
+        else:
+            return super().get()
+
 
 class GenericScalarsManagerViz(_Viz):
     accum_cls = GenericScalarsManagerAccumViz
@@ -57,7 +65,7 @@ class HistogramsViz(_ScalarViz):
         max=np.inf,
         trace_kwargs=None,
         layout_kwargs=None,
-        **hg_kwargs
+        **hg_kwargs,
     ):
         """
         fxn extracts a list torch tensors. A histogram will be computed from each.
@@ -132,7 +140,7 @@ class HistogramsAccumViz(_AccumViz):
             k_sample,
             compute_histogram=False,
             histogram_kwargs={"bin_centers": bin_centers},
-            **self.viz.add_kwargs
+            **self.viz.add_kwargs,
         )
 
 
