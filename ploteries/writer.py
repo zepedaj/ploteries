@@ -3,14 +3,16 @@ Provides a higher-level interface to ploteries that exposes a :class:`Writer` cl
 """
 import numpy as np
 from numbers import Number
+
 from .data_store import DataStore, Ref_
 from .ndarray_data_handlers import UniformNDArrayDataHandler, RaggedNDArrayDataHandler
 from .serializable_data_handler import SerializableDataHandler
 from .figure_handler import FigureHandler, TableHandler
 from pglib.numpy import ArrayLike
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Type
 from pglib.nnets import numtor
 import os.path as osp
+from .figure_handler.scalars_figure_handler import ScalarsFigureHandler
 
 
 class Writer:
@@ -59,6 +61,7 @@ class Writer:
         traces_kwargs: List[Dict[str, Any]],
         default_trace_kwargs: Dict[str, Any],
         layout_kwargs: Dict[str, Any],
+        figure_handler: Type[FigureHandler] = FigureHandler,
     ):
         """
         Checks that the lengths of value_refs_as_traces and number of traces_kwargs match. Writes the figure to the figure definitions table if the figure does not yet exist. Returns ``True`` if the figure was written and ``False`` otherwise. Trace keyword args will be built by combining corresponding dictionaries in value_refs_as_traces and traces_kwargs, and applying to each the dictionary in default_trace_kwargs. Key collisions are resolved in the following highest-to-lowest priority order: ``value_refs_as_traces``, ``traces_kwargs``, ``default_trace_kwargs``.
@@ -67,7 +70,6 @@ class Writer:
         """
         figure_written = False
         if figure_name not in self.existing_figures:
-
             # Check traces_kwargs input
             if traces_kwargs and len(traces_kwargs) != len(value_refs_as_traces):
                 raise ValueError(
@@ -83,7 +85,7 @@ class Writer:
             ]
 
             # Create figure handler.
-            fig_handler = FigureHandler.from_traces(
+            fig_handler = figure_handler.from_traces(
                 self.data_store,
                 name=figure_name,
                 traces=value_refs_as_traces,
@@ -112,6 +114,7 @@ class Writer:
         traces_kwargs: Optional[List[Dict]] = None,
         layout_kwargs=None,
         data_name: Optional[str] = None,
+        smoothing: bool = True,
     ):
         """
         :param figure_name: The figure name. If specified in format '<tab>/<group>/...' , the tab and group entries will determine the position of the figure in the page.
@@ -119,6 +122,7 @@ class Writer:
         :param names: The legend name to use for each trace.
         :param traces: None or list of dictionaries of length equal to that of values containing keyword arguments for the trace. The default value for each trace is ``{'type':'scatter', 'mode':'lines'}`` and will be updated with the specified values.
         :param data_name: The name of the data series when stored in the data table. If ``None``, the name ``__add_scalars__.<figure_name>`` will be used.
+        :param smoothing: Whether to enable smoothing.
 
         Example:
 
@@ -158,7 +162,12 @@ class Writer:
                 for k in range(len(values))
             ]
             self._write_figure(
-                figure_name, traces, traces_kwargs, default_trace_kwargs, layout_kwargs
+                figure_name,
+                traces,
+                traces_kwargs,
+                default_trace_kwargs,
+                layout_kwargs,
+                figure_handler=(ScalarsFigureHandler if smoothing else FigureHandler),
             )
 
         # Write data.

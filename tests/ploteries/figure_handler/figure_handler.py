@@ -14,49 +14,56 @@ import dash
 
 @contextmanager
 def get_store_with_fig():
-    with get_store() as store:
-        #
-        arr1_h = UniformNDArrayDataHandler(store, "arr1")
-        for index in range(5):
-            arr1_h.add_data(
-                index,
-                np.array(
-                    list(zip(range(0, 10), range(10, 20))),
-                    dtype=[("f0", "i"), ("f1", "f")],
-                ),
-            )
-        #
-        arr2_h = UniformNDArrayDataHandler(store, "arr2")
-        for index in range(5):
-            arr2_h.add_data(
-                index,
-                np.array(
-                    list(zip(range(20, 30), range(30, 40))),
-                    dtype=[("f0", "i"), ("f1", "f")],
-                ),
-            )
-
-        #
-        fig = go.Figure()
-        for k in range(2):
-            fig.add_trace(go.Scatter(x=[], y=[], mode="lines", name=f"plot_{k}"))
-        fig_dict = fig.to_dict()
-        fig_dict["data"][0]["x"] = Ref_("arr1")["data"][0]["f0"]
-        fig_dict["data"][0]["y"] = Ref_("arr1")["data"][0]["f1"]
-        fig_dict["data"][1]["x"] = Ref_("arr2")["data"][0]["f0"]
-        fig_dict["data"][1]["y"] = Ref_("arr2")["data"][0]["f1"]
-
-        #
-        fig_h = mdl.FigureHandler(store, "fig1", fig_dict)
-
-        store.flush()
-        yield store, arr1_h, arr2_h, fig_h
-        store.flush()
+    with TestFigureHandler.get_store_with_fig() as out:
+        yield out
 
 
 class TestFigureHandler(TestCase):
-    def test_create(self):
+    FigureHandler = mdl.FigureHandler
 
+    @classmethod
+    @contextmanager
+    def get_store_with_fig(cls):
+        with get_store() as store:
+            #
+            arr1_h = UniformNDArrayDataHandler(store, "arr1")
+            for index in range(5):
+                arr1_h.add_data(
+                    index,
+                    np.array(
+                        list(zip(range(0, 10), range(10, 20))),
+                        dtype=[("f0", "i"), ("f1", "f")],
+                    ),
+                )
+            #
+            arr2_h = UniformNDArrayDataHandler(store, "arr2")
+            for index in range(5):
+                arr2_h.add_data(
+                    index,
+                    np.array(
+                        list(zip(range(20, 30), range(30, 40))),
+                        dtype=[("f0", "i"), ("f1", "f")],
+                    ),
+                )
+
+            #
+            fig = go.Figure()
+            for k in range(2):
+                fig.add_trace(go.Scatter(x=[], y=[], mode="lines", name=f"plot_{k}"))
+            fig_dict = fig.to_dict()
+            fig_dict["data"][0]["x"] = Ref_("arr1")["data"][0]["f0"]
+            fig_dict["data"][0]["y"] = Ref_("arr1")["data"][0]["f1"]
+            fig_dict["data"][1]["x"] = Ref_("arr2")["data"][0]["f0"]
+            fig_dict["data"][1]["y"] = Ref_("arr2")["data"][0]["f1"]
+
+            #
+            fig_h = cls.FigureHandler(store, "fig1", fig_dict)
+
+            store.flush()
+            yield store, arr1_h, arr2_h, fig_h
+            store.flush()
+
+    def test_create(self):
         with get_store_with_fig() as (store, arr1_h, arr2_h, fig_h):
             built_fig = fig_h.build_figure()
 
@@ -100,11 +107,10 @@ class TestFigureHandler(TestCase):
             )
             built_fig_ft = fig_h_ft.build_figure()
 
-            self.assertEqual(built_fig.to_json(), built_fig_ft.to_json())
+            self.assertEqual(built_fig, built_fig_ft)
 
     def test_get_data_names(self):
         with get_store_with_fig() as (store, arr1_h, arr2_h, fig1_h):
-
             # Add another fig.
             arr3_h = UniformNDArrayDataHandler(store, "arr3")
             arr3_h.add_data(

@@ -16,8 +16,7 @@ from ploteries.data_store import DataStore
 
 # from ploteries2._ploteries2_helper import get_train_args
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc, html
 import dash_daq as daq
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -237,7 +236,6 @@ def create_discover_callback():
         State("data-store-dropdown", "options"),
     )
     def update_data_store_dropdown_options(n_intervals, data_store_options):
-
         DATA_INTERFACES.update(verbose=False)
         new_paths = DATA_INTERFACES.keys()
 
@@ -251,7 +249,6 @@ def create_discover_callback():
 
 @app_callback(Output("figure-tabs", "children"), Input("data-store-dropdown", "value"))
 def update_figure_tabs(data_store_name):
-
     if data_store_name is None:
         raise PreventUpdate
 

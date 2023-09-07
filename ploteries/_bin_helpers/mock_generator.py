@@ -64,7 +64,7 @@ class RandomWalk:
 @clx.option(
     "--num-histograms", type=int, default=2, help="Number of `add_plots` figures."
 )
-def launch_mock_generator(
+def demo(
     out,
     interval,
     length,
@@ -80,26 +80,23 @@ def launch_mock_generator(
     .. code-block:: bash
 
        # From shell 1
-       $ ./ploteries launch_mock_generator
-         Launch a ploteries server with the following command:
-             ploteries launch --interval 2 /tmp/tmp_55f_7jh/data_store.pltr
-         71it [12:41, 23.85it/s]
+       $ ./ploteries demo
+         <prints out a a full command with temporary path>
 
-       # From shell 2
-       $ ploteries launch --interval 2 /tmp/tmp_55f_7jh/data_store.pltr
+       # From shell 2, copy paste the command printed above
+       $ ploteries launch --interval 2 <temporary path>
     """
 
     try:
-        with (nullcontext() if out else TemporaryDirectory()) as root_dir:
+        with nullcontext() if out else TemporaryDirectory() as root_dir:
             out = out or osp.join(root_dir, "data_store.pltr")
             #
             print(
-                f"Launch a ploteries server with the following command (ctrl+c to exit):\n\tploteries launch --interval 2 {out}"
+                f"This command generates demo data. To visualize this data, you need to launch a ploteries server in a different shell using the following command:\n\tploteries launch --interval 2 --path {out}"
             )
 
             writer = Writer(out)
             try:
-
                 # Define figures
                 scalars = [
                     {"name": f"scalars/scalars-{_k}", "iter": RandomWalk(num_traces)}

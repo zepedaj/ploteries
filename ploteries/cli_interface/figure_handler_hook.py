@@ -9,9 +9,7 @@ import plotly.graph_objects as go
 
 # from sqlalchemy.sql import select
 from sqlalchemy import select, func
-from dash import Dash
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
 from dash.exceptions import PreventUpdate
 from .abstract_hook import AbstractInterfaceHook
@@ -20,7 +18,7 @@ from ploteries.figure_handler import FigureHandler
 
 class FigureHandlerHook(AbstractInterfaceHook):
     """
-        Implements the interface (methods :meth:`render_empty_figures` and :meth:`create_callbacks`)) required by the 'ploteries launch' CLI to access the
+    Implements the interface (methods :meth:`render_empty_figures` and :meth:`create_callbacks`)) required by the 'ploteries launch' CLI to access the
     figures in a data store.
     """
 
@@ -265,7 +263,6 @@ class FigureHandlerHook(AbstractInterfaceHook):
         # Build the slider state for each figure.
         new_slider_states = []
         for fig_name in [_x["name"] for _x in slider_ids]:
-
             #
             indices = fig_to_indices[fig_name].tolist()
 

@@ -6,6 +6,9 @@ from typing import Callable, Dict, Union
 from dash import Dash
 from dash.dependencies import Input, Output, State
 from collections import namedtuple
+
+from ploteries.base_handlers import DataHandler
+
 from .figure_handler_hook import FigureHandlerHook
 from .table_handler_hook import TableHandlerHook
 
@@ -54,10 +57,24 @@ class PloteriesLaunchInterface:
             RenderedFigure(
                 name=_fig_handler.name,
                 posn=self._name_to_posn(_fig_handler.name),
-                html=self.hooks[type(_fig_handler)].build_empty_html(_fig_handler),
+                html=self.get_hook(type(_fig_handler)).build_empty_html(_fig_handler),
             )
             for _fig_handler in self.data_store.get_figure_handlers()
         ]
+
+    def get_hook(self, handler_type: DataHandler):
+        """Tries to find a matching hook based on class inheritance structure."""
+        try:
+            return self.hooks[handler_type]
+        except KeyError:
+            available_ancestors = set(self.hooks.keys())
+            if not (
+                closest_ancestor := [
+                    x for x in handler_type.mro() if x in available_ancestors
+                ]
+            ):
+                raise
+            return self.hooks[closest_ancestor[0]]
 
     def _name_to_posn(self, fig_name):
         default = None
@@ -89,6 +106,8 @@ class PloteriesLaunchInterface:
         for hook in cls.hook_classes:
             hook.create_callbacks(
                 app_callback,
-                lambda path, hook=hook: get_interface(path).hooks[hook.handler_class],
+                lambda path, hook=hook: get_interface(path).get_hook(
+                    hook.handler_class
+                ),
                 callback_args,
             )

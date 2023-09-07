@@ -12,10 +12,18 @@ import torch
 
 
 class GenericScalarsManagerAccumViz(_ScalarAccumViz):
+    def __init__(self, *args, **kwargs):
+        self.smoothing = kwargs.pop("smoothing", True)
+        super().__init__(*args, **kwargs)
+
     def write_epoch(self, writer, k_sample, name=None, **name_formatters):
         name = self.get_name(name, **name_formatters)
         writer.add_scalars(
-            name, self.get(), k_sample, traces_kwargs=self.viz.traces_kwargs
+            name,
+            self.get(),
+            k_sample,
+            traces_kwargs=self.viz.traces_kwargs,
+            smoothing=self.smoothing,
         )
 
     def get(self):
@@ -28,14 +36,18 @@ class GenericScalarsManagerAccumViz(_ScalarAccumViz):
 
 
 class GenericScalarsManagerViz(_Viz):
-    accum_cls = GenericScalarsManagerAccumViz
+    def accum_cls(self, *args, **kwargs):
+        return GenericScalarsManagerAccumViz(
+            *args, **{**{"smoothing": self.smoothing}, **kwargs}
+        )
 
-    def __init__(self, name, fxns, traces_kwargs=None):
+    def __init__(self, name, fxns, traces_kwargs=None, smoothing=True):
         """
         Supports ploteries2.figure_managers.GenericScalarsManagerViz visualizations.
         """
         self.name, self.fxns = name, [default_viz_fxn(fxn) for fxn in fxns]
         self.traces_kwargs = traces_kwargs
+        self.smoothing = smoothing
 
     def update(self, batch, prediction, loss, timing, extra):
         # self.val=nt.copy(self.fxn(batch, prediction, loss, timing, extra))
@@ -50,7 +62,13 @@ class GenericScalarsManagerViz(_Viz):
     def write_batch(self, writer, k_sample, name=None, **name_formatters):
         name = self.get_name(name, **name_formatters)
         # getattr(writer, self._add_method)(name, self.get(), k_sample)
-        writer.add_scalars(name, self.get(), k_sample, traces_kwargs=self.traces_kwargs)
+        writer.add_scalars(
+            name,
+            self.get(),
+            k_sample,
+            traces_kwargs=self.traces_kwargs,
+            smoothing=self.smoothing,
+        )
 
 
 # HISTOGRAM VISUALIZATIONS

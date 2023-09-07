@@ -13,7 +13,6 @@ from pglib.py import get_nested_keys
 
 
 class FigureHandler(Handler):
-
     data_store = None
     decoded_data_def = None
 
@@ -140,6 +139,6 @@ class FigureHandler(Handler):
         fig_dict["data"].extend(traces)
 
         # Save figure.
-        fig_handler = FigureHandler(data_store, name=name, figure_dict=fig_dict)
+        fig_handler = cls(data_store, name=name, figure_dict=fig_dict)
 
         return fig_handler

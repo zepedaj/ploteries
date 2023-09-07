@@ -32,7 +32,7 @@ class TestWriter(TestCase):
 
             # Check built figure.
             fig = fig_h.build_figure()
-            self.assertEqual(len(fig["data"]), num_traces)
+            self.assertEqual(len(fig["data"]), num_traces * 2)
 
             for _k in range(num_traces):
                 npt.assert_array_equal(
