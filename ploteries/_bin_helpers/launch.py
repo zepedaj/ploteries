@@ -158,6 +158,7 @@ def create_layout(update_interval):
                                         persistence=osp.abspath(
                                             DATA_INTERFACES.glob_path
                                         ),
+                                        persistence_type="session",
                                         clearable=False,
                                         options=DATA_INTERFACES.options(),
                                         value=DATA_INTERFACES.default_value(),
