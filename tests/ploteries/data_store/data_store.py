@@ -57,7 +57,6 @@ def get_store_with_data(num_uniform=[3, 5, 2], num_ragged=[11, 6, 4, 9]):
 
 
 class TestRef_(TestCase):
-
     # @benchmark(False)
     # def test_serialization(self):
     #     ref_ = mdl.Ref_('series1')['abc'][1]['def'][3]
@@ -111,18 +110,15 @@ class TestDataStore(TestCase):
                 npt.assert_array_equal(dh.load_data()["data"], np.array(arrs))
 
     def test_getitem__single_series(self):
-
         with get_store_with_data(
             num_uniform := [4, 3, 5, 2], num_ragged := [3, 8, 5]
         ) as (store, uniform, ragged):
-
             #
             for type_name, num, orig_data in [
                 ("uniform", num_uniform, uniform),
                 ("ragged", num_ragged, ragged),
             ]:
                 for array_index in range(len(num)):
-
                     series_name = f"{type_name}_{array_index}"
                     #
                     stacked_arrays = orig_data[array_index]["arrays"]
@@ -153,7 +149,6 @@ class TestDataStore(TestCase):
         with get_store_with_data(
             num_uniform := [4, 3, 5, 2], num_ragged := [3, 8, 5]
         ) as (store, uniform, ragged):
-
             #
             for series_specs in [
                 (("uniform", 2),),

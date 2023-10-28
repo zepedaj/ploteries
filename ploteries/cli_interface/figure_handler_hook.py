@@ -199,10 +199,8 @@ class FigureHandlerHook(AbstractInterfaceHook):
         with self.data_store.begin_connection() as connection:
             qry = (
                 select(
-                    [
-                        self.data_store.data_records_table.c.index.asc(),
-                        self.data_store.data_records_table.c.data_def_id,
-                    ]
+                    self.data_store.data_records_table.c.index.asc(),
+                    self.data_store.data_records_table.c.data_def_id,
                 )
                 .where(
                     self.data_store.data_records_table.c.data_def_id.in_(
@@ -215,7 +213,7 @@ class FigureHandlerHook(AbstractInterfaceHook):
 
             # Assign to numpy record array.
             max_possible_indices = connection.execute(
-                select([func.count()]).select_from(self.data_store.data_records_table)
+                select(func.count()).select_from(self.data_store.data_records_table)
             ).one()[0]
             indices = np.empty(
                 max_possible_indices, dtype=[("index", "i8"), ("data_def_id", "i")]

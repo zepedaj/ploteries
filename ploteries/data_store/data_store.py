@@ -117,15 +117,15 @@ class DataStore:
         #
         self.path = path
         self.engine = create_engine(f"sqlite:///{path}")
-        self._metadata = MetaData(bind=self.engine)
+        self._metadata = MetaData()
 
         #
-        self._metadata.reflect()
+        self._metadata.reflect(self.engine)
         self._create_tables()
 
         # Set writer instance
         if not read_only:
-            with self.engine.connect() as conn:
+            with self.engine.connect() as conn, conn.begin():
                 self.writer_id = conn.execute(
                     self._metadata.tables["writers"].insert()
                 ).inserted_primary_key.id
@@ -255,7 +255,7 @@ class DataStore:
             extend_existing=True,
         )
 
-        self._metadata.create_all()
+        self._metadata.create_all(self.engine)
 
     @classmethod
     def format_getitem_idx(cls, idx):
@@ -398,11 +398,13 @@ class DataStore:
             name = _al["name"]
             #
             _content = {"created": np.empty(len(records), dtype="datetime64[us]")}
-            _content["created"][:] = [_rec[f"{name}.created"] for _rec in records]
+            _content["created"][:] = [
+                _rec._mapping[f"{name}.created"] for _rec in records
+            ]
             #
             _content["data"] = _al["handler"].merge_records_data(
                 [
-                    _al["handler"].decode_record_bytes(_rec[f"{name}.bytes"])
+                    _al["handler"].decode_record_bytes(_rec._mapping[f"{name}.bytes"])
                     for _rec in records
                 ]
             )

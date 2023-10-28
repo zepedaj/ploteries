@@ -193,7 +193,7 @@ class UniformNDArrayDataHandler(DataHandler):
                     )
 
         # Check the input ndarray spec against the stored ndarray spec.
-        decoded_ndarray_spec = self.decoded_data_def["params"]["ndarray_spec"]
+        decoded_ndarray_spec = self.decoded_data_def._mapping["params"]["ndarray_spec"]
         if self.decoded_data_def and input_ndarray_spec != decoded_ndarray_spec:
             raise TypeError(
                 f"The input ndarray spec {input_ndarray_spec} does not match the value "
@@ -204,7 +204,6 @@ class UniformNDArrayDataHandler(DataHandler):
         super().add_data(index, arr, connection=connection)
 
     def encode_record_bytes(self, arr):
-
         # Convert data, build records
         packed_arr = np.require(
             arr, dtype=self.ndarray_spec.dtype, requirements="C"
@@ -217,7 +216,6 @@ class UniformNDArrayDataHandler(DataHandler):
         return data_bytes
 
     def merge_records_data(self, records_data):
-
         # Pre alloc output
         out_ndarray = np.empty(
             (len(records_data), *self.ndarray_spec.shape), dtype=self.ndarray_spec.dtype

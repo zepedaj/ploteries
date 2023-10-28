@@ -1,6 +1,6 @@
 from unittest import TestCase
 from plotly import graph_objects as go
-import dash_core_components as dcc
+from dash import dcc
 import numpy.testing as npt
 from dash.dependencies import Input, Output, State, ALL
 import dash
@@ -11,7 +11,6 @@ from ploteries.data_store import Col_
 
 class TestFigureHandlerHook(TestCase):
     def test_build_empty_html(self):
-
         with get_store_with_fig() as (store, arr1_h, arr2_h, fig_h):
             built_fig = fig_h.build_figure()
 
@@ -57,9 +56,7 @@ class TestFigureHandlerHook(TestCase):
             )
 
     def test_update_all_sliders_and_global_index_dropdown_options_callback(self):
-
         with get_store_with_fig() as (store, arr1_h, arr2_h, fig_h):
-
             fig_h.write_def()
 
             output = mdl.FigureHandlerHook(

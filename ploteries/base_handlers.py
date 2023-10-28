@@ -92,7 +92,7 @@ class Handler(abc.ABC):
             except exc.NoResultFound:
                 return False
             else:
-                cls.decode_params(data_def["params"])
+                cls.decode_params(data_def._mapping["params"])
                 return data_def
 
     def write_def(self, connection=None, mode="insert", extra_params={}):
