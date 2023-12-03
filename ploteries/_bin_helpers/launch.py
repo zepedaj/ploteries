@@ -140,7 +140,17 @@ def create_layout(update_interval):
             html.Div(
                 [
                     html.H2(
-                        children="Ploteries",
+                        children=[
+                            "Ploteries",
+                            html.Img(
+                                src="assets/ploteries2.png",
+                                style={
+                                    "height": "1.5em",
+                                    "margin-bottom": "-0.4em",
+                                    "margin-top": 0,
+                                },
+                            ),
+                        ],
                         style={
                             "float": "right",
                             "margin-right": "1em",
