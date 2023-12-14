@@ -238,7 +238,7 @@ class Writer:
     def add_histograms(
         self,
         figure_name: str,
-        values: ArrayLike,
+        values: List[ArrayLike],
         global_step: int,
         traces_kwargs: Optional[List[Dict]] = None,
         layout_kwargs=None,
