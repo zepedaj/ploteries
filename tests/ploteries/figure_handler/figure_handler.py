@@ -1,13 +1,13 @@
 from ploteries.figure_handler import figure_handler as mdl
 from ploteries.data_store import Ref_
 import numpy.testing as npt
-from pglib.slice_sequence import SSQ_
+from jztools.slice_sequence import SSQ_
 import plotly.graph_objects as go
 from ploteries.ndarray_data_handlers import UniformNDArrayDataHandler
 from unittest import TestCase
 from ..data_store import get_store
 import numpy as np
-from pglib.profiling import time_and_print
+from jztools.profiling import time_and_print
 from contextlib import contextmanager
 import dash
 

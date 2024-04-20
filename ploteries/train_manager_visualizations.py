@@ -5,7 +5,7 @@ from torch_train_manager.viz import (
     AccumViz as _AccumViz,
     default_viz_fxn,
 )
-from pglib.nnets import numtor as nt
+from jztools.nnets import numtor as nt
 import numpy as np
 from .writer import Writer
 import torch

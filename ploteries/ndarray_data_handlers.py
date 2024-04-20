@@ -1,6 +1,6 @@
 from threading import RLock
 import numpy as np
-from pglib.numpy import encode_ndarray, decode_ndarray, ArrayLike
+from jztools.numpy import encode_ndarray, decode_ndarray, ArrayLike
 from numpy.lib import recfunctions as recfns
 from typing import Optional
 from .base_handlers import DataHandler
@@ -158,9 +158,9 @@ class UniformNDArrayDataHandler(DataHandler):
         if not isinstance(arr, np.ndarray):
             arr = np.require(
                 arr,
-                dtype=None
-                if not explicit_ndarray_spec
-                else explicit_ndarray_spec.dtype,
+                dtype=(
+                    None if not explicit_ndarray_spec else explicit_ndarray_spec.dtype
+                ),
             )
             arr_shape = arr.shape
             if not arr_shape:

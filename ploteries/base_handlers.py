@@ -1,5 +1,5 @@
 import abc
-import pglib.validation as pgval
+import jztools.validation as pgval
 import re
 from sqlalchemy.engine.result import Row
 from sqlalchemy import insert, update, func, select, exc

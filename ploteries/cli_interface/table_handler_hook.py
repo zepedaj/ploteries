@@ -2,8 +2,8 @@ import numpy as np
 from dash.dash_table import DataTable
 from typing import Callable, Union, Dict
 import itertools as it
-from pglib.py import class_name
-from pglib.validation import checked_get_single
+from jztools.py import class_name
+from jztools.validation import checked_get_single
 from ploteries.data_store import Col_
 
 from dash import dcc

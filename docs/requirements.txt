@@ -1,0 +1,4 @@
+sphinx
+sphinx-favicon
+sphinx-book-theme
+ipython

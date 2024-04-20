@@ -10,19 +10,17 @@ setup(
     description="",
     author="Joaquin Zepeda",
     install_requires=[
-        # Testing
         "pytest",
-        # !!!! sudo apt install graphviz  !!!!
-        # Documentation
         "sphinx",
-        "enum_tools",  # 'sphinx-toolbox',
-        # Algorithm
+        "enum_tools",
         "numpy",
-        "sqlalchemy",
-        # Extra
+        "sqlalchemy==1.4.46",
         "climax",
         "dash",
         "dash_daq",
         "gunicorn",
+        "jztools>=0.1.5",
+        "pandas",
+        "rich",
     ],
 )

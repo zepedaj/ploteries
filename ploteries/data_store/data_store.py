@@ -15,14 +15,14 @@ from sqlalchemy import (
 )
 import numpy as np
 import itertools as it
-from pglib.validation import checked_get_single
-from pglib.sqlalchemy import ClassType, create_serializable_type, ThreadedInsertCache
+from jztools.validation import checked_get_single
+from jztools.sqlalchemy import ClassType, create_serializable_type, ThreadedInsertCache
 from contextlib import contextmanager
-from pglib.sqlalchemy import begin_connection
+from jztools.sqlalchemy import begin_connection
 from sqlalchemy.sql.elements import BinaryExpression
 from sqlalchemy.sql import column
 from typing import Union, List, Tuple
-from pglib.slice_sequence import SSQ_ as _SSQ_
+from jztools.slice_sequence import SSQ_ as _SSQ_
 from xerializer.abstract_type_serializer import Serializable
 
 Col_ = column
@@ -33,7 +33,7 @@ Convenience alias to :class:`sqlalchemy.sql.column`. See documentation for :meth
 
 class Ref_(_SSQ_, Serializable):
     """
-    Extension to :class:`~pglib.slice_sequence.SliceSequence` that is used to define serializable references to data store content.
+    Extension to :class:`~jztools.slice_sequence.SliceSequence` that is used to define serializable references to data store content.
     """
 
     def __init__(self, index):
@@ -189,7 +189,7 @@ class DataStore:
 
     def insert_data_record(self, data_record: Union[dict, List[dict]]):
         """
-        Using this method will automatically batch inserts in a new thread to increase disk-write efficiency (:class:`~pglib.sqlalchemy.threaded_insert_cache.ThreadedInsertCache` used internally). Call :meth:`flush` to ensure all records inserted before the call have been written to the database.
+        Using this method will automatically batch inserts in a new thread to increase disk-write efficiency (:class:`~jztools.sqlalchemy.threaded_insert_cache.ThreadedInsertCache` used internally). Call :meth:`flush` to ensure all records inserted before the call have been written to the database.
 
         :param data_record: Record dictionary or list of record dictionaries.
         """

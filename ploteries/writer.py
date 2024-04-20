@@ -1,6 +1,7 @@
 """
 Provides a higher-level interface to ploteries that exposes a :class:`Writer` class with :meth:`add_*` methods similar to Tensorboard's API.
 """
+
 import numpy as np
 from numbers import Number
 
@@ -8,9 +9,9 @@ from .data_store import DataStore, Ref_
 from .ndarray_data_handlers import UniformNDArrayDataHandler, RaggedNDArrayDataHandler
 from .serializable_data_handler import SerializableDataHandler
 from .figure_handler import FigureHandler, TableHandler
-from pglib.numpy import ArrayLike
+from jztools.numpy import ArrayLike
 from typing import Optional, List, Dict, Any, Type
-from pglib.nnets import numtor
+from jztools.nnets import numtor
 import os.path as osp
 from .figure_handler.scalars_figure_handler import ScalarsFigureHandler
 

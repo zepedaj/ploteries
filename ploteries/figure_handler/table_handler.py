@@ -1,14 +1,14 @@
 from copy import deepcopy
-from pglib.validation import checked_get_single
-from pglib.slice_sequence import SSQ_
+from jztools.validation import checked_get_single
+from jztools.slice_sequence import SSQ_
 import plotly.graph_objects as go
 from typing import List, Optional, Union, Dict, Any, Tuple
 from ploteries.data_store import Ref_
 import itertools as it
 from collections import OrderedDict
-from pglib import validation as pgval
+from jztools import validation as pgval
 from numbers import Number
-from pglib.py import strict_zip
+from jztools.py import strict_zip
 from .figure_handler import FigureHandler as _FigureHandler
 from dash.dash_table import DataTable
 import re
@@ -66,7 +66,7 @@ class TableHandler(_FigureHandler):
         """
         :param data_store: Source data store.
         :param name: Name of the FigureHandler instance that will be used in the figure defs table.
-        :param data_mappings: A data series name /  :class:`pglib.slice_sequence.SSQ_`-producible pair, or a dictionary of such pairs. In the first case, the :class:`SSQ_` object is expected to produce a dictionary. In both cases, the :class:`SSQ_` objects are applied to each record retrieved from the corresponding data series (i.e., to each entry of ``data_store['data_series_name']['data']``), and the dictionary keys will be the :attr:`id` for the :attr:`columns` argument of the :class:`dash_table.DataStore` object (as well as the :attr:`name` by default, unless overwritten with argument :attr:`columns_kwargs`).
+        :param data_mappings: A data series name /  :class:`jztools.slice_sequence.SSQ_`-producible pair, or a dictionary of such pairs. In the first case, the :class:`SSQ_` object is expected to produce a dictionary. In both cases, the :class:`SSQ_` objects are applied to each record retrieved from the corresponding data series (i.e., to each entry of ``data_store['data_series_name']['data']``), and the dictionary keys will be the :attr:`id` for the :attr:`columns` argument of the :class:`dash_table.DataStore` object (as well as the :attr:`name` by default, unless overwritten with argument :attr:`columns_kwargs`).
         :param data_table_template: A :class:`dash.dcc.DataTable` or derived dictionary specifying the template used to build the data table.
         :param transposed: Whether to display the table in transposed form (where each record will appear as a column for the k-th time step).
         :param sorting: Whether to display the data fields in ascending or descending order.

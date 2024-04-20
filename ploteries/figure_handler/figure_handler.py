@@ -1,15 +1,15 @@
 import plotly.graph_objects as go
 import itertools as it
 from sqlalchemy import exc
-from pglib.profiling import time_and_print
+from jztools.profiling import time_and_print
 from ploteries.base_handlers import Handler
 from typing import List, Optional
 from typing import Dict, Union, Any
-from pglib.slice_sequence import SSQ_
+from jztools.slice_sequence import SSQ_
 from dataclasses import dataclass
 from copy import deepcopy
 from ploteries.data_store import Col_, Ref_
-from pglib.py import get_nested_keys
+from jztools.py import get_nested_keys
 
 
 class FigureHandler(Handler):

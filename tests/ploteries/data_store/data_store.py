@@ -1,9 +1,10 @@
 from unittest import TestCase
-from marcabanca import benchmark
+
+benchmark = lambda x: (lambda y: y)  # from marcabanca import benchmark
 import ploteries.data_store as mdl
 from tempfile import NamedTemporaryFile
 from contextlib import contextmanager
-import pglib.numpy as pgnp
+import jztools.numpy as pgnp
 import numpy as np
 import numpy.testing as npt
 from sqlalchemy.sql import column as c
@@ -11,7 +12,7 @@ from ploteries.ndarray_data_handlers import (
     UniformNDArrayDataHandler,
     RaggedNDArrayDataHandler,
 )
-from pglib.sqlalchemy import ClassType
+from jztools.sqlalchemy import ClassType
 from sqlalchemy.sql.expression import bindparam
 
 

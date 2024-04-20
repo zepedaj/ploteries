@@ -22,7 +22,7 @@ class SliceSerializer(LegacyTypeSerializer):
 
     handled_type = None
     as_serializable = None
-    signature = "pglib.serializer.extensions.SliceSerializer"
+    signature = "jztools.serializer.extensions.SliceSerializer"
 
     def from_serializable(self, value):
         return slice(*value)
@@ -32,7 +32,7 @@ class SliceSequenceSerializer(LegacyTypeSerializer):
 
     handled_type = None
     as_serializable = None
-    signature = "pglib.slice_sequence.SliceSequence"
+    signature = "jztools.slice_sequence.SliceSequence"
 
     def from_serializable(self, value):
         from ploteries.data_store.data_store import Ref_
@@ -48,7 +48,7 @@ class DtypeSerializer(LegacyTypeSerializer):
 
     handled_type = None
     as_serializable = None
-    signature = "pglib.serializer.extensions.DtypeSerializer"
+    signature = "jztools.serializer.extensions.DtypeSerializer"
 
     def from_serializable(self, value):
         return descr_to_dtype(value)
@@ -58,10 +58,10 @@ class NDArraySerializer(LegacyTypeSerializer):
 
     handled_type = None
     as_serializable = None
-    signature = "pglib.serializer.extensions.NDArraySerializer"
+    signature = "jztools.serializer.extensions.NDArraySerializer"
 
     def from_serializable(self, value):
-        from pglib.numpy import decode_ndarray
+        from jztools.numpy import decode_ndarray
 
         return decode_ndarray(base64.b64decode(value.encode("ascii")))
 

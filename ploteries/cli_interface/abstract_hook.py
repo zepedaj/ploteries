@@ -1,5 +1,5 @@
 from typing import Callable, Union, Dict
-from pglib.py import class_name
+from jztools.py import class_name
 from dash import Dash
 from dash.dependencies import Input, Output, State
 import abc
