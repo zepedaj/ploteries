@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-with open("README.md") as f:
+with open("readme.md") as f:
     long_description = f.read()
 
 
@@ -10,7 +10,7 @@ setup(
     name="ploteries",
     packages=find_packages(".", exclude=["tests"]),
     scripts=["ploteries/bin/ploteries"],
-    version="0.1.1",
+    version="0.1.2",
     description="Plotting for ML training",
     keywords=["plots", "tensorboard", "machine learning", "training"],
     long_description=long_description,
